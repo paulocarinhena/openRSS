@@ -57,7 +57,29 @@ export type ParsedFeed = {
 
 export function looksLikeFeed(body: string): boolean {
   const head = body.slice(0, 2000).trimStart();
-  return /^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<(rss|feed|rdf:RDF)\b/i.test(head);
+  let i = 0;
+
+  const skipWs = () => {
+    while (i < head.length && /\s/.test(head[i])) i++;
+  };
+
+  if (head.startsWith("<?xml", i)) {
+    const endDecl = head.indexOf("?>", i + 5);
+    if (endDecl === -1) return false;
+    i = endDecl + 2;
+    skipWs();
+  }
+
+  while (head.startsWith("<!--", i)) {
+    const endComment = head.indexOf("-->", i + 4);
+    if (endComment === -1) return false;
+    i = endComment + 3;
+    skipWs();
+  }
+
+  const rest = head.slice(i);
+  const m = /^<(rss|feed|rdf:RDF)(\W|$)/i.exec(rest);
+  return m !== null;
 }
 
 export async function parseFeed(xml: string, feedUrl: string): Promise<ParsedFeed> {
