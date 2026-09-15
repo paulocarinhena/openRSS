@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { extractFullContent } from "@/lib/feeds/extract";
 import { findPreviewImage } from "@/lib/feeds/preview-image";
+import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { articleScopeWhere, getArticle, listArticles, type ArticleScope } from "@/lib/queries";
 
 /** Carrega o artigo para o leitor e marca como lido. */
@@ -94,7 +95,9 @@ export async function loadFullContent(articleId: string): Promise<{ html?: strin
   const user = await requireUser();
   await assertAccess(user.id, articleId);
   const article = await db.article.findUniqueOrThrow({ where: { id: articleId } });
-  if (article.fullContentHtml) return { html: article.fullContentHtml };
+  // Reaplica o saneamento: conteúdo extraído antes de uma correção no sanitizador
+  // (ex.: forçar target="_blank" nos links) fica com o HTML cru gravado no banco.
+  if (article.fullContentHtml) return { html: sanitizeArticleHtml(article.fullContentHtml, article.url) };
   const t = await getTranslations("articles.errors");
   if (!article.url) return { error: t("noOriginalLink") };
   try {

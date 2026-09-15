@@ -330,6 +330,16 @@
     transition: opacity 150ms ease-out !important;
   }
 }
+/* Sem hover confiável (touch): mantém as ações, inclusive "abrir original", sempre visíveis. */
+@media (hover: none) {
+  .card-actions,
+  .card-actions > * {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    pointer-events: auto;
+  }
+}
 
 /* ── Barras de rolagem finas (vertical e horizontal) ────────── */
 :root {

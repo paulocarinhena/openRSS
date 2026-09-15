@@ -30,7 +30,9 @@ import {
   Menu,
   MessageSquare,
   Newspaper,
+  Pencil,
   Plus,
+  RefreshCw,
   Rss,
   Settings,
   Sparkles,
@@ -43,7 +45,7 @@ import { Dialog } from "radix-ui";
 import type { SidebarData } from "@/lib/queries";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import { createFolderAction, updateSubscriptionAction } from "@/app/actions/feeds";
+import { createFolderAction, refreshAllFeedsAction, renameFolderAction, updateSubscriptionAction } from "@/app/actions/feeds";
 import { AddFeedDialog } from "@/components/add-feed-dialog";
 import { FeedIcon } from "@/components/feed-icon";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -57,6 +59,15 @@ type Move = { subscriptionId: string; folderId: string | null };
 
 const UNFILED_ZONE = "unfiled";
 const folderZoneId = (folderId: string) => `folder:${folderId}`;
+
+/** lucide-react não inclui mais ícones de marca; octocat inline no lugar do pacote. */
+function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56 0-.27-.01-1.17-.02-2.13-3.2.7-3.87-1.36-3.87-1.36-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11.06 11.06 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.2.67.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
+  );
+}
 
 export function AppShell({ sidebar, user, children }: { sidebar: SidebarData; user: User; children: React.ReactNode }) {
   const t = useTranslations("shell");
@@ -124,6 +135,8 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [refreshingAll, startRefreshAll] = useTransition();
 
   // Arrastar e soltar feeds entre pastas (com atualização otimista).
   const [data, applyMove] = useOptimistic(sidebar, moveSubscription);
@@ -184,6 +197,18 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
 
   const draggingFromFolder = Boolean(dragging?.folderId);
 
+  function refreshAll() {
+    startRefreshAll(async () => {
+      const res = await refreshAllFeedsAction();
+      if (res.ok) {
+        toast.success(t("feedsRefreshed", { count: res.added }));
+        router.refresh();
+      } else {
+        toast.error(res.error || t("refreshFeedsFailed"));
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-0 w-full flex-col">
       <div className="flex h-12 items-center justify-between px-3">
@@ -220,17 +245,30 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
 
         <div className="mt-5 mb-1 flex items-center justify-between pr-1 pl-2">
           <p className="eyebrow">{t("feeds")}</p>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={cn("size-6", creatingFolder && "bg-sidebar-active text-foreground")}
-            title={t("newFolder")}
-            aria-label={t("newFolder")}
-            aria-expanded={creatingFolder}
-            onClick={() => setCreatingFolder((v) => !v)}
-          >
-            <FolderPlus className="size-3.5" />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-6"
+              title={t("refreshAllFeeds")}
+              aria-label={t("refreshAllFeeds")}
+              disabled={refreshingAll}
+              onClick={refreshAll}
+            >
+              <RefreshCw className={cn("size-3.5", refreshingAll && "animate-spin")} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={cn("size-6", creatingFolder && "bg-sidebar-active text-foreground")}
+              title={t("newFolder")}
+              aria-label={t("newFolder")}
+              aria-expanded={creatingFolder}
+              onClick={() => setCreatingFolder((v) => !v)}
+            >
+              <FolderPlus className="size-3.5" />
+            </Button>
+          </div>
         </div>
         {creatingFolder && <NewFolderInput onClose={() => setCreatingFolder(false)} />}
 
@@ -273,15 +311,30 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
                     >
                       <ChevronRight className={cn("size-3.5 transition-transform duration-200", open && "rotate-90")} />
                     </button>
-                    <Link href={`/folder/${folder.id}`} draggable={false} className="flex h-full min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-foreground">
-                      <Icon className="size-4 shrink-0 fill-primary/15 text-primary dark:fill-ai/15 dark:text-ai" />
-                      <span className="min-w-0 flex-1 truncate">{folder.name}</span>
-                      {folder.unread > 0 && (
-                        <span className="rounded-full bg-primary/10 px-1.5 py-px font-mono text-[0.625rem] font-medium tabular-nums text-primary dark:bg-white/10 dark:text-foreground">
-                          {folder.unread > 999 ? "999+" : folder.unread}
-                        </span>
-                      )}
-                    </Link>
+                    {renamingFolderId === folder.id ? (
+                      <RenameFolderInput folder={folder} onClose={() => setRenamingFolderId(null)} />
+                    ) : (
+                      <>
+                        <Link href={`/folder/${folder.id}`} draggable={false} className="flex h-full min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-foreground">
+                          <Icon className="size-4 shrink-0 fill-primary/15 text-primary dark:fill-ai/15 dark:text-ai" />
+                          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+                          {folder.unread > 0 && (
+                            <span className="rounded-full bg-primary/10 px-1.5 py-px font-mono text-[0.625rem] font-medium tabular-nums text-primary dark:bg-white/10 dark:text-foreground">
+                              {folder.unread > 999 ? "999+" : folder.unread}
+                            </span>
+                          )}
+                        </Link>
+                        <button
+                          type="button"
+                          title={t("renameFolder")}
+                          aria-label={t("renameFolderName", { name: folder.name })}
+                          onClick={() => setRenamingFolderId(folder.id)}
+                          className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   {/* Feeds da pasta: recuados e ligados por uma linha-guia */}
@@ -336,6 +389,11 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
           <p className="truncate text-xs font-medium">{user.name}</p>
           <p className="truncate text-[0.6875rem] text-muted-foreground">{user.email}</p>
         </div>
+        <Button asChild variant="ghost" size="icon-sm" aria-label={t("viewSourceOnGithub")} title={t("viewSourceOnGithub")}>
+          <a href="https://github.com/paulocarinhena/openRSS" target="_blank" rel="noopener noreferrer">
+            <GithubIcon />
+          </a>
+        </Button>
         <Button asChild variant="ghost" size="icon-sm" aria-label={t("settings")} title={t("settings")}>
           <Link href="/settings">
             <Settings />
@@ -439,6 +497,67 @@ function NewFolderInput({ onClose }: { onClose: () => void }) {
       ) : (
         <p className="mt-1 px-1 text-[0.625rem] text-muted-foreground">{t("folderInputHint")}</p>
       )}
+    </form>
+  );
+}
+
+/** Campo inline para renomear uma pasta existente (Enter salva, Esc cancela). */
+function RenameFolderInput({ folder, onClose }: { folder: { id: string; name: string }; onClose: () => void }) {
+  const t = useTranslations("shell");
+  const router = useRouter();
+  const [name, setName] = useState(folder.name);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  function submit() {
+    if (pending) return;
+    const value = name.trim();
+    if (!value || value === folder.name) return onClose();
+    start(async () => {
+      const res = await renameFolderAction(folder.id, value);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      toast.success(t("folderRenamed", { name: value }));
+      onClose();
+      router.refresh();
+    });
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="flex h-full min-w-0 flex-1 items-center"
+    >
+      <input
+        autoFocus
+        value={name}
+        maxLength={60}
+        disabled={pending}
+        aria-label={t("renameFolderName", { name: folder.name })}
+        aria-invalid={Boolean(error)}
+        onChange={(e) => {
+          setName(e.target.value);
+          setError(null);
+        }}
+        onFocus={(e) => e.target.select()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        onBlur={submit}
+        className={cn(
+          "min-w-0 flex-1 rounded border bg-surface px-1.5 text-sm font-semibold text-foreground outline-none dark:bg-secondary",
+          error ? "border-destructive" : "border-border",
+        )}
+      />
+      {pending && <Loader2 className="ml-1.5 size-3.5 shrink-0 animate-spin text-muted-foreground" />}
     </form>
   );
 }

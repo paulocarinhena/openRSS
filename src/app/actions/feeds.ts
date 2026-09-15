@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { discoverFeeds } from "@/lib/feeds/discover";
 import { parseOpml } from "@/lib/feeds/opml";
-import { refreshFeed, subscribe } from "@/lib/feeds/refresh";
+import { refreshFeed, refreshFeedsNow, subscribe } from "@/lib/feeds/refresh";
 import { classifyNewArticles } from "@/lib/ai/classify";
 import { actionErrorMessage } from "@/lib/action-errors";
 
@@ -86,6 +86,15 @@ export async function refreshFeedAction(feedId: string): Promise<Result<{ added:
   if (!sub) return { ok: false, error: (await errors())("feedNotFound") };
   const { newArticleIds, error } = await refreshFeed(feedId);
   if (error) return { ok: false, error };
+  void classifyNewArticles(newArticleIds).catch(() => {});
+  revalidatePath("/", "layout");
+  return { ok: true, added: newArticleIds.length };
+}
+
+export async function refreshAllFeedsAction(): Promise<Result<{ added: number }>> {
+  const user = await requireUser();
+  const subs = await db.subscription.findMany({ where: { userId: user.id }, select: { feedId: true }, distinct: ["feedId"] });
+  const newArticleIds = await refreshFeedsNow(subs.map((s) => s.feedId));
   void classifyNewArticles(newArticleIds).catch(() => {});
   revalidatePath("/", "layout");
   return { ok: true, added: newArticleIds.length };

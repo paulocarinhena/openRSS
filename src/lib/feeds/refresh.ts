@@ -89,15 +89,9 @@ export async function refreshFeed(feedId: string): Promise<{ newArticleIds: stri
   return result ?? { newArticleIds: [], error: "Este feed já está sendo atualizado." };
 }
 
-/** Atualiza feeds vencidos com concorrência limitada. */
-export async function refreshDueFeeds(limit = 40, concurrency = 4): Promise<string[]> {
-  const due = await db.feed.findMany({
-    where: { nextFetchAt: { lte: new Date() }, subscriptions: { some: {} } },
-    orderBy: { nextFetchAt: "asc" },
-    take: limit,
-    select: { id: true },
-  });
-  const queue = due.map((f) => f.id);
+/** Atualiza uma lista de feeds com concorrência limitada. */
+export async function refreshFeedsNow(feedIds: string[], concurrency = 4): Promise<string[]> {
+  const queue = [...feedIds];
   const created: string[] = [];
   await Promise.all(
     Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
@@ -108,6 +102,17 @@ export async function refreshDueFeeds(limit = 40, concurrency = 4): Promise<stri
     }),
   );
   return created;
+}
+
+/** Atualiza feeds vencidos com concorrência limitada. */
+export async function refreshDueFeeds(limit = 40, concurrency = 4): Promise<string[]> {
+  const due = await db.feed.findMany({
+    where: { nextFetchAt: { lte: new Date() }, subscriptions: { some: {} } },
+    orderBy: { nextFetchAt: "asc" },
+    take: limit,
+    select: { id: true },
+  });
+  return refreshFeedsNow(due.map((f) => f.id), concurrency);
 }
 
 /** Assina um feed (criando-o globalmente se necessário) com os itens já baixados. */

@@ -149,7 +149,14 @@
     "newFolderName": "New folder name",
     "createFolder": "Create folder",
     "folderInputHint": "Enter to create · Esc to cancel",
-    "feedError": "Feed error"
+    "feedError": "Feed error",
+    "renameFolder": "Rename folder",
+    "renameFolderName": "Rename “{name}”",
+    "folderRenamed": "Folder renamed to “{name}”",
+    "refreshAllFeeds": "Refresh all feeds",
+    "feedsRefreshed": "{count, plural, =0 {No new articles} =1 {1 new article} other {# new articles}}",
+    "refreshFeedsFailed": "Could not refresh the feeds.",
+    "viewSourceOnGithub": "View source on GitHub"
   },
   "articles": {
     "scopes": {
@@ -487,6 +494,7 @@
   },
   "settings": {
     "title": "Settings",
+    "sourceLink": "View source on GitHub",
     "tabs": {
       "general": "General",
       "feeds": "Feeds",

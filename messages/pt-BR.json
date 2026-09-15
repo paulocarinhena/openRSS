@@ -149,7 +149,14 @@
     "newFolderName": "Nome da nova pasta",
     "createFolder": "Criar pasta",
     "folderInputHint": "Enter para criar · Esc para cancelar",
-    "feedError": "Erro no feed"
+    "feedError": "Erro no feed",
+    "renameFolder": "Renomear pasta",
+    "renameFolderName": "Renomear “{name}”",
+    "folderRenamed": "Pasta renomeada para “{name}”",
+    "refreshAllFeeds": "Atualizar todos os feeds",
+    "feedsRefreshed": "{count, plural, =0 {Nenhum artigo novo} =1 {1 artigo novo} other {# artigos novos}}",
+    "refreshFeedsFailed": "Não foi possível atualizar os feeds.",
+    "viewSourceOnGithub": "Ver código no GitHub"
   },
   "articles": {
     "scopes": {
@@ -487,6 +494,7 @@
   },
   "settings": {
     "title": "Configurações",
+    "sourceLink": "Ver código no GitHub",
     "tabs": {
       "general": "Geral",
       "feeds": "Feeds",

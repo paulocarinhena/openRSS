@@ -18,7 +18,7 @@ export function sanitizeArticleHtml(html: string, baseUrl?: string | null): stri
       "img", "figure", "figcaption", "picture", "source", "video", "audio", "iframe", "del", "ins", "sup", "sub", "details", "summary",
     ],
     allowedAttributes: {
-      a: ["href", "title"],
+      a: ["href", "title", "target", "rel"],
       img: ["src", "srcset", "alt", "title", "width", "height"],
       source: ["src", "srcset", "type", "media"],
       video: ["src", "poster", "controls", "width", "height"],

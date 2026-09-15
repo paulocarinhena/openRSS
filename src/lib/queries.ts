@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { db, icontains } from "@/lib/db";
 import { getUserSettings } from "@/lib/app-settings";
+import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { stripHtml, truncate } from "@/lib/utils";
 
 export type ArticleScope =
@@ -198,7 +199,14 @@ export async function getArticle(userId: string, articleId: string) {
   });
   if (!article) return null;
   const { states, ...rest } = article;
-  return { ...rest, state: states.at(0) ?? null };
+  return {
+    ...rest,
+    // Reaplica o saneamento: artigos extraídos/ingeridos antes de uma correção no sanitizador
+    // (ex.: forçar target="_blank" nos links) ficam com o HTML cru gravado no banco.
+    contentHtml: rest.contentHtml ? sanitizeArticleHtml(rest.contentHtml, rest.url) : rest.contentHtml,
+    fullContentHtml: rest.fullContentHtml ? sanitizeArticleHtml(rest.fullContentHtml, rest.url) : rest.fullContentHtml,
+    state: states.at(0) ?? null,
+  };
 }
 
 export type ArticleDetail = NonNullable<Awaited<ReturnType<typeof getArticle>>>;

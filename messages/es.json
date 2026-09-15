@@ -149,7 +149,14 @@
     "newFolderName": "Nombre de la nueva carpeta",
     "createFolder": "Crear carpeta",
     "folderInputHint": "Enter para crear · Esc para cancelar",
-    "feedError": "Error en el feed"
+    "feedError": "Error en el feed",
+    "renameFolder": "Renombrar carpeta",
+    "renameFolderName": "Renombrar “{name}”",
+    "folderRenamed": "Carpeta renombrada a “{name}”",
+    "refreshAllFeeds": "Actualizar todos los feeds",
+    "feedsRefreshed": "{count, plural, =0 {Sin artículos nuevos} =1 {1 artículo nuevo} other {# artículos nuevos}}",
+    "refreshFeedsFailed": "No se pudieron actualizar los feeds.",
+    "viewSourceOnGithub": "Ver código en GitHub"
   },
   "articles": {
     "scopes": {
@@ -487,6 +494,7 @@
   },
   "settings": {
     "title": "Configuración",
+    "sourceLink": "Ver código en GitHub",
     "tabs": {
       "general": "General",
       "feeds": "Feeds",
