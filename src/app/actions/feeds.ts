@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -8,19 +9,23 @@ import { discoverFeeds } from "@/lib/feeds/discover";
 import { parseOpml } from "@/lib/feeds/opml";
 import { refreshFeed, subscribe } from "@/lib/feeds/refresh";
 import { classifyNewArticles } from "@/lib/ai/classify";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
-const fail = (err: unknown): { ok: false; error: string } => ({
+// Mensagens do zod são chaves de feeds.errors.
+const errors = () => getTranslations("feeds.errors");
+
+const fail = async (err: unknown): Promise<{ ok: false; error: string }> => ({
   ok: false,
-  error: err instanceof z.ZodError ? err.issues[0]?.message ?? "Dados inválidos." : err instanceof Error ? err.message : String(err),
+  error: err instanceof z.ZodError ? actionErrorMessage(await errors(), err) : err instanceof Error ? err.message : String(err),
 });
 
 export async function discoverAction(input: string): Promise<Result<{ feeds: { url: string; title: string; siteUrl: string | null; itemCount: number; subscribed: boolean }[] }>> {
   const user = await requireUser();
   try {
-    const found = await discoverFeeds(z.string().min(3, "Informe uma URL.").parse(input));
-    if (found.length === 0) return { ok: false, error: "Nenhum feed encontrado nesse endereço." };
+    const found = await discoverFeeds(z.string().min(3, "urlRequired").parse(input));
+    if (found.length === 0) return { ok: false, error: (await errors())("noneFound") };
     const subs = await db.subscription.findMany({
       where: { userId: user.id, feed: { url: { in: found.map((f) => f.url) } } },
       select: { feed: { select: { url: true } } },
@@ -78,7 +83,7 @@ export async function updateSubscriptionAction(
 export async function refreshFeedAction(feedId: string): Promise<Result<{ added: number }>> {
   const user = await requireUser();
   const sub = await db.subscription.findFirst({ where: { userId: user.id, feedId } });
-  if (!sub) return { ok: false, error: "Feed não encontrado." };
+  if (!sub) return { ok: false, error: (await errors())("feedNotFound") };
   const { newArticleIds, error } = await refreshFeed(feedId);
   if (error) return { ok: false, error };
   void classifyNewArticles(newArticleIds).catch(() => {});
@@ -86,14 +91,14 @@ export async function refreshFeedAction(feedId: string): Promise<Result<{ added:
   return { ok: true, added: newArticleIds.length };
 }
 
-const folderName = z.string().trim().min(1, "Nome obrigatório.").max(60);
+const folderName = z.string().trim().min(1, "nameRequired").max(60);
 
 export async function createFolderAction(name: string): Promise<Result<{ id: string }>> {
   const user = await requireUser();
   try {
     const value = folderName.parse(name);
     const existing = await db.folder.findFirst({ where: { userId: user.id, name: value }, select: { id: true } });
-    if (existing) return { ok: false, error: "Já existe uma pasta com esse nome." };
+    if (existing) return { ok: false, error: (await errors())("folderExists") };
     const count = await db.folder.count({ where: { userId: user.id } });
     const folder = await db.folder.create({ data: { userId: user.id, name: value, position: count } });
     revalidatePath("/", "layout");
@@ -123,12 +128,13 @@ export async function deleteFolderAction(folderId: string): Promise<Result> {
 
 export async function importOpmlAction(formData: FormData): Promise<Result<{ imported: number; failed: number }>> {
   const user = await requireUser();
+  const t = await errors();
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Selecione um arquivo OPML." };
-  if (file.size > 2 * 1024 * 1024) return { ok: false, error: "Arquivo muito grande." };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: t("opmlRequired") };
+  if (file.size > 2 * 1024 * 1024) return { ok: false, error: t("fileTooLarge") };
 
   const entries = parseOpml(await file.text());
-  if (entries.length === 0) return { ok: false, error: "Nenhum feed encontrado no OPML." };
+  if (entries.length === 0) return { ok: false, error: t("opmlEmpty") };
 
   const folderIds = new Map<string, string>();
   for (const name of new Set(entries.map((e) => e.folder).filter((f): f is string => Boolean(f)))) {

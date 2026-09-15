@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { extractFullContent } from "@/lib/feeds/extract";
@@ -29,7 +30,7 @@ async function assertAccess(userId: string, articleId: string) {
       OR: [{ feed: { subscriptions: { some: { userId } } } }, { states: { some: { userId, isSaved: true } } }],
     },
   });
-  if (!ok) throw new Error("Artigo não encontrado.");
+  if (!ok) throw new Error((await getTranslations("articles.errors"))("notFound"));
 }
 
 export async function setRead(articleId: string, isRead: boolean) {
@@ -94,14 +95,15 @@ export async function loadFullContent(articleId: string): Promise<{ html?: strin
   await assertAccess(user.id, articleId);
   const article = await db.article.findUniqueOrThrow({ where: { id: articleId } });
   if (article.fullContentHtml) return { html: article.fullContentHtml };
-  if (!article.url) return { error: "Artigo sem link original." };
+  const t = await getTranslations("articles.errors");
+  if (!article.url) return { error: t("noOriginalLink") };
   try {
     const html = await extractFullContent(article.url);
-    if (!html) return { error: "Não foi possível extrair o conteúdo." };
+    if (!html) return { error: t("extractFailed") };
     await db.article.update({ where: { id: articleId }, data: { fullContentHtml: html } });
     return { html };
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Falha ao buscar o artigo." };
+    return { error: err instanceof Error ? err.message : t("fetchFailed") };
   }
 }
 

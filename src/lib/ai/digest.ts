@@ -3,8 +3,10 @@ import { generateText } from "ai";
 import { db } from "@/lib/db";
 import { stripHtml, truncate } from "@/lib/utils";
 import { withLock } from "@/lib/jobs/lock";
+import { staticTranslator } from "@/i18n/static";
 import { resolveModel } from "./providers";
 import { errorMessage, languageName } from "./content";
+import { AiError } from "./errors";
 
 const MAX_ARTICLES = 80;
 
@@ -45,10 +47,12 @@ async function generateDigestUnlocked(userId: string, now: Date) {
 
   const day = dayInTimezone(now, settings.timezone);
   if (articles.length === 0) {
+    // Texto persistido no idioma da interface vigente na geração.
+    const empty = staticTranslator(settings.uiLanguage, "digest")("empty");
     return db.digest.upsert({
       where: { userId_day: { userId, day } },
-      create: { userId, day, content: "Nenhum artigo novo nas últimas 24 horas.", articleIds: "[]" },
-      update: { content: "Nenhum artigo novo nas últimas 24 horas.", articleIds: "[]" },
+      create: { userId, day, content: empty, articleIds: "[]" },
+      update: { content: empty, articleIds: "[]" },
     });
   }
 
@@ -81,7 +85,7 @@ async function generateDigestUnlocked(userId: string, now: Date) {
 export async function generateDigest(userId: string, now = new Date()) {
   const day = dayInTimezone(now, (await db.userSettings.upsert({ where: { userId }, create: { userId }, update: {} })).timezone);
   const result = await withLock(`digest:${userId}:${day}`, 5 * 60_000, () => generateDigestUnlocked(userId, now));
-  if (!result) throw new Error("O digest deste usuário já está sendo gerado.");
+  if (!result) throw new AiError("digestInProgress");
   return result;
 }
 

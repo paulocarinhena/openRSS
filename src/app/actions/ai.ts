@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getLocale, getTranslations } from "next-intl/server";
 import { generateText } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -10,36 +11,54 @@ import { createModel, listModels, listModelsFor, PROVIDER_TYPES } from "@/lib/ai
 import { errorMessage } from "@/lib/ai/content";
 import { generateDigest } from "@/lib/ai/digest";
 import { classifyForUser } from "@/lib/ai/classify";
+import { actionErrorMessage } from "@/lib/action-errors";
 
+// Mensagens do zod são chaves de ai.actionErrors (traduzidas por actionErrorMessage).
 const providerSchema = z.object({
   id: z.string().optional(),
   scope: z.enum(["user", "global"]),
   type: z.enum(PROVIDER_TYPES),
-  name: z.string().trim().min(1, "Nome obrigatório.").max(60),
-  baseUrl: z.union([z.url("Base URL inválida."), z.literal("")]).optional(),
+  name: z.string().trim().min(1, "nameRequired").max(60),
+  baseUrl: z.union([z.url("invalidBaseUrl"), z.literal("")]).optional(),
   apiKey: z.string().optional(), // vazio = manter a atual
   defaultModel: z.string().trim().max(200).optional(),
   enabled: z.boolean().default(true),
 });
 
+/** Erro de validação/permissão desta camada; `errorMessage` traduz pela chave. */
+class ProviderActionError extends Error {
+  constructor(public readonly key: "providerNotFound" | "noPermission") {
+    super(key);
+  }
+}
+
+async function failed(err: unknown) {
+  if (err instanceof ProviderActionError) {
+    const t = await getTranslations("ai.actionErrors");
+    return { ok: false as const, error: t(err.key) };
+  }
+  return { ok: false as const, error: errorMessage(err, await getLocale()) };
+}
+
 /** Garante que o usuário pode editar o provedor (dono, ou admin para globais). */
 async function editableProvider(id: string) {
   const user = await requireUser();
   const provider = await db.aiProvider.findUnique({ where: { id } });
-  if (!provider) throw new Error("Provedor não encontrado.");
+  if (!provider) throw new ProviderActionError("providerNotFound");
   const canEdit = provider.userId ? provider.userId === user.id : user.role === "admin";
-  if (!canEdit) throw new Error("Sem permissão.");
+  if (!canEdit) throw new ProviderActionError("noPermission");
   return { user, provider };
 }
 
 export async function saveProviderAction(input: z.input<typeof providerSchema>) {
   const user = await requireUser();
+  const t = await getTranslations("ai.actionErrors");
   const parsed = providerSchema.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!parsed.success) return { ok: false as const, error: actionErrorMessage(t, parsed.error) };
   const { id, scope, apiKey, baseUrl, defaultModel, ...rest } = parsed.data;
 
-  if (scope === "global" && user.role !== "admin") return { ok: false as const, error: "Apenas administradores." };
-  if (rest.type === "openai_compatible" && !baseUrl) return { ok: false as const, error: "Base URL obrigatória para OpenAI-compatible." };
+  if (scope === "global" && user.role !== "admin") return { ok: false as const, error: t("adminsOnly") };
+  if (rest.type === "openai_compatible" && !baseUrl) return { ok: false as const, error: t("baseUrlRequired") };
 
   const data = {
     ...rest,
@@ -59,7 +78,7 @@ export async function saveProviderAction(input: z.input<typeof providerSchema>) 
       await db.aiProvider.create({ data: { ...data, userId: scope === "user" ? user.id : null } });
     }
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
   revalidatePath("/settings", "layout");
   return { ok: true as const };
@@ -74,7 +93,7 @@ export async function deleteProviderAction(id: string) {
       db.userSettings.updateMany({ where: { aiProviderId: id }, data: { aiProviderId: null, aiModel: null } }),
     ]);
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
   revalidatePath("/settings", "layout");
   return { ok: true as const };
@@ -83,7 +102,7 @@ export async function deleteProviderAction(id: string) {
 async function usableProvider(id: string) {
   const user = await requireUser();
   const provider = await db.aiProvider.findFirst({ where: { id, OR: [{ userId: user.id }, { userId: null }] } });
-  if (!provider) throw new Error("Provedor não encontrado.");
+  if (!provider) throw new ProviderActionError("providerNotFound");
   return provider;
 }
 
@@ -91,7 +110,10 @@ export async function testProviderAction(id: string, model?: string) {
   try {
     const provider = await usableProvider(id);
     const modelId = model || provider.defaultModel;
-    if (!modelId) return { ok: false as const, error: "Informe um modelo para testar." };
+    if (!modelId) {
+      const t = await getTranslations("ai.actionErrors");
+      return { ok: false as const, error: t("modelRequired") };
+    }
     const started = Date.now();
     const { text } = await generateText({
       model: createModel(provider, modelId),
@@ -100,7 +122,7 @@ export async function testProviderAction(id: string, model?: string) {
     });
     return { ok: true as const, reply: text.trim().slice(0, 60), ms: Date.now() - started };
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
 }
 
@@ -110,8 +132,9 @@ export async function testProviderAction(id: string, model?: string) {
  */
 export async function fetchModelsAction(input: { providerId?: string; type: string; baseUrl?: string; apiKey?: string }) {
   const user = await requireUser();
+  const t = await getTranslations("ai.actionErrors");
   const type = z.enum(PROVIDER_TYPES).safeParse(input.type);
-  if (!type.success) return { ok: false as const, error: "Tipo de provedor inválido." };
+  if (!type.success) return { ok: false as const, error: t("invalidProviderType") };
 
   let apiKey = input.apiKey?.trim() || undefined;
   let providerType = type.data;
@@ -119,24 +142,24 @@ export async function fetchModelsAction(input: { providerId?: string; type: stri
   let allowPrivateNetwork = false;
   if (input.providerId) {
     const stored = await db.aiProvider.findFirst({ where: { id: input.providerId, OR: [{ userId: user.id }, { userId: null }] } });
-    if (!stored) return { ok: false as const, error: "Provedor não encontrado." };
+    if (!stored) return { ok: false as const, error: t("providerNotFound") };
     const storedType = z.enum(PROVIDER_TYPES).safeParse(stored.type);
-    if (!storedType.success) return { ok: false as const, error: "Tipo de provedor inválido." };
+    if (!storedType.success) return { ok: false as const, error: t("invalidProviderType") };
     providerType = storedType.data;
     baseUrl = stored.baseUrl ?? undefined;
     allowPrivateNetwork = stored.type === "openai_compatible" && stored.userId === null;
     if (!apiKey && stored.apiKeyEncrypted) apiKey = decrypt(stored.apiKeyEncrypted);
   }
   if (!apiKey && providerType !== "openai_compatible" && providerType !== "openrouter") {
-    return { ok: false as const, error: "Informe a API key para carregar os modelos." };
+    return { ok: false as const, error: t("apiKeyRequiredForModels") };
   }
   if (providerType === "openai_compatible" && !baseUrl) {
-    return { ok: false as const, error: "Informe a Base URL para carregar os modelos." };
+    return { ok: false as const, error: t("baseUrlRequiredForModels") };
   }
   try {
     return { ok: true as const, models: await listModelsFor(providerType, baseUrl, apiKey, { allowPrivateNetwork }) };
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
 }
 
@@ -145,7 +168,7 @@ export async function listModelsAction(id: string) {
     const provider = await usableProvider(id);
     return { ok: true as const, models: await listModels(provider) };
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
 }
 
@@ -154,7 +177,7 @@ export async function generateDigestAction() {
   try {
     await generateDigest(user.id);
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
   revalidatePath("/digest");
   return { ok: true as const };
@@ -178,6 +201,6 @@ export async function classifyRecentAction() {
     revalidatePath("/", "layout");
     return { ok: true as const, count };
   } catch (err) {
-    return { ok: false as const, error: errorMessage(err) };
+    return failed(err);
   }
 }

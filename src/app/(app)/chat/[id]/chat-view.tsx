@@ -7,6 +7,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { Check, Copy, FileText, Loader2, RotateCcw, Search, Sparkles, Trash2, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { deleteThreadAction, startThreadAction } from "@/app/actions/chat";
 import { cn } from "@/lib/utils";
 import { ChatComposer } from "@/components/chat/chat-composer";
@@ -34,6 +35,7 @@ export function ChatView({
 }: {
   /** null = tela inicial (/chat): a primeira mensagem cria a conversa nesta mesma tela. */
   threadId: string | null;
+  /** Vazio = sem título ainda (mostra o placeholder traduzido). */
   title: string;
   initialMessages: UIMessage[];
   contextArticles: { id: string; title: string }[];
@@ -41,6 +43,7 @@ export function ChatView({
   providers: ChatProvider[];
   defaults: { providerId: string | null; model: string };
 }) {
+  const t = useTranslations("chat");
   const router = useRouter();
   const [choice, setChoice] = useChatModelChoice(providers, defaults);
   const [threadId, setThreadId] = useState(initialThreadId);
@@ -59,7 +62,7 @@ export function ChatView({
       const id = threadIdRef.current;
       if (id && window.location.pathname !== `/chat/${id}`) window.history.replaceState(null, "", `/chat/${id}`);
       // Atualiza o título da conversa na lista lateral (gerado a partir da 1ª pergunta).
-      if (title === "Nova conversa") router.refresh();
+      if (!title) router.refresh();
     },
   });
 
@@ -89,8 +92,8 @@ export function ChatView({
       } catch {
         setStarting(false);
         setInput(text);
-        setStartError("Não foi possível criar a conversa.");
-        toast.error("Não foi possível criar a conversa.");
+        setStartError(t("errors.createFailed"));
+        toast.error(t("errors.createFailed"));
         return;
       }
       threadIdRef.current = id;
@@ -102,17 +105,16 @@ export function ChatView({
   }
 
   const empty = messages.length === 0;
-  const suggestions = contextArticles.length
-    ? ["Resuma este artigo em 5 pontos", "Qual é o contexto por trás dessa notícia?", "Quais pontos são controversos ou discutíveis?", "O que mais saiu sobre esse assunto nos meus feeds?"]
-    : ["O que saiu de mais importante hoje?", "Resuma as notícias de tecnologia da semana", "Quais temas mais apareceram nos meus feeds?", "Tem alguma novidade sobre inteligência artificial?"];
+  const suggestionKeys = ["one", "two", "three", "four"] as const;
+  const suggestions = suggestionKeys.map((k) => t(contextArticles.length ? `suggestions.article.${k}` : `suggestions.general.${k}`));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       {threadId && (
         <header className="flex h-12 shrink-0 items-center gap-2 px-4">
-          <h1 className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">{title || t("untitled")}</h1>
           <form action={deleteThreadAction.bind(null, threadId)}>
-            <Button type="submit" variant="ghost" size="icon-sm" title="Excluir conversa" aria-label="Excluir conversa">
+            <Button type="submit" variant="ghost" size="icon-sm" title={t("deleteThread")} aria-label={t("deleteThread")}>
               <Trash2 />
             </Button>
           </form>
@@ -127,9 +129,9 @@ export function ChatView({
             </span>
             <div className="animate-[ai-fade-in_400ms_ease-out]">
               <h1 className="text-2xl font-semibold tracking-tight text-balance dark:font-normal">
-                {contextArticles.length ? "O que você quer saber sobre este artigo?" : "Sobre o que você quer saber hoje?"}
+                {contextArticles.length ? t("emptyArticleTitle") : t("emptyTitle")}
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">A IA busca e lê as matérias dos seus feeds para responder.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{t("emptyDescription")}</p>
             </div>
             <div className="grid w-full max-w-2xl grid-cols-1 gap-2 sm:grid-cols-2">
               {suggestions.map((s, i) => (
@@ -147,11 +149,13 @@ export function ChatView({
             </div>
             {!aiEnabled && (
               <p className="text-xs text-muted-foreground">
-                Configure um provedor em{" "}
-                <Link href="/settings/ai" className="underline underline-offset-2">
-                  Configurações → IA
-                </Link>
-                .
+                {t.rich("configureProvider", {
+                  link: (chunks) => (
+                    <Link href="/settings/ai" className="underline underline-offset-2">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
               </p>
             )}
           </div>
@@ -169,7 +173,7 @@ export function ChatView({
             {(status === "submitted" || starting) && (
               <div className="flex items-center gap-3">
                 <Avatar active />
-                <div className="flex gap-1" aria-label="Pensando">
+                <div className="flex gap-1" aria-label={t("thinking")}>
                   {[0, 1, 2].map((i) => (
                     <span key={i} className="size-1.5 animate-bounce rounded-full bg-ai/70" style={{ animationDelay: `${i * 140}ms` }} />
                   ))}
@@ -185,10 +189,10 @@ export function ChatView({
       {(error || startError) && (
         <div role="alert" aria-live="assertive" className="mx-2 flex shrink-0 items-start gap-3 rounded-card border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm sm:mx-4">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
-          <p className="min-w-0 flex-1 text-foreground">{startError ?? error?.message ?? "Não foi possível responder."}</p>
+          <p className="min-w-0 flex-1 text-foreground">{startError ?? error?.message ?? t("errors.replyFailed")}</p>
           {error && (
             <Button size="sm" variant="ghost" onClick={() => regenerate({ body: { threadId, ...requestOptions(choice) } })}>
-              <RotateCcw /> Tentar novamente
+              <RotateCcw /> {t("retry")}
             </Button>
           )}
         </div>
@@ -203,7 +207,7 @@ export function ChatView({
           busy={busy}
           disabled={!aiEnabled}
           autoFocus
-          placeholder={aiEnabled ? "Peça qualquer coisa" : "Configure um provedor de IA em Configurações"}
+          placeholder={aiEnabled ? undefined : t("composer.configureAi")}
           contextArticles={contextArticles}
           modelControl={<ChatModelPicker providers={providers} choice={choice} onChange={setChoice} disabled={busy} />}
         />
@@ -236,6 +240,7 @@ type ToolPart = { type: string; state?: string; input?: { query?: string; id?: s
 type FoundArticle = { id: string; title: string; feed: string };
 
 function AssistantMessage({ message, streaming }: { message: UIMessage; streaming: boolean }) {
+  const t = useTranslations("chat");
   const [copied, setCopied] = useState(false);
   const text = message.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n\n").trim();
   const lastTextIndex = message.parts.map((p) => p.type).lastIndexOf("text");
@@ -262,8 +267,8 @@ function AssistantMessage({ message, streaming }: { message: UIMessage; streamin
             <Button
               variant="ghost"
               size="icon-sm"
-              title="Copiar resposta"
-              aria-label="Copiar resposta"
+              title={t("copyReply")}
+              aria-label={t("copyReply")}
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(text);
@@ -284,6 +289,7 @@ function AssistantMessage({ message, streaming }: { message: UIMessage; streamin
 }
 
 function ToolCall({ part }: { part: ToolPart }) {
+  const t = useTranslations("chat.tools");
   const name = part.type.slice(5);
   const done = part.state === "output-available";
   const failed = part.state === "output-error";
@@ -292,11 +298,11 @@ function ToolCall({ part }: { part: ToolPart }) {
   const label =
     name === "searchArticles"
       ? done
-        ? `${found?.length ?? 0} artigos sobre “${part.input?.query ?? ""}”`
-        : `Buscando “${part.input?.query ?? "…"}”`
+        ? t("searchDone", { count: found?.length ?? 0, query: part.input?.query ?? "" })
+        : t("searching", { query: part.input?.query ?? "…" })
       : done
-        ? "Artigo lido"
-        : "Lendo artigo";
+        ? t("articleRead")
+        : t("readingArticle");
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -307,7 +313,7 @@ function ToolCall({ part }: { part: ToolPart }) {
         )}
       >
         {name === "searchArticles" ? <Search className="size-3 shrink-0" /> : <FileText className="size-3 shrink-0" />}
-        <span className="truncate">{failed ? "Falha na ferramenta" : label}</span>
+        <span className="truncate">{failed ? t("failed") : label}</span>
         {!done && !failed && <Loader2 className="size-3 shrink-0 animate-spin text-ai" />}
         {done && <Check className="size-3 shrink-0 text-success" />}
       </span>

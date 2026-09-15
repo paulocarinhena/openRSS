@@ -203,7 +203,8 @@ model UserSettings {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiProviderId      String?
   aiModel           String?
-  language          String   @default("pt-BR")
+  language          String   @default("pt-BR") // idioma da IA (resumos, digest, chat)
+  uiLanguage        String   @default("pt-BR") // idioma da interface
   interests         String?
   classifyEnabled   Boolean  @default(false)
   digestEnabled     Boolean  @default(false)
@@ -248,7 +249,7 @@ model ChatThread {
   id         String        @id @default(cuid())
   userId     String
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String        @default("Nova conversa")
+  title      String        @default("") // vazio = sem título (a UI mostra um placeholder traduzido)
   articleIds String        @default("[]") // JSON array de artigos de contexto
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt

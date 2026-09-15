@@ -9,6 +9,9 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getUserSettings } from "@/lib/app-settings";
 import { createPinnedWebFetch, pinnedFetch, resolveNetworkTarget } from "@/lib/network";
+import { AiError, AiNotConfiguredError } from "./errors";
+
+export { AiNotConfiguredError };
 
 export const PROVIDER_TYPES = ["openai", "anthropic", "openrouter", "openai_compatible"] as const;
 export type ProviderType = (typeof PROVIDER_TYPES)[number];
@@ -19,12 +22,6 @@ export const PROVIDER_META: Record<ProviderType, { label: string; defaultBaseUrl
   openrouter: { label: "OpenRouter", defaultBaseUrl: "https://openrouter.ai/api/v1", needsBaseUrl: false, modelHint: "anthropic/claude-sonnet-5" },
   openai_compatible: { label: "OpenAI-compatible", defaultBaseUrl: "http://localhost:11434/v1", needsBaseUrl: true, modelHint: "llama3.2" },
 };
-
-export class AiNotConfiguredError extends Error {
-  constructor(message = "Nenhum provedor de IA configurado. Configure em Configurações → IA.") {
-    super(message);
-  }
-}
 
 function apiKeyOf(p: AiProvider): string | undefined {
   return p.apiKeyEncrypted ? decrypt(p.apiKeyEncrypted) : undefined;
@@ -42,10 +39,10 @@ export function createModel(p: AiProvider, modelId: string): LanguageModel {
     case "openrouter":
       return createOpenRouter({ apiKey, baseURL, appName: "openRSS", fetch })(modelId);
     case "openai_compatible":
-      if (!baseURL) throw new AiNotConfiguredError(`O provedor "${p.name}" precisa de uma Base URL.`);
+      if (!baseURL) throw new AiNotConfiguredError("providerNeedsBaseUrl", { name: p.name });
       return createOpenAICompatible({ name: "openai-compatible", baseURL, apiKey, fetch })(modelId);
     default:
-      throw new AiNotConfiguredError(`Tipo de provedor desconhecido: ${p.type}`);
+      throw new AiNotConfiguredError("unknownProviderType", { type: p.type });
   }
 }
 
@@ -71,7 +68,7 @@ export async function resolveModel(userId: string, opts: { providerId?: string; 
   const wantedId = opts.providerId ?? settings.aiProviderId;
   const provider = providers.find((p) => p.id === wantedId) ?? providers[0];
   const modelId = opts.model || (provider.id === settings.aiProviderId ? settings.aiModel : null) || provider.defaultModel;
-  if (!modelId) throw new AiNotConfiguredError(`Defina um modelo padrão para o provedor "${provider.name}".`);
+  if (!modelId) throw new AiNotConfiguredError("noDefaultModel", { name: provider.name });
 
   return { model: createModel(provider, modelId), modelId, provider };
 }
@@ -84,7 +81,7 @@ export async function assertSafeModelListingUrl(baseUrl: string, allowPrivateNet
     return (await resolveNetworkTarget(baseUrl, allowPrivateNetwork)).url;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.includes("rede privada") ? "A Base URL aponta para uma rede privada não autorizada." : "Base URL inválida para listar modelos.");
+    throw new AiError(message.includes("rede privada") ? "privateNetworkBaseUrl" : "invalidListingBaseUrl");
   }
 }
 
@@ -111,7 +108,7 @@ export async function listModelsFor(
       options.allowPrivateNetwork,
     );
   } catch (err) {
-    throw new Error(`Não foi possível conectar em ${base}: ${err instanceof Error ? err.message : String(err)}`);
+    throw new AiError("connectFailed", { base, reason: err instanceof Error ? err.message : String(err) });
   }
   let json: {
     data?: { id: string; name?: string; display_name?: string }[];
@@ -119,8 +116,8 @@ export async function listModelsFor(
   };
   try {
     const res = connection.response;
-    if (res.status === 401 || res.status === 403) throw new Error("API key inválida ou sem permissão para listar modelos.");
-    if (!res.ok) throw new Error(`Falha ao listar modelos (HTTP ${res.status}).`);
+    if (res.status === 401 || res.status === 403) throw new AiError("listUnauthorized");
+    if (!res.ok) throw new AiError("listFailed", { status: res.status });
     json = (await res.json()) as typeof json;
   } finally {
     await connection.close();

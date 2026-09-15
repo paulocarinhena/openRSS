@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   // Módulos nativos / com binários ficam fora do bundle do servidor.
@@ -6,4 +7,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 };
 
-export default nextConfig;
+// Registra src/i18n/request.ts como configuração de locale/mensagens por requisição.
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

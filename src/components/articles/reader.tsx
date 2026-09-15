@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail } from "@/lib/queries";
 import { loadFullContent } from "@/app/actions/articles";
 import { createThreadAction } from "@/app/actions/chat";
@@ -44,6 +45,8 @@ export function Reader({
   onToggleSaved: () => void;
   standalone?: boolean;
 }) {
+  const t = useTranslations("articles");
+  const locale = useLocale();
   const [fullHtml, setFullHtml] = useState<string | null>(article.fullContentHtml);
   const [showFull, setShowFull] = useState(Boolean(article.fullContentHtml));
   const [loadingFull, startFull] = useTransition();
@@ -94,7 +97,7 @@ export function Reader({
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? `Falha (HTTP ${res.status})`);
+        throw new Error(data.error ?? t("errors.http", { status: res.status }));
       }
       setSummaryMeta({ model: res.headers.get("x-model"), cached: res.headers.get("x-cached") === "1" });
       const reader = res.body!.getReader();
@@ -106,9 +109,9 @@ export function Reader({
         text += decoder.decode(value, { stream: true });
         setSummary(text);
       }
-      if (!text.trim()) throw new Error("O modelo não retornou conteúdo.");
+      if (!text.trim()) throw new Error(t("errors.emptyModelResponse"));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha ao resumir.";
+      const message = err instanceof Error ? err.message : t("errors.summarizeFailed");
       setSummary(null);
       setReaderError(message);
       toast.error(message);
@@ -127,7 +130,7 @@ export function Reader({
         setFullHtml(res.html);
         setShowFull(true);
       } else {
-        const message = res.error ?? "Não foi possível carregar.";
+        const message = res.error ?? t("errors.loadFailed");
         setReaderError(message);
         toast.error(message);
       }
@@ -138,44 +141,44 @@ export function Reader({
     <article className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
       <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border px-2 sm:px-4">
         {onClose && (
-          <Button variant="ghost" size="icon-sm" aria-label="Voltar (Esc)" title="Voltar (Esc)" onClick={onClose}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("reader.back")} title={t("reader.back")} onClick={onClose}>
             <ArrowLeft />
           </Button>
         )}
         {(onPrev || onNext) && (
           <>
-            <Button variant="ghost" size="icon-sm" aria-label="Anterior (k)" title="Anterior (k)" onClick={onPrev} disabled={!onPrev}>
+            <Button variant="ghost" size="icon-sm" aria-label={t("reader.previous")} title={t("reader.previous")} onClick={onPrev} disabled={!onPrev}>
               <ChevronUp />
             </Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Próximo (j)" title="Próximo (j)" onClick={onNext} disabled={!onNext}>
+            <Button variant="ghost" size="icon-sm" aria-label={t("reader.next")} title={t("reader.next")} onClick={onNext} disabled={!onNext}>
               <ChevronDown />
             </Button>
           </>
         )}
         <div className="flex-1" />
-        <Button variant="ghost" size="icon-sm" onClick={onToggleRead} title={isRead ? "Marcar como não lido (m)" : "Marcar como lido (m)"} aria-label="Alternar lido">
+        <Button variant="ghost" size="icon-sm" onClick={onToggleRead} title={isRead ? t("reader.markUnread") : t("reader.markRead")} aria-label={t("reader.toggleRead")}>
           {isRead ? <CircleCheck /> : <Circle />}
         </Button>
-        <Button variant="ghost" size="icon-sm" onClick={onToggleSaved} title={isSaved ? "Remover dos salvos (s)" : "Salvar (s)"} aria-label="Alternar salvo">
+        <Button variant="ghost" size="icon-sm" onClick={onToggleSaved} title={isSaved ? t("reader.unsave") : t("reader.save")} aria-label={t("reader.toggleSaved")}>
           <Bookmark className={cn(isSaved && "fill-current text-foreground")} />
         </Button>
         <Button
           variant="ghost"
           size="icon-sm"
           onClick={() => setReaderWidth(nextWidth)}
-          title={`Largura do texto: ${widthConfig.label} (clique para ${READER_WIDTHS[nextWidth].label.toLowerCase()})`}
-          aria-label={`Largura do texto: ${widthConfig.label}`}
+          title={t("reader.widthTitle", { current: t(`readerWidth.${readerWidth}`), next: t(`readerWidth.${nextWidth}`).toLowerCase() })}
+          aria-label={t("reader.widthLabel", { current: t(`readerWidth.${readerWidth}`) })}
           className="hidden md:inline-flex"
         >
           <MoveHorizontal className={cn("transition-transform duration-300", readerWidth === "wide" && "scale-x-125", readerWidth === "narrow" && "scale-x-75")} />
         </Button>
         {article.url && (
-          <Button variant="ghost" size="icon-sm" onClick={toggleFull} title={showFull ? "Conteúdo do feed" : "Carregar artigo completo"} aria-label="Artigo completo" disabled={loadingFull}>
+          <Button variant="ghost" size="icon-sm" onClick={toggleFull} title={showFull ? t("reader.feedContent") : t("reader.loadFull")} aria-label={t("reader.fullArticle")} disabled={loadingFull}>
             {loadingFull ? <Loader2 className="animate-spin" /> : <FileText className={cn(showFull && "text-foreground")} />}
           </Button>
         )}
         {article.url && (
-          <Button asChild variant="ghost" size="icon-sm" title="Abrir original (o)" aria-label="Abrir original">
+          <Button asChild variant="ghost" size="icon-sm" title={t("reader.openOriginalShortcut")} aria-label={t("openOriginal")}>
             <a href={article.url} target="_blank" rel="noopener noreferrer">
               <ExternalLink />
             </a>
@@ -200,7 +203,7 @@ export function Reader({
               )}
               <span aria-hidden>·</span>
               <time dateTime={article.publishedAt.toISOString()} suppressHydrationWarning>
-                {article.publishedAt.toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })}
+                {article.publishedAt.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })}
               </time>
             </div>
             <h1 className="text-2xl leading-tight font-semibold tracking-tight text-balance lg:text-[1.875rem] dark:font-normal dark:tracking-[-0.02em]">
@@ -220,9 +223,9 @@ export function Reader({
               </p>
             )}
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => summarize(false)} disabled={!aiEnabled || summarizing} title={aiEnabled ? undefined : "Configure um provedor de IA em Configurações"}>
+              <Button size="sm" onClick={() => summarize(false)} disabled={!aiEnabled || summarizing} title={aiEnabled ? undefined : t("reader.configureAi")}>
                 <Sparkles className={cn("text-ai", summarizing && "animate-[ai-twinkle_1.6s_ease-in-out_infinite]")} />
-                {summarizing ? "Resumindo…" : "Resumir"}
+                {summarizing ? t("reader.summarizing") : t("reader.summarize")}
               </Button>
               <Button
                 size="sm"
@@ -230,7 +233,7 @@ export function Reader({
                 onClick={() => startChat(() => createThreadAction([article.id]))}
               >
                 {chatPending ? <Loader2 className="animate-spin" /> : <MessageSquare className="text-ai" />}
-                Perguntar à IA
+                {t("reader.askAi")}
               </Button>
             </div>
           </header>
@@ -253,7 +256,7 @@ export function Reader({
 
           {autoLoading && (
             <p className="flex items-center gap-2 rounded-input border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" /> Carregando a matéria completa…
+              <Loader2 className="size-3.5 animate-spin" /> {t("reader.loadingFull")}
             </p>
           )}
 
@@ -261,10 +264,10 @@ export function Reader({
             <div className={cn("prose-reader transition-opacity duration-200", autoLoading && "opacity-60")} dangerouslySetInnerHTML={{ __html: html }} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Este item não tem conteúdo no feed.{" "}
+              {t("reader.noContent")}{" "}
               {article.url && (
                 <button type="button" className="cursor-pointer underline underline-offset-2" onClick={toggleFull}>
-                  Carregar artigo completo
+                  {t("reader.loadFull")}
                 </button>
               )}
             </p>

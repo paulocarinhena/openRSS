@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Check, ListChecks, Loader2, SquarePen, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { deleteThreadsAction } from "@/app/actions/chat";
 import { cn, relativeTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { Button } from "@/components/ui/button";
 type Thread = { id: string; title: string; updatedAt: Date };
 
 export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavigate?: () => void }) {
+  const t = useTranslations("chat");
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [selecting, setSelecting] = useState(false);
@@ -64,7 +67,7 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
         toast.error(res.error);
         return;
       }
-      toast.success(res.count === 1 ? "1 conversa excluída" : `${res.count} conversas excluídas`);
+      toast.success(t("deleted", { count: res.count }));
       const openDeleted = ids.some((id) => pathname === `/chat/${id}`);
       exitSelection();
       if (openDeleted) router.push("/chat");
@@ -80,22 +83,22 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
       }}
     >
       <div className="flex items-center justify-between px-3 pt-3 pb-2">
-        <p className="eyebrow px-1">Conversas</p>
+        <p className="eyebrow px-1">{t("threads")}</p>
         <div className="flex items-center gap-0.5">
           {threads.length > 0 && (
             <Button
               variant="ghost"
               size="icon-sm"
               aria-pressed={selecting}
-              title={selecting ? "Cancelar seleção (Esc)" : "Selecionar conversas"}
-              aria-label={selecting ? "Cancelar seleção" : "Selecionar conversas"}
+              title={selecting ? t("cancelSelectionShortcut") : t("selectThreads")}
+              aria-label={selecting ? t("cancelSelection") : t("selectThreads")}
               onClick={() => (selecting ? exitSelection() : setSelecting(true))}
               className={cn(selecting && "bg-accent text-foreground")}
             >
               {selecting ? <X /> : <ListChecks />}
             </Button>
           )}
-          <Button asChild variant="ghost" size="icon-sm" title="Nova conversa" aria-label="Nova conversa">
+          <Button asChild variant="ghost" size="icon-sm" title={t("newThread")} aria-label={t("newThread")}>
             <Link href="/chat" onClick={onNavigate}>
               <SquarePen />
             </Link>
@@ -126,18 +129,18 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
             >
               <CheckBox checked={allSelected} indeterminate={selectedIds.length > 0 && !allSelected} />
               <span className="truncate tabular-nums">
-                {selectedIds.length === 0 ? "Selecionar todas" : selectedIds.length === 1 ? "1 selecionada" : `${selectedIds.length} selecionadas`}
+                {selectedIds.length === 0 ? t("selectAll") : t("selectedCount", { count: selectedIds.length })}
               </span>
             </button>
             <div className="flex-1" />
             {confirming ? (
               <div className="flex animate-[ai-fade-in_200ms_ease-out] items-center gap-0.5">
                 <Button size="sm" variant="ghost" onClick={() => setConfirming(false)} disabled={pending}>
-                  Cancelar
+                  {t("cancel")}
                 </Button>
                 <Button size="sm" variant="destructive" onClick={removeSelected} disabled={pending}>
                   {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                  Confirmar
+                  {t("confirm")}
                 </Button>
               </div>
             ) : (
@@ -148,7 +151,7 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
                 onClick={() => setConfirming(true)}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 /> Excluir
+                <Trash2 /> {t("delete")}
               </Button>
             )}
           </div>
@@ -156,13 +159,13 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
       </div>
 
       <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3">
-        {threads.map((t, index) => {
-          const active = pathname === `/chat/${t.id}`;
-          const checked = selected.has(t.id);
+        {threads.map((thread, index) => {
+          const active = pathname === `/chat/${thread.id}`;
+          const checked = selected.has(thread.id);
           return (
             <Link
-              key={t.id}
-              href={`/chat/${t.id}`}
+              key={thread.id}
+              href={`/chat/${thread.id}`}
               role={selecting ? "checkbox" : undefined}
               aria-checked={selecting ? checked : undefined}
               aria-current={active && !selecting ? "page" : undefined}
@@ -198,16 +201,16 @@ export function ThreadList({ threads, onNavigate }: { threads: Thread[]; onNavig
                     (active && !selecting) || checked ? "font-medium text-foreground" : "text-muted-foreground group-hover:text-foreground",
                   )}
                 >
-                  {t.title}
+                  {thread.title || t("untitled")}
                 </span>
                 <span className="text-[0.625rem] text-muted-foreground" suppressHydrationWarning>
-                  {relativeTime(t.updatedAt)}
+                  {relativeTime(thread.updatedAt, locale)}
                 </span>
               </span>
             </Link>
           );
         })}
-        {threads.length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">Suas conversas aparecem aqui.</p>}
+        {threads.length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">{t("emptyList")}</p>}
       </nav>
     </div>
   );

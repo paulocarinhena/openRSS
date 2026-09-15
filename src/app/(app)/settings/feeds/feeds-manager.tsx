@@ -3,6 +3,7 @@
 import { Download, Folder as FolderIcon, FolderPlus, Inbox, Loader2, Pencil, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import {
   createFolderAction,
   deleteFolderAction,
@@ -28,6 +29,8 @@ type Sub = {
 };
 
 export function FeedsManager({ folders, subscriptions }: { folders: { id: string; name: string }[]; subscriptions: Sub[] }) {
+  const t = useTranslations("feeds.manager");
+  const locale = useLocale();
   const [pending, start] = useTransition();
   const [newFolder, setNewFolder] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -35,7 +38,7 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, success?: string) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) toast.error(res.error ?? "Erro");
+      if (!res.ok) toast.error(res.error ?? t("genericError"));
       else if (success) toast.success(success);
     });
 
@@ -44,7 +47,7 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
       <Card className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-medium">OPML</p>
-          <p className="text-xs text-muted-foreground">Importe assinaturas de outro leitor ou exporte as suas.</p>
+          <p className="text-xs text-muted-foreground">{t("opmlDescription")}</p>
         </div>
         <input
           ref={fileRef}
@@ -58,24 +61,24 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
             data.set("file", file);
             start(async () => {
               const res = await importOpmlAction(data);
-              if (res.ok) toast.success(`${res.imported} feeds importados${res.failed ? `, ${res.failed} falharam` : ""}`);
+              if (res.ok) toast.success(t("imported", { count: res.imported }) + (res.failed ? t("importFailed", { count: res.failed }) : ""));
               else toast.error(res.error);
               if (fileRef.current) fileRef.current.value = "";
             });
           }}
         />
         <Button onClick={() => fileRef.current?.click()} disabled={pending}>
-          {pending ? <Loader2 className="animate-spin" /> : <Upload />} Importar
+          {pending ? <Loader2 className="animate-spin" /> : <Upload />} {t("import")}
         </Button>
         <Button asChild>
           <a href="/api/opml/export">
-            <Download /> Exportar
+            <Download /> {t("export")}
           </a>
         </Button>
       </Card>
 
       <section className="flex flex-col gap-3">
-        <h2 className="eyebrow">Pastas</h2>
+        <h2 className="eyebrow">{t("folders")}</h2>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -87,9 +90,9 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
             });
           }}
         >
-          <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder="Nova pasta" />
+          <Input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} placeholder={t("newFolder")} />
           <Button type="submit" disabled={pending || !newFolder.trim()}>
-            <FolderPlus /> Criar
+            <FolderPlus /> {t("create")}
           </Button>
         </form>
         {folders.length > 0 && (
@@ -100,9 +103,9 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Renomear pasta"
+                  aria-label={t("renameFolder")}
                   onClick={() => {
-                    const name = window.prompt("Novo nome da pasta", f.name);
+                    const name = window.prompt(t("renameFolderPrompt"), f.name);
                     if (name && name !== f.name) run(() => renameFolderAction(f.id, name));
                   }}
                 >
@@ -111,9 +114,9 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Excluir pasta"
+                  aria-label={t("deleteFolder")}
                   onClick={() => {
-                    if (window.confirm(`Excluir a pasta "${f.name}"? Os feeds ficam sem pasta.`)) run(() => deleteFolderAction(f.id), "Pasta excluída");
+                    if (window.confirm(t("deleteFolderConfirm", { name: f.name }))) run(() => deleteFolderAction(f.id), t("folderDeleted"));
                   }}
                 >
                   <Trash2 />
@@ -125,9 +128,9 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="eyebrow">Assinaturas ({subscriptions.length})</h2>
+        <h2 className="eyebrow">{t("subscriptions", { count: subscriptions.length })}</h2>
         <Card className="divide-y divide-border p-0">
-          {subscriptions.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">Nenhuma assinatura.</p>}
+          {subscriptions.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">{t("noSubscriptions")}</p>}
           {subscriptions.map((s) => (
             <div key={s.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
@@ -137,28 +140,32 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                 </p>
                 <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">{s.url}</p>
                 <p className="text-[0.6875rem] text-muted-foreground" suppressHydrationWarning>
-                  {s.lastError ? `Erro: ${s.lastError}` : s.lastFetchedAt ? `Atualizado ${relativeTime(s.lastFetchedAt)}` : "Nunca atualizado"}
+                  {s.lastError
+                    ? t("error", { error: s.lastError })
+                    : s.lastFetchedAt
+                      ? t("updated", { when: relativeTime(s.lastFetchedAt, locale) })
+                      : t("neverUpdated")}
                 </p>
               </div>
               <div className="flex items-center gap-1">
                 <Combobox
                   size="sm"
                   className="w-44"
-                  aria-label="Pasta"
+                  aria-label={t("folder")}
                   value={s.folderId ?? ""}
-                  searchPlaceholder="Buscar pasta…"
+                  searchPlaceholder={t("searchFolder")}
                   onValueChange={(v) => run(() => updateSubscriptionAction(s.id, { folderId: v || null }))}
                   options={[
-                    { value: "", label: "Sem pasta", icon: <Inbox /> },
+                    { value: "", label: t("noFolder"), icon: <Inbox /> },
                     ...folders.map((f) => ({ value: f.id, label: f.name, icon: <FolderIcon /> })),
                   ]}
                 />
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Renomear"
+                  aria-label={t("rename")}
                   onClick={() => {
-                    const title = window.prompt("Nome do feed (vazio = original)", s.customTitle ?? s.title);
+                    const title = window.prompt(t("renameFeedPrompt"), s.customTitle ?? s.title);
                     if (title !== null) run(() => updateSubscriptionAction(s.id, { customTitle: title }));
                   }}
                 >
@@ -167,9 +174,9 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Cancelar assinatura"
+                  aria-label={t("unsubscribe")}
                   onClick={() => {
-                    if (window.confirm(`Cancelar assinatura de "${s.customTitle ?? s.title}"?`)) run(() => unsubscribeAction(s.id), "Assinatura removida");
+                    if (window.confirm(t("unsubscribeConfirm", { title: s.customTitle ?? s.title }))) run(() => unsubscribeAction(s.id), t("unsubscribed"));
                   }}
                 >
                   <Trash2 />

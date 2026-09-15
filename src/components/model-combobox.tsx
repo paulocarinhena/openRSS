@@ -2,6 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -20,10 +21,10 @@ export function ModelCombobox({
   cacheKey,
   load,
   unavailableReason,
-  placeholder = "Selecione ou digite um modelo",
+  placeholder,
   disabled,
   id,
-  "aria-label": ariaLabel = "Modelo",
+  "aria-label": ariaLabel,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -35,6 +36,7 @@ export function ModelCombobox({
   id?: string;
   "aria-label"?: string;
 }) {
+  const t = useTranslations("ai.models");
   const [result, setResult] = useState<{ key: string; models?: ModelInfo[]; error?: string } | null>(null);
   const [pending, start] = useTransition();
   const request = useRef(0);
@@ -55,11 +57,11 @@ export function ModelCombobox({
   const status = !cacheKey
     ? unavailableReason
     : pending
-      ? "Carregando modelos…"
+      ? t("loading")
       : current?.error
         ? current.error
         : current?.models
-          ? `${current.models.length} modelos disponíveis — digite para buscar ou use um nome personalizado.`
+          ? t("available", { count: current.models.length })
           : null;
 
   return (
@@ -68,16 +70,16 @@ export function ModelCombobox({
         <Combobox
           id={id}
           className="flex-1"
-          aria-label={ariaLabel}
+          aria-label={ariaLabel ?? t("label")}
           allowCustom
           value={value}
           onValueChange={onValueChange}
           disabled={disabled}
           loading={pending}
-          loadingText="Carregando modelos…"
-          placeholder={placeholder}
-          searchPlaceholder="Buscar modelo…"
-          emptyText={current?.error ?? (cacheKey ? "Nenhum modelo encontrado. Digite o nome para usar." : unavailableReason ?? "Digite o nome do modelo.")}
+          loadingText={t("loading")}
+          placeholder={placeholder ?? t("placeholder")}
+          searchPlaceholder={t("searchPlaceholder")}
+          emptyText={current?.error ?? (cacheKey ? t("noneFound") : unavailableReason ?? t("typeName"))}
           onOpenChange={(open) => open && fetchModels()}
           options={models.map((m) => ({ value: m.id, label: m.id, description: m.name }))}
         />
@@ -85,8 +87,8 @@ export function ModelCombobox({
           type="button"
           variant="ghost"
           size="icon"
-          title="Recarregar modelos"
-          aria-label="Recarregar modelos"
+          title={t("reload")}
+          aria-label={t("reload")}
           disabled={!cacheKey || pending || disabled}
           onClick={() => fetchModels(true)}
         >

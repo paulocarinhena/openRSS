@@ -1,28 +1,30 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { getSession } from "@/lib/session";
 import { Card } from "@/components/ui/input";
 import { AuthForm, AuthSwitch } from "../auth-form";
 
-export const metadata = { title: "Criar conta" };
+export async function generateMetadata() {
+  const t = await getTranslations("metadata");
+  return { title: t("register") };
+}
 
 export default async function RegisterPage() {
   if (await getSession()) redirect("/");
-  const [users, settings] = await Promise.all([db.user.count(), getAppSettings()]);
+  const [users, settings, t] = await Promise.all([db.user.count(), getAppSettings(), getTranslations("auth")]);
   const firstUser = users === 0;
 
   if (!firstUser && !settings.allowRegistration) {
     return (
       <>
         <Card>
-          <h1 className="text-base font-semibold">Cadastro fechado</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Peça a um administrador para criar sua conta.
-          </p>
+          <h1 className="text-base font-semibold">{t("registrationClosed")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("registrationClosedHint")}</p>
         </Card>
-        <AuthSwitch href="/login" label="Voltar para o login" />
+        <AuthSwitch href="/login" label={t("backToLogin")} />
       </>
     );
   }
@@ -32,7 +34,7 @@ export default async function RegisterPage() {
       <Suspense>
         <AuthForm mode="register" firstUser={firstUser} />
       </Suspense>
-      {!firstUser && <AuthSwitch href="/login" label="Já tem conta? Entrar" />}
+      {!firstUser && <AuthSwitch href="/login" label={t("haveAccount")} />}
     </>
   );
 }

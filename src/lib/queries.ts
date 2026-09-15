@@ -203,14 +203,19 @@ export async function getArticle(userId: string, articleId: string) {
 
 export type ArticleDetail = NonNullable<Awaited<ReturnType<typeof getArticle>>>;
 
-export async function scopeTitle(userId: string, scope: ArticleScope): Promise<string | null> {
+/** Título do escopo; os fixos vêm traduzidos em `labels` (articles.scopes.*). */
+export async function scopeTitle(
+  userId: string,
+  scope: ArticleScope,
+  labels: { today: string; all: string; saved: string },
+): Promise<string | null> {
   switch (scope.kind) {
     case "today":
-      return "Hoje";
+      return labels.today;
     case "all":
-      return "Todos os artigos";
+      return labels.all;
     case "saved":
-      return "Salvos";
+      return labels.saved;
     case "feed": {
       const sub = await db.subscription.findFirst({ where: { userId, feedId: scope.feedId }, include: { feed: true } });
       return sub ? (sub.customTitle ?? sub.feed.title) : null;

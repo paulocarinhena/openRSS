@@ -3,6 +3,7 @@
 import { Popover } from "radix-ui";
 import { Brain, ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { listModelsAction } from "@/app/actions/ai";
 import { cn } from "@/lib/utils";
 import { ModelCombobox } from "@/components/model-combobox";
@@ -12,13 +13,13 @@ export type Reasoning = "off" | "low" | "medium" | "high" | "xhigh";
 export type ChatModelChoice = { providerId: string | null; model: string; reasoning: Reasoning };
 export type ChatProvider = { id: string; name: string; type: string; defaultModel: string | null };
 
-/** Níveis no estilo da OpenAI. "off" = não envia ajuste (padrão do modelo). */
-export const REASONING: { value: Reasoning; label: string; hint: string }[] = [
-  { value: "off", label: "Off", hint: "Sem ajuste de raciocínio — usa o padrão do modelo." },
-  { value: "low", label: "Low", hint: "Pensa pouco e responde rápido." },
-  { value: "medium", label: "Medium", hint: "Equilíbrio entre velocidade e qualidade." },
-  { value: "high", label: "High", hint: "Pensa mais antes de responder." },
-  { value: "xhigh", label: "XHigh", hint: "Raciocínio máximo — mais lento e mais caro." },
+/** Níveis no estilo da OpenAI. "off" = não envia ajuste (padrão do modelo). Descrições em messages/*.json (chat.reasoning.<value>). */
+export const REASONING: { value: Reasoning; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "XHigh" },
 ];
 
 const KEY = "openrss:chat-model";
@@ -89,8 +90,9 @@ export function ChatModelPicker({
   onChange: (choice: ChatModelChoice) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("chat.picker");
   const provider = providers.find((p) => p.id === choice.providerId) ?? null;
-  const modelLabel = choice.model || provider?.defaultModel || "Modelo";
+  const modelLabel = choice.model || provider?.defaultModel || t("model");
   const current = REASONING.find((r) => r.value === choice.reasoning) ?? REASONING[0];
 
   return (
@@ -117,9 +119,9 @@ export function ChatModelPicker({
         >
           {providers.length > 1 && (
             <div className="flex flex-col gap-1.5">
-              <p className="eyebrow">Provedor</p>
+              <p className="eyebrow">{t("provider")}</p>
               <Combobox
-                aria-label="Provedor"
+                aria-label={t("provider")}
                 value={choice.providerId ?? ""}
                 onValueChange={(id) => onChange({ ...choice, providerId: id, model: "" })}
                 options={providers.map((p) => ({ value: p.id, label: p.name, description: p.defaultModel ?? undefined }))}
@@ -128,24 +130,24 @@ export function ChatModelPicker({
           )}
 
           <div className="flex flex-col gap-1.5">
-            <p className="eyebrow">Modelo</p>
+            <p className="eyebrow">{t("model")}</p>
             <ModelCombobox
               value={choice.model}
               onValueChange={(model) => onChange({ ...choice, model })}
-              placeholder={provider?.defaultModel ? `Padrão: ${provider.defaultModel}` : "Selecione ou digite um modelo"}
+              placeholder={provider?.defaultModel ? t("defaultModel", { model: provider.defaultModel }) : undefined}
               cacheKey={provider?.id ?? null}
-              unavailableReason="Nenhum provedor configurado."
+              unavailableReason={t("noProvider")}
               load={() => listModelsAction(provider!.id)}
             />
           </div>
 
           <div className="flex flex-col gap-2">
             <p className="eyebrow flex items-center gap-1.5">
-              <Brain className="size-3" /> Raciocínio
+              <Brain className="size-3" /> {t("reasoning")}
             </p>
             <EffortSelector value={choice.reasoning} onChange={(reasoning) => onChange({ ...choice, reasoning })} />
             <p key={current.value} className="min-h-4 animate-[ai-fade-in_220ms_ease-out] text-[0.6875rem] text-muted-foreground">
-              {current.hint}
+              {t(`reasoningHints.${current.value}`)}
             </p>
           </div>
         </Popover.Content>
@@ -156,6 +158,7 @@ export function ChatModelPicker({
 
 /** Controle segmentado com um indicador que desliza até a opção escolhida. */
 function EffortSelector({ value, onChange }: { value: Reasoning; onChange: (value: Reasoning) => void }) {
+  const t = useTranslations("chat.picker");
   const index = Math.max(0, REASONING.findIndex((r) => r.value === value));
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const previousIndex = useRef(index);
@@ -189,7 +192,7 @@ function EffortSelector({ value, onChange }: { value: Reasoning; onChange: (valu
   }
 
   return (
-    <div role="radiogroup" aria-label="Nível de raciocínio" onKeyDown={onKeyDown} className="relative grid grid-cols-5 rounded-input bg-muted p-1">
+    <div role="radiogroup" aria-label={t("reasoningLevel")} onKeyDown={onKeyDown} className="relative grid grid-cols-5 rounded-input bg-muted p-1">
       {/* Indicador deslizante */}
       <span
         ref={indicatorRef}
@@ -207,7 +210,7 @@ function EffortSelector({ value, onChange }: { value: Reasoning; onChange: (valu
             data-value={r.value}
             aria-checked={active}
             tabIndex={active ? 0 : -1}
-            title={r.hint}
+            title={t(`reasoningHints.${r.value}`)}
             onClick={() => onChange(r.value)}
             className={cn(
               "relative z-10 flex h-8 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md text-xs outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-ring",

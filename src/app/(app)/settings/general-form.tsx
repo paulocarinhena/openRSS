@@ -1,24 +1,43 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { updateProfileAction, updateSettingsAction } from "@/app/actions/settings";
+import { isLocale, localeLabels, locales, type Locale } from "@/i18n/config";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Card, Field, Input } from "@/components/ui/input";
 import { LayoutGrid, List, Rows3 } from "lucide-react";
 
+const SHORTCUTS = [
+  ["j / k", "nextPrev"],
+  ["o", "openOriginal"],
+  ["m", "toggleRead"],
+  ["s", "save"],
+  ["Shift + A", "markAllRead"],
+  ["/", "search"],
+  ["Esc", "closeReader"],
+] as const;
+
 export function GeneralForm(props: {
   name: string;
   email: string;
   language: string;
+  uiLanguage: string;
   timezone: string;
   listView: string;
   timezones: string[];
 }) {
+  const t = useTranslations("settings.general");
+  const tArticles = useTranslations("articles");
+  const tLocale = useTranslations("locale");
+  const router = useRouter();
   const [name, setName] = useState(props.name);
   const [language, setLanguage] = useState(props.language);
+  const [uiLanguage, setUiLanguage] = useState<Locale>(isLocale(props.uiLanguage) ? props.uiLanguage : "pt-BR");
   const [timezone, setTimezone] = useState(props.timezone);
   const [listView, setListView] = useState(props.listView);
   const [pending, start] = useTransition();
@@ -28,84 +47,85 @@ export function GeneralForm(props: {
     start(async () => {
       const [a, b] = await Promise.all([
         updateProfileAction(name),
-        updateSettingsAction({ language, timezone, listView: listView as "cards" | "grid" | "titles" }),
+        updateSettingsAction({ language, uiLanguage, timezone, listView: listView as "cards" | "grid" | "titles" }),
       ]);
       const err = (!a.ok && a.error) || (!b.ok && b.error);
-      if (err) toast.error(err);
-      else toast.success("Configurações salvas");
+      if (err) {
+        toast.error(err);
+        return;
+      }
+      toast.success(t("saved"));
+      // Re-renderiza o shell no idioma novo.
+      if (uiLanguage !== props.uiLanguage) router.refresh();
     });
   }
 
   return (
     <form onSubmit={save} className="flex flex-col gap-4">
       <Card className="grid gap-4 sm:grid-cols-2">
-        <Field label="Nome">
+        <Field label={t("name")}>
           <Input value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
-        <Field label="Email">
+        <Field label={t("email")}>
           <Input value={props.email} disabled />
         </Field>
-        <Field label="Idioma da IA" hint="Idioma usado em resumos, digest e chat.">
+        <Field label={tLocale("label")} hint={tLocale("hint")}>
           <Combobox
-            aria-label="Idioma da IA"
-            value={language}
-            onValueChange={setLanguage}
-            options={[
-              { value: "pt-BR", label: "Português (Brasil)" },
-              { value: "en", label: "English" },
-              { value: "es", label: "Español" },
-            ]}
+            aria-label={tLocale("label")}
+            value={uiLanguage}
+            onValueChange={(v) => isLocale(v) && setUiLanguage(v)}
+            options={locales.map((value) => ({ value, label: localeLabels[value] }))}
           />
         </Field>
-        <Field label="Fuso horário">
+        <Field label={t("aiLanguage")} hint={t("aiLanguageHint")}>
           <Combobox
-            aria-label="Fuso horário"
+            aria-label={t("aiLanguage")}
+            value={language}
+            onValueChange={setLanguage}
+            options={locales.map((value) => ({ value, label: localeLabels[value] }))}
+          />
+        </Field>
+        <Field label={t("timezone")}>
+          <Combobox
+            aria-label={t("timezone")}
             value={timezone}
             onValueChange={setTimezone}
-            searchPlaceholder="Buscar cidade ou região…"
+            searchPlaceholder={t("timezoneSearch")}
             options={props.timezones.map((tz) => ({ value: tz, label: tz.replace(/_/g, " ") }))}
           />
         </Field>
-        <Field label="Visualização da lista">
+        <Field label={t("listView")}>
           <Combobox
-            aria-label="Visualização da lista"
+            aria-label={t("listView")}
             value={listView}
             onValueChange={setListView}
             options={[
-              { value: "cards", label: "Cartões", description: "Um por linha, com imagem e trecho da matéria", icon: <Rows3 /> },
-              { value: "grid", label: "Grade", description: "Cards menores, vários na tela", icon: <LayoutGrid /> },
-              { value: "titles", label: "Só texto", description: "Lista compacta de títulos", icon: <List /> },
+              { value: "cards", label: tArticles("views.cards"), description: tArticles("viewDescriptions.cards"), icon: <Rows3 /> },
+              { value: "grid", label: tArticles("views.grid"), description: tArticles("viewDescriptions.grid"), icon: <LayoutGrid /> },
+              { value: "titles", label: tArticles("views.titles"), description: tArticles("viewDescriptions.titles"), icon: <List /> },
             ]}
           />
         </Field>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">Tema</span>
+          <span className="text-xs font-medium text-foreground">{t("theme")}</span>
           <div className="flex h-9 items-center gap-2 text-sm text-muted-foreground">
-            <ThemeToggle /> Light · Dark · sistema
+            <ThemeToggle /> {t("themeOptions")}
           </div>
         </div>
       </Card>
       <Card className="text-xs text-muted-foreground">
-        <p className="eyebrow mb-2">Atalhos</p>
+        <p className="eyebrow mb-2">{t("shortcuts")}</p>
         <ul className="grid gap-1 sm:grid-cols-2">
-          {[
-            ["j / k", "próximo / anterior"],
-            ["o", "abrir original"],
-            ["m", "alternar lido"],
-            ["s", "salvar"],
-            ["Shift + A", "marcar tudo como lido"],
-            ["/", "buscar"],
-            ["Esc", "fechar leitor"],
-          ].map(([k, v]) => (
+          {SHORTCUTS.map(([k, key]) => (
             <li key={k}>
-              <kbd className="rounded border border-border px-1 font-mono">{k}</kbd> {v}
+              <kbd className="rounded border border-border px-1 font-mono">{k}</kbd> {t(`shortcutList.${key}`)}
             </li>
           ))}
         </ul>
       </Card>
       <div>
         <Button type="submit" variant="primary" disabled={pending}>
-          Salvar
+          {t("save")}
         </Button>
       </div>
     </form>

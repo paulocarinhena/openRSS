@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { isSetupRequired } from "@/lib/env";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, defaultLocale, isLocale, pickLocale } from "@/i18n/config";
 
 const PUBLIC_PATHS = ["/login", "/register", "/setup"];
 
@@ -23,7 +24,20 @@ export function proxy(request: NextRequest) {
     if (pathname !== "/" || request.nextUrl.search) url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
-  return NextResponse.next();
+
+  const response = NextResponse.next();
+  // Primeira visita: fixa o idioma da interface a partir do navegador (o usuário pode trocar depois).
+  if (!isLocale(request.cookies.get(LOCALE_COOKIE)?.value)) {
+    response.cookies.set({
+      name: LOCALE_COOKIE,
+      value: pickLocale(request.headers.get("accept-language")) ?? defaultLocale,
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+      httpOnly: true,
+    });
+  }
+  return response;
 }
 
 export const config = {

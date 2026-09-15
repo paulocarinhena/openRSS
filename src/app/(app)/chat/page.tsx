@@ -9,7 +9,7 @@ export default async function ChatIndexPage() {
   return (
     <ChatView
       threadId={null}
-      title="Nova conversa"
+      title=""
       initialMessages={[]}
       contextArticles={[]}
       aiEnabled={providers.length > 0}

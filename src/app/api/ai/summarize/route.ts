@@ -1,4 +1,5 @@
 import { streamText } from "ai";
+import { getLocale } from "next-intl/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   try {
     resolved = await resolveModel(user.id);
   } catch (err) {
-    return Response.json({ error: errorMessage(err) }, { status: 400 });
+    return Response.json({ error: errorMessage(err, await getLocale()) }, { status: 400 });
   }
 
   const cacheKey = {

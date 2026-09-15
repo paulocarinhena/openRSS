@@ -3,6 +3,7 @@
 import { Check, Copy, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export function SummaryPanel({
   onRegenerate: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("articles.summary");
   const ref = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -38,11 +40,11 @@ export function SummaryPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Não foi possível copiar.");
+      toast.error(t("copyFailed"));
     }
   }
 
-  const status = streaming ? (text ? "Escrevendo resumo…" : "Lendo a matéria…") : "Resumo da IA";
+  const status = streaming ? (text ? t("writing") : t("reading")) : t("title");
 
   return (
     <section
@@ -72,20 +74,20 @@ export function SummaryPanel({
           {!streaming && meta?.model && (
             <p className="animate-[ai-fade-in_240ms_ease-out] truncate font-mono text-[0.625rem] text-muted-foreground">
               {meta.model}
-              {meta.cached && " · em cache"}
+              {meta.cached && ` · ${t("cached")}`}
             </p>
           )}
         </div>
 
         {!streaming && text && (
           <div className="flex animate-[ai-fade-in_240ms_ease-out] items-center">
-            <Button variant="ghost" size="icon-sm" title="Copiar" aria-label="Copiar resumo" onClick={copy}>
+            <Button variant="ghost" size="icon-sm" title={t("copy")} aria-label={t("copySummary")} onClick={copy}>
               {copied ? <Check className="text-success" /> : <Copy />}
             </Button>
-            <Button variant="ghost" size="icon-sm" title="Gerar novamente" aria-label="Gerar novamente" onClick={onRegenerate}>
+            <Button variant="ghost" size="icon-sm" title={t("regenerate")} aria-label={t("regenerate")} onClick={onRegenerate}>
               <RotateCcw />
             </Button>
-            <Button variant="ghost" size="icon-sm" title="Fechar" aria-label="Fechar resumo" onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" title={t("close")} aria-label={t("closeSummary")} onClick={onClose}>
               <X />
             </Button>
           </div>

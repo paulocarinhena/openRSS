@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /** Alça vertical na borda direita de um painel (o painel precisa ser `relative`). */
@@ -7,10 +10,11 @@ export function ResizeHandle({
   className,
   ...props
 }: React.ComponentProps<"div"> & { label: string; dragging?: boolean }) {
+  const t = useTranslations("ui");
   return (
     <div
       aria-label={label}
-      title="Arraste para redimensionar · duplo clique para restaurar"
+      title={t("resizeHint")}
       data-dragging={dragging || undefined}
       className={cn("group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize touch-none outline-none", className)}
       {...props}

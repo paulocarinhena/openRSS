@@ -4,10 +4,11 @@ import { useCallback, useSyncExternalStore } from "react";
 
 export type ReaderWidth = "narrow" | "medium" | "wide";
 
-export const READER_WIDTHS: Record<ReaderWidth, { label: string; maxWidth: string; fontSize: string }> = {
-  narrow: { label: "Estreita", maxWidth: "44rem", fontSize: "1rem" },
-  medium: { label: "Média", maxWidth: "56rem", fontSize: "1.0625rem" },
-  wide: { label: "Larga", maxWidth: "72rem", fontSize: "1.125rem" },
+// Os rótulos ficam em messages/*.json (articles.readerWidth.<chave>).
+export const READER_WIDTHS: Record<ReaderWidth, { maxWidth: string; fontSize: string }> = {
+  narrow: { maxWidth: "44rem", fontSize: "1rem" },
+  medium: { maxWidth: "56rem", fontSize: "1.0625rem" },
+  wide: { maxWidth: "72rem", fontSize: "1.125rem" },
 };
 
 export const READER_WIDTH_ORDER: ReaderWidth[] = ["narrow", "medium", "wide"];

@@ -2,6 +2,7 @@
 
 import { ArrowUp, FileText, Rss, Square } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export function ChatComposer({
@@ -11,7 +12,7 @@ export function ChatComposer({
   onStop,
   busy,
   disabled,
-  placeholder = "Peça qualquer coisa",
+  placeholder,
   contextArticles,
   modelControl,
   autoFocus,
@@ -27,6 +28,7 @@ export function ChatComposer({
   modelControl?: React.ReactNode;
   autoFocus?: boolean;
 }) {
+  const t = useTranslations("chat.composer");
   const ref = useRef<HTMLTextAreaElement>(null);
   const canSend = value.trim().length > 0 && !disabled;
 
@@ -55,7 +57,7 @@ export function ChatComposer({
         ) : (
           <span className="flex items-center gap-1.5 font-medium text-foreground">
             <Rss className="size-3.5 text-muted-foreground" />
-            Todos os seus feeds
+            {t("allFeeds")}
           </span>
         )}
       </div>
@@ -73,8 +75,8 @@ export function ChatComposer({
           autoFocus={autoFocus}
           disabled={disabled}
           rows={3}
-          placeholder={placeholder}
-          aria-label="Mensagem"
+          placeholder={placeholder ?? t("placeholder")}
+          aria-label={t("message")}
           onChange={(e) => {
             onChange(e.target.value);
             const el = e.currentTarget;
@@ -92,7 +94,7 @@ export function ChatComposer({
 
         <div className="flex items-center gap-2 px-3 pt-1 pb-3">
           <p className="hidden pl-2 text-[0.6875rem] text-muted-foreground sm:block">
-            <kbd className="font-sans">↵</kbd> enviar · <kbd className="font-sans">⇧ ↵</kbd> nova linha
+            <kbd className="font-sans">↵</kbd> {t("sendHint")} · <kbd className="font-sans">⇧ ↵</kbd> {t("newLineHint")}
           </p>
           <div className="flex-1" />
           {modelControl}
@@ -100,8 +102,8 @@ export function ChatComposer({
             <button
               type="button"
               onClick={onStop}
-              aria-label="Parar"
-              title="Parar"
+              aria-label={t("stop")}
+              title={t("stop")}
               className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground text-background transition-transform duration-150 hover:scale-105 active:scale-95"
             >
               <Square className="size-3.5 fill-current" />
@@ -110,8 +112,8 @@ export function ChatComposer({
             <button
               type="submit"
               disabled={!canSend}
-              aria-label="Enviar"
-              title="Enviar"
+              aria-label={t("send")}
+              title={t("send")}
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-full transition-[transform,background-color,color] duration-200",
                 canSend

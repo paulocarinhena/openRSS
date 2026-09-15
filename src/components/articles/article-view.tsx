@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { getUserSettings } from "@/lib/app-settings";
 import { getArticle, listArticles, scopeTitle, type ArticleScope } from "@/lib/queries";
@@ -12,7 +13,8 @@ type Search = { unread?: string; q?: string; a?: string };
 export async function ArticleView({ scope, searchParams }: { scope: ArticleScope; searchParams: Promise<Search> }) {
   const user = await requireUser();
   const params = await searchParams;
-  const title = await scopeTitle(user.id, scope);
+  const t = await getTranslations("articles.scopes");
+  const title = await scopeTitle(user.id, scope, { today: t("today"), all: t("all"), saved: t("saved") });
   if (!title) notFound();
 
   const unreadOnly = scope.kind === "saved" ? params.unread === "1" : params.unread !== "0";

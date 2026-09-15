@@ -7,6 +7,14 @@ import { db, getDbProvider } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { readAppSecret } from "@/lib/env";
 import { lazyObject } from "@/lib/lazy";
+import { localeFromRequest } from "@/i18n/config";
+import { staticTranslator } from "@/i18n/static";
+
+/** Erro de cadastro com código estável (o formulário traduz pelo código) e mensagem no idioma do request. */
+function registrationError(code: "REGISTRATION_DISABLED" | "ADMIN_BOOTSTRAP_IN_PROGRESS", request: Request | undefined) {
+  const t = staticTranslator(request ? localeFromRequest(request) : "pt-BR", "auth.errors");
+  return new APIError("FORBIDDEN", { code, message: t(code) });
+}
 
 // Lazy: o provider só é conhecido depois do assistente de instalação.
 export const auth = lazyObject(() => betterAuth({
@@ -35,9 +43,7 @@ export const auth = lazyObject(() => betterAuth({
       const users = await db.user.count();
       if (users === 0) return;
       const settings = await getAppSettings();
-      if (!settings.allowRegistration) {
-        throw new APIError("FORBIDDEN", { message: "Cadastro desativado pelo administrador." });
-      }
+      if (!settings.allowRegistration) throw registrationError("REGISTRATION_DISABLED", ctx.request);
     }),
   },
   databaseHooks: {
@@ -50,9 +56,7 @@ export const auth = lazyObject(() => betterAuth({
           const settings = await getAppSettings();
           const users = await db.user.count();
           if (users > 0) {
-            if (!settings.allowRegistration) {
-              throw new APIError("FORBIDDEN", { message: "Cadastro desativado pelo administrador." });
-            }
+            if (!settings.allowRegistration) throw registrationError("REGISTRATION_DISABLED", ctx.request);
             return { data: { ...user, role: "user" } };
           }
 
@@ -64,7 +68,7 @@ export const auth = lazyObject(() => betterAuth({
           `;
           if (claimed > 0) return { data: { ...user, role: "admin" } };
           if (settings.allowRegistration) return { data: { ...user, role: "user" } };
-          throw new APIError("FORBIDDEN", { message: "O administrador inicial já está sendo criado." });
+          throw registrationError("ADMIN_BOOTSTRAP_IN_PROGRESS", ctx.request);
         },
       },
     },

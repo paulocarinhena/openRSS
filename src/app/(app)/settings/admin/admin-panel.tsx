@@ -3,15 +3,11 @@
 import { ShieldCheck, Trash2, User as UserIcon, UserPlus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { createUserAction, deleteUserAction, setUserRoleAction, updateAppSettingsAction } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Card, Field, Input, Switch } from "@/components/ui/input";
-
-const ROLE_OPTIONS: ComboboxOption[] = [
-  { value: "user", label: "Usuário", icon: <UserIcon /> },
-  { value: "admin", label: "Admin", description: "Gerencia usuários e provedores globais", icon: <ShieldCheck /> },
-];
 
 type User = { id: string; name: string; email: string; role: string; createdAt: Date; subscriptions: number };
 
@@ -26,18 +22,24 @@ export function AdminPanel({
   users: User[];
   stats: { feeds: number; articles: number; failingFeeds: number; database: string };
 }) {
+  const t = useTranslations("admin");
   const [settings, setSettings] = useState(initial);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "user" as "user" | "admin" });
   const [pending, start] = useTransition();
+
+  const roleOptions: ComboboxOption[] = [
+    { value: "user", label: t("roleUser"), icon: <UserIcon /> },
+    { value: "admin", label: t("roleAdmin"), description: t("roleAdminHint"), icon: <ShieldCheck /> },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          ["Banco", stats.database],
-          ["Feeds", stats.feeds],
-          ["Artigos", stats.articles],
-          ["Feeds com erro", stats.failingFeeds],
+          [t("stats.database"), stats.database],
+          [t("stats.feeds"), stats.feeds],
+          [t("stats.articles"), stats.articles],
+          [t("stats.failingFeeds"), stats.failingFeeds],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
             <p className="eyebrow">{label}</p>
@@ -52,21 +54,21 @@ export function AdminPanel({
           e.preventDefault();
           start(async () => {
             const res = await updateAppSettingsAction(settings);
-            if (res.ok) toast.success("Configurações salvas");
+            if (res.ok) toast.success(t("saved"));
             else toast.error(res.error);
           });
         }}
       >
-        <h2 className="eyebrow">Instância</h2>
+        <h2 className="eyebrow">{t("instance")}</h2>
         <Card className="grid gap-4 sm:grid-cols-2">
           <label className="flex items-center justify-between gap-3 sm:col-span-2">
             <span>
-              <span className="block font-medium">Cadastro aberto</span>
-              <span className="text-xs text-muted-foreground">Permite que qualquer pessoa crie uma conta pela tela de cadastro.</span>
+              <span className="block font-medium">{t("openRegistration")}</span>
+              <span className="text-xs text-muted-foreground">{t("openRegistrationHint")}</span>
             </span>
             <Switch checked={settings.allowRegistration} onCheckedChange={(v) => setSettings({ ...settings, allowRegistration: v })} />
           </label>
-          <Field label="Intervalo de atualização (min)">
+          <Field label={t("refreshInterval")}>
             <Input
               type="number"
               min={5}
@@ -75,35 +77,35 @@ export function AdminPanel({
               onChange={(e) => setSettings({ ...settings, refreshIntervalMinutes: Number(e.target.value) })}
             />
           </Field>
-          <Field label="Retenção de artigos (dias)" hint="Artigos mais antigos são removidos, exceto os salvos.">
+          <Field label={t("retention")} hint={t("retentionHint")}>
             <Input type="number" min={7} max={3650} value={settings.retentionDays} onChange={(e) => setSettings({ ...settings, retentionDays: Number(e.target.value) })} />
           </Field>
         </Card>
         <div>
           <Button type="submit" variant="primary" disabled={pending}>
-            Salvar
+            {t("save")}
           </Button>
         </div>
       </form>
 
       <section className="flex flex-col gap-3">
-        <h2 className="eyebrow">Usuários ({users.length})</h2>
+        <h2 className="eyebrow">{t("users", { count: users.length })}</h2>
         <Card className="divide-y divide-border p-0">
           {users.map((u) => (
             <div key={u.id} className="flex flex-wrap items-center gap-2 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{u.name}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {u.email} · {u.subscriptions} feeds
+                  {u.email} · {t("feedCount", { count: u.subscriptions })}
                 </p>
               </div>
               <Combobox
                 size="sm"
                 className="w-36"
-                aria-label="Papel"
+                aria-label={t("role")}
                 value={u.role}
                 disabled={u.id === currentUserId || pending}
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 onValueChange={(role) =>
                   start(async () => {
                     const res = await setUserRoleAction(u.id, role as "user" | "admin");
@@ -114,10 +116,10 @@ export function AdminPanel({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Excluir usuário"
+                aria-label={t("deleteUser")}
                 disabled={u.id === currentUserId || pending}
                 onClick={() => {
-                  if (!window.confirm(`Excluir ${u.email} e todos os seus dados?`)) return;
+                  if (!window.confirm(t("deleteUserConfirm", { email: u.email }))) return;
                   start(async () => {
                     const res = await deleteUserAction(u.id);
                     if (!res.ok) toast.error(res.error);
@@ -138,32 +140,32 @@ export function AdminPanel({
               start(async () => {
                 const res = await createUserAction(newUser);
                 if (res.ok) {
-                  toast.success("Usuário criado");
+                  toast.success(t("userCreated"));
                   setNewUser({ name: "", email: "", password: "", role: "user" });
                 } else toast.error(res.error);
               });
             }}
           >
-            <Field label="Nome">
+            <Field label={t("name")}>
               <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required />
             </Field>
-            <Field label="Email">
+            <Field label={t("email")}>
               <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
             </Field>
-            <Field label="Senha inicial">
+            <Field label={t("initialPassword")}>
               <Input type="password" minLength={8} value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
             </Field>
-            <Field label="Papel">
+            <Field label={t("role")}>
               <Combobox
-                aria-label="Papel"
+                aria-label={t("role")}
                 value={newUser.role}
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 onValueChange={(role) => setNewUser({ ...newUser, role: role as "user" | "admin" })}
               />
             </Field>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={pending}>
-                <UserPlus /> Criar usuário
+                <UserPlus /> {t("createUser")}
               </Button>
             </div>
           </form>

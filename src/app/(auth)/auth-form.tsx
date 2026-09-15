@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { signIn, signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, Field, Input } from "@/components/ui/input";
 
 export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firstUser?: boolean }) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +30,13 @@ export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firs
           : await signUp.email({ email, password, name: String(form.get("name")) });
 
       if (error) {
-        setError(error.message ?? "Não foi possível continuar.");
+        // Códigos conhecidos (do better-auth ou nossos) são traduzidos; o resto usa a mensagem do servidor.
+        const code = (error.code ? `errors.${error.code}` : "") as Parameters<typeof t>[0];
+        setError(code && t.has(code) ? t(code) : (error.message ?? t("errors.generic")));
         return;
       }
     } catch {
-      setError("Não foi possível conectar ao servidor.");
+      setError(t("errors.network"));
       return;
     } finally {
       setPending(false);
@@ -50,23 +54,19 @@ export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firs
   return (
     <Card className="flex flex-col gap-5">
       <div>
-        <h1 className="text-base font-semibold tracking-tight">{mode === "login" ? "Entrar" : "Criar conta"}</h1>
-        {firstUser && (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Primeiro acesso: esta conta será a de administrador.
-          </p>
-        )}
+        <h1 className="text-base font-semibold tracking-tight">{mode === "login" ? t("login") : t("register")}</h1>
+        {firstUser && <p className="mt-1 text-xs text-muted-foreground">{t("firstUser")}</p>}
       </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {mode === "register" && (
-          <Field label="Nome">
+          <Field label={t("name")}>
             <Input name="name" required autoComplete="name" />
           </Field>
         )}
-        <Field label="Email">
+        <Field label={t("email")}>
           <Input name="email" type="email" required autoComplete="email" />
         </Field>
-        <Field label="Senha">
+        <Field label={t("password")}>
           <Input
             name="password"
             type="password"
@@ -77,7 +77,7 @@ export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firs
         </Field>
         {error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>}
         <Button type="submit" variant="primary" size="lg" disabled={pending}>
-          {pending ? "Aguarde…" : mode === "login" ? "Entrar" : "Criar conta"}
+          {pending ? t("wait") : mode === "login" ? t("login") : t("register")}
         </Button>
       </form>
     </Card>

@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { Client, escapeIdentifier } from "pg";
 import { z } from "zod";
 import {
@@ -12,15 +13,19 @@ import {
   type DatabaseConfig,
 } from "@/lib/env";
 import { runMigrations } from "@/lib/setup/migrate";
+import { actionErrorMessage } from "@/lib/action-errors";
 
+// Mensagens do zod são chaves de setup.errors.
 const postgresSchema = z.object({
-  host: z.string().trim().min(1, "Informe o host."),
-  port: z.coerce.number().int().min(1).max(65535, "Porta inválida."),
-  user: z.string().trim().min(1, "Informe o usuário."),
+  host: z.string().trim().min(1, "hostRequired"),
+  port: z.coerce.number().int().min(1, "invalidPort").max(65535, "invalidPort"),
+  user: z.string().trim().min(1, "userRequired"),
   password: z.string(),
-  database: z.string().trim().regex(/^[A-Za-z0-9_]+$/, "Nome do banco: use apenas letras, números e _."),
+  database: z.string().trim().regex(/^[A-Za-z0-9_]+$/, "invalidDatabaseName"),
   ssl: z.boolean().optional(),
 });
+
+const errors = () => getTranslations("setup.errors");
 
 export type PostgresInput = {
   host: string;
@@ -37,9 +42,9 @@ export type SetupInput =
 
 type ConnectionResult = { status: "ok" } | { status: "missing-database" } | { status: "error"; message: string };
 
-function assertSetupMode() {
+async function assertSetupMode() {
   // Depois de configurado, o assistente deixa de existir: ninguém reconfigura pela web.
-  if (!isSetupRequired()) throw new Error("A instância já está configurada.");
+  if (!isSetupRequired()) throw new Error((await errors())("alreadyConfigured"));
 }
 
 function postgresUrl(input: z.output<typeof postgresSchema>, database = input.database) {
@@ -48,22 +53,23 @@ function postgresUrl(input: z.output<typeof postgresSchema>, database = input.da
   return input.ssl ? `${url}?sslmode=require` : url;
 }
 
-function describePgError(error: unknown) {
+async function describePgError(error: unknown) {
+  const t = await errors();
   const err = error as NodeJS.ErrnoException & { code?: string };
   switch (err.code) {
     case "ECONNREFUSED":
     case "ENOTFOUND":
     case "EHOSTUNREACH":
-      return "Não foi possível alcançar o servidor. Verifique host e porta.";
+      return t("pgUnreachable");
     case "ETIMEDOUT":
-      return "Tempo esgotado ao conectar. Verifique host, porta e firewall.";
+      return t("pgTimeout");
     case "28P01":
     case "28000":
-      return "Usuário ou senha inválidos.";
+      return t("pgBadCredentials");
     case "42501":
-      return "O usuário não tem permissão para criar bancos (CREATEDB).";
+      return t("pgNoCreateDb");
     default:
-      return err.message || "Falha ao conectar ao PostgreSQL.";
+      return err.message || t("pgConnectFailed");
   }
 }
 
@@ -83,19 +89,19 @@ async function probePostgres(input: z.output<typeof postgresSchema>): Promise<Co
     return { status: "ok" };
   } catch (error) {
     if ((error as { code?: string }).code === "3D000") return { status: "missing-database" };
-    return { status: "error", message: describePgError(error) };
+    return { status: "error", message: await describePgError(error) };
   }
 }
 
 export async function testPostgresConnection(input: PostgresInput): Promise<ConnectionResult> {
-  assertSetupMode();
+  await assertSetupMode();
   const parsed = postgresSchema.safeParse(input);
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!parsed.success) return { status: "error", message: actionErrorMessage(await errors(), parsed.error) };
   return probePostgres(parsed.data);
 }
 
 export async function completeSetup(input: SetupInput): Promise<{ status: "ok" } | { status: "error"; message: string }> {
-  assertSetupMode();
+  await assertSetupMode();
   const dataDir = readDataDir();
 
   let database: DatabaseConfig;
@@ -103,7 +109,7 @@ export async function completeSetup(input: SetupInput): Promise<{ status: "ok" }
     database = { provider: "sqlite", url: sqliteUrl(dataDir) };
   } else {
     const parsed = postgresSchema.safeParse(input);
-    if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    if (!parsed.success) return { status: "error", message: actionErrorMessage(await errors(), parsed.error) };
 
     if (input.createDatabase) {
       try {
@@ -112,12 +118,12 @@ export async function completeSetup(input: SetupInput): Promise<{ status: "ok" }
           client.query(`CREATE DATABASE ${escapeIdentifier(parsed.data.database)}`),
         );
       } catch (error) {
-        return { status: "error", message: describePgError(error) };
+        return { status: "error", message: await describePgError(error) };
       }
     }
 
     const probe = await probePostgres(parsed.data);
-    if (probe.status === "missing-database") return { status: "error", message: `O banco "${parsed.data.database}" não existe.` };
+    if (probe.status === "missing-database") return { status: "error", message: (await errors())("databaseMissing", { database: parsed.data.database }) };
     if (probe.status === "error") return probe;
     database = { provider: "postgresql", url: postgresUrl(parsed.data) };
   }

@@ -5,6 +5,7 @@ import { Check, Folder as FolderIcon, Inbox, Loader2, Plus, X } from "lucide-rea
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { discoverAction, subscribeAction } from "@/app/actions/feeds";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -19,6 +20,7 @@ export function AddFeedDialog({
   folders: { id: string; name: string }[];
   trigger: React.ReactNode;
 }) {
+  const t = useTranslations("feeds.add");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -55,7 +57,7 @@ export function AddFeedDialog({
       toast.error(res.error);
       return;
     }
-    toast.success(`Assinado: ${feed.title}`);
+    toast.success(t("subscribedToast", { title: feed.title }));
     setOpen(false);
     reset();
     router.push(`/feed/${res.feedId}`);
@@ -75,33 +77,31 @@ export function AddFeedDialog({
         <Dialog.Content className="fixed top-[12vh] left-1/2 z-50 flex max-h-[76vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 flex-col gap-4 overflow-hidden rounded-card border border-border bg-surface p-5 shadow-card">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <Dialog.Title className="text-base font-semibold tracking-tight">Adicionar feed</Dialog.Title>
-              <Dialog.Description className="mt-1 text-xs text-muted-foreground">
-                Cole a URL de um site ou de um feed RSS/Atom.
-              </Dialog.Description>
+              <Dialog.Title className="text-base font-semibold tracking-tight">{t("title")}</Dialog.Title>
+              <Dialog.Description className="mt-1 text-xs text-muted-foreground">{t("description")}</Dialog.Description>
             </div>
             <Dialog.Close asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Fechar">
+              <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
                 <X />
               </Button>
             </Dialog.Close>
           </div>
 
           <form onSubmit={search} className="flex gap-2">
-            <Input autoFocus placeholder="exemplo.com ou exemplo.com/feed.xml" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <Input autoFocus placeholder={t("urlPlaceholder")} value={query} onChange={(e) => setQuery(e.target.value)} />
             <Button type="submit" variant="primary" disabled={searching || query.trim().length < 3}>
-              {searching ? <Loader2 className="animate-spin" /> : "Buscar"}
+              {searching ? <Loader2 className="animate-spin" /> : t("search")}
             </Button>
           </form>
 
           {folders.length > 0 && (
             <Combobox
-              aria-label="Pasta"
+              aria-label={t("folder")}
               value={folderId}
               onValueChange={setFolderId}
-              searchPlaceholder="Buscar pasta…"
+              searchPlaceholder={t("searchFolder")}
               options={[
-                { value: "", label: "Sem pasta", icon: <Inbox /> },
+                { value: "", label: t("noFolder"), icon: <Inbox /> },
                 ...folders.map((f) => ({ value: f.id, label: f.name, icon: <FolderIcon /> })),
               ]}
             />
@@ -116,17 +116,17 @@ export function AddFeedDialog({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{f.title}</p>
                     <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">
-                      {f.url} · {f.itemCount} itens
+                      {f.url} · {t("items", { count: f.itemCount })}
                     </p>
                   </div>
                   {f.subscribed ? (
                     <span className="flex items-center gap-1 text-xs text-success">
-                      <Check className="size-3.5" /> Assinado
+                      <Check className="size-3.5" /> {t("subscribed")}
                     </span>
                   ) : (
                     <Button size="sm" variant="primary" onClick={() => add(f)} disabled={subscribing !== null}>
                       {subscribing === f.url ? <Loader2 className="animate-spin" /> : <Plus />}
-                      Assinar
+                      {t("subscribe")}
                     </Button>
                   )}
                 </li>

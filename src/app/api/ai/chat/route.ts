@@ -1,5 +1,6 @@
 import { convertToModelMessages, isStepCount, streamText, tool, type UIMessage } from "ai";
 import { randomUUID } from "node:crypto";
+import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { db, icontains } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
@@ -32,11 +33,12 @@ export async function POST(request: Request) {
   if (!thread) return new Response("Not found", { status: 404 });
 
   const settings = await getUserSettings(user.id);
+  const locale = await getLocale();
   let resolved;
   try {
     resolved = await resolveModel(user.id, { providerId, model });
   } catch (err) {
-    return Response.json({ error: errorMessage(err) }, { status: 400 });
+    return Response.json({ error: errorMessage(err, locale) }, { status: 400 });
   }
 
   const subscribed = { feed: { subscriptions: { some: { userId: user.id } } } };
@@ -88,7 +90,10 @@ export async function POST(request: Request) {
     : "";
 
   const releaseThread = await acquireLock(`chat:${threadId}`, 3 * 60_000);
-  if (!releaseThread) return new Response("A conversa já está processando outra mensagem.", { status: 409 });
+  if (!releaseThread) {
+    const t = await getTranslations("chat.errors");
+    return new Response(t("busy"), { status: 409 });
+  }
 
   let result;
   try {
@@ -117,7 +122,7 @@ Data atual: ${new Date().toISOString().slice(0, 10)}.${context}`,
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
-    onError: (error) => errorMessage(error),
+    onError: (error) => errorMessage(error, locale),
     onEnd: async ({ messages: all }) => {
       try {
         const firstUserText = all
@@ -138,7 +143,7 @@ Data atual: ${new Date().toISOString().slice(0, 10)}.${context}`,
             where: { id: threadId },
             data: {
               updatedAt: new Date(),
-              ...(thread.title === "Nova conversa" && firstUserText ? { title: truncate(firstUserText, 80) } : {}),
+              ...(!thread.title && firstUserText ? { title: truncate(firstUserText, 80) } : {}),
             },
           }),
         ]);

@@ -2,6 +2,7 @@
 
 import { Bookmark, Circle, CircleCheck, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem } from "@/lib/queries";
 import { cn, relativeTime } from "@/lib/utils";
 import { FeedIcon } from "@/components/feed-icon";
@@ -30,11 +31,23 @@ export function ArticleList(props: Props) {
 }
 
 function Time({ date }: { date: Date }) {
+  const locale = useLocale();
   return (
     <time dateTime={date.toISOString()} suppressHydrationWarning className="shrink-0">
-      {relativeTime(date)}
+      {relativeTime(date, locale)}
     </time>
   );
+}
+
+/** Marcador de "não lido" com rótulo acessível. */
+function UnreadDot({ className }: { className?: string }) {
+  const t = useTranslations("articles");
+  return <span aria-label={t("unread")} className={cn("size-1.5 shrink-0 rounded-full bg-primary", className)} />;
+}
+
+function SavedIcon({ className }: { className?: string }) {
+  const t = useTranslations("articles");
+  return <Bookmark className={className} aria-label={t("saved")} />;
 }
 
 function PriorityBadge({ item, threshold = 70 }: { item: ArticleListItem; threshold?: number }) {
@@ -88,6 +101,7 @@ function CardActions({
   /** Mantém as ações visíveis quando o artigo está salvo. */
   pinWhenSaved?: boolean;
 }) {
+  const t = useTranslations("articles");
   return (
     <div
       data-visible={(pinWhenSaved && a.isSaved) || undefined}
@@ -100,8 +114,8 @@ function CardActions({
         variant="ghost"
         size="icon-sm"
         className="size-7"
-        title={a.isSaved ? "Remover dos salvos" : "Salvar"}
-        aria-label={a.isSaved ? "Remover dos salvos" : "Salvar"}
+        title={a.isSaved ? t("removeSaved") : t("save")}
+        aria-label={a.isSaved ? t("removeSaved") : t("save")}
         onClick={() => onToggleSaved(a.id, !a.isSaved)}
       >
         <Bookmark className={cn(a.isSaved && "fill-current text-foreground")} />
@@ -110,14 +124,14 @@ function CardActions({
         variant="ghost"
         size="icon-sm"
         className="size-7"
-        title={a.isRead ? "Marcar como não lido" : "Marcar como lido"}
-        aria-label={a.isRead ? "Marcar como não lido" : "Marcar como lido"}
+        title={a.isRead ? t("markUnread") : t("markRead")}
+        aria-label={a.isRead ? t("markUnread") : t("markRead")}
         onClick={() => onToggleRead(a.id, !a.isRead)}
       >
         {a.isRead ? <CircleCheck /> : <Circle />}
       </Button>
       {a.url && (
-        <Button asChild variant="ghost" size="icon-sm" className="size-7" title="Abrir original" aria-label="Abrir original">
+        <Button asChild variant="ghost" size="icon-sm" className="size-7" title={t("openOriginal")} aria-label={t("openOriginal")}>
           <a href={a.url} target="_blank" rel="noopener noreferrer">
             <ExternalLink />
           </a>
@@ -167,7 +181,7 @@ function ArticleCards({ items, loadingId, showFeed, onOpen, onToggleRead, onTogg
 
                 <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
                   <div className="flex min-w-0 items-center gap-1.5 pr-28 text-[0.6875rem] text-muted-foreground">
-                    {!a.isRead && <span aria-label="Não lido" className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                    {!a.isRead && <UnreadDot />}
                     <FeedIcon src={a.feed.iconUrl} className="size-3.5" />
                     {showFeed && <span className="truncate font-medium text-foreground/80">{a.feed.title}</span>}
                     {showFeed && a.author && <span aria-hidden>·</span>}
@@ -236,7 +250,7 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
 
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
                   <div className="flex min-w-0 items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
-                    {!a.isRead && <span aria-label="Não lido" className="size-1.5 shrink-0 rounded-full bg-primary" />}
+                    {!a.isRead && <UnreadDot />}
                     <FeedIcon src={a.feed.iconUrl} className="size-3" />
                     <span className="truncate">{showFeed ? a.feed.title : (a.author ?? a.feed.title)}</span>
                     <span aria-hidden>·</span>
@@ -272,14 +286,14 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
 
 /* ── Só texto: lista de leitura agrupada por dia ──────────────────────── */
 
-function dayLabel(date: Date, timeZone: string, now = new Date()) {
+function dayLabel(date: Date, timeZone: string, locale: string, labels: { today: string; yesterday: string }, now = new Date()) {
   const formatter = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
   const day = formatter.format(date);
   const today = formatter.format(now);
   const diffDays = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86400000);
-  if (diffDays === 0) return "Hoje";
-  if (diffDays === 1) return "Ontem";
-  return date.toLocaleDateString("pt-BR", {
+  if (diffDays === 0) return labels.today;
+  if (diffDays === 1) return labels.yesterday;
+  return date.toLocaleDateString(locale, {
     timeZone,
     weekday: "long",
     day: "numeric",
@@ -289,9 +303,12 @@ function dayLabel(date: Date, timeZone: string, now = new Date()) {
 }
 
 function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggleRead, onToggleSaved }: Props) {
+  const t = useTranslations("articles");
+  const locale = useLocale();
+  const dayLabels = { today: t("today"), yesterday: t("yesterday") };
   const groups: { label: string; items: ArticleListItem[] }[] = [];
   for (const item of items) {
-    const label = dayLabel(item.publishedAt, timezone);
+    const label = dayLabel(item.publishedAt, timezone, locale, dayLabels);
     const last = groups.at(-1);
     if (last?.label === label) last.items.push(item);
     else groups.push({ label, items: [item] });
@@ -318,10 +335,11 @@ function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggl
                     a.isRead && "opacity-75 hover:opacity-100",
                   )}
                 >
-                  <span
-                    aria-label={a.isRead ? undefined : "Não lido"}
-                    className={cn("mt-2 size-1.5 shrink-0 rounded-full transition-colors", a.isRead ? "bg-transparent" : "bg-primary")}
-                  />
+                  {a.isRead ? (
+                    <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-transparent" />
+                  ) : (
+                    <UnreadDot className="mt-2" />
+                  )}
 
                   <button
                     type="button"
@@ -368,7 +386,7 @@ function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggl
                   {/* Horário: dá lugar às ações no hover */}
                   <span className="flex w-24 shrink-0 items-center justify-end gap-1.5 pt-0.5 text-xs text-muted-foreground tabular-nums transition-opacity duration-150 group-focus-within:opacity-0 group-hover:opacity-0">
                     {loadingId === a.id && <Loader2 className="size-3 animate-spin" />}
-                    {a.isSaved && <Bookmark className="size-3 fill-current text-foreground/70" aria-label="Salvo" />}
+                    {a.isSaved && <SavedIcon className="size-3 fill-current text-foreground/70" />}
                     <Time date={a.publishedAt} />
                   </span>
                   <div className="pointer-events-none absolute top-2 right-2 flex [&>*]:pointer-events-auto">
@@ -402,7 +420,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
               </>
             )}
             <Time date={a.publishedAt} />
-            {a.isSaved && <Bookmark className="size-3 shrink-0 fill-current" aria-label="Salvo" />}
+            {a.isSaved && <SavedIcon className="size-3 shrink-0 fill-current" />}
             {loadingId === a.id && <Loader2 className="size-3 shrink-0 animate-spin" />}
           </div>
         );

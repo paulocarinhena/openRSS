@@ -11,6 +11,7 @@ export default async function GeneralSettingsPage() {
       name={user.name}
       email={user.email}
       language={settings.language}
+      uiLanguage={settings.uiLanguage}
       timezone={settings.timezone}
       listView={normalizeListView(settings.listView)}
       timezones={Intl.supportedValuesOf("timeZone")}

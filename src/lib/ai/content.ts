@@ -1,4 +1,7 @@
 import { stripHtml, truncate } from "@/lib/utils";
+import { defaultLocale } from "@/i18n/config";
+import { staticTranslator } from "@/i18n/static";
+import { AiError } from "./errors";
 
 /** ~4 chars por token; limita o conteúdo enviado ao modelo. */
 export function articleText(
@@ -13,12 +16,15 @@ export function articleText(
 export const languageName = (code: string) =>
   ({ "pt-BR": "português do Brasil", en: "English", es: "español" })[code] ?? code;
 
-export function errorMessage(err: unknown): string {
+/** Mensagem legível para o usuário no idioma da interface (padrão pt-BR para logs). */
+export function errorMessage(err: unknown, locale: string = defaultLocale): string {
+  const t = staticTranslator(locale, "ai.errors");
+  if (err instanceof AiError) return t(err.key, err.params);
   if (err instanceof Error) {
     const withData = err as Error & { responseBody?: string; statusCode?: number };
-    if (withData.statusCode === 401) return "Chave de API inválida ou sem permissão.";
-    if (withData.statusCode === 404) return "Modelo não encontrado neste provedor.";
-    if (withData.statusCode === 429) return "Limite de requisições do provedor atingido. Tente mais tarde.";
+    if (withData.statusCode === 401) return t("apiKeyInvalid");
+    if (withData.statusCode === 404) return t("modelNotFound");
+    if (withData.statusCode === 429) return t("rateLimited");
     return err.message;
   }
   return String(err);

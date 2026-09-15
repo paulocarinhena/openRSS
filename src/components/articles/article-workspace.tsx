@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { CheckCheck, Eye, EyeOff, Loader2, RefreshCw, Search, Sparkles, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem, ArticleScope } from "@/lib/queries";
 import { loadMoreArticles, loadPreviewImagesAction, markAllRead, openArticleAction, setRead, setSaved } from "@/app/actions/articles";
 import { refreshFeedAction } from "@/app/actions/feeds";
@@ -41,6 +42,7 @@ export function ArticleWorkspace({
   aiEnabled: boolean;
   feedError: string | null;
 }) {
+  const t = useTranslations("articles");
   const router = useRouter();
   const pathname = usePathname();
   const [items, setItems] = useState(initial.items);
@@ -137,8 +139,8 @@ export function ArticleWorkspace({
         if (request !== openRequest.current) return;
         setLoadingId(null);
         if (!article) {
-          setOperationError("Artigo não encontrado.");
-          toast.error("Artigo não encontrado.");
+          setOperationError(t("errors.notFound"));
+          toast.error(t("errors.notFound"));
           return;
         }
         const state = { ...(article.state ?? emptyState(article)), isRead: true, readAt: article.state?.readAt ?? new Date() };
@@ -147,11 +149,11 @@ export function ArticleWorkspace({
       } catch {
         if (request !== openRequest.current) return;
         setLoadingId(null);
-        setOperationError("Não foi possível abrir o artigo.");
-        toast.error("Não foi possível abrir o artigo.");
+        setOperationError(t("errors.openFailed"));
+        toast.error(t("errors.openFailed"));
       }
     },
-    [buildUrl, patchItem, router],
+    [buildUrl, patchItem, router, t],
   );
 
   const close = useCallback(() => {
@@ -208,11 +210,11 @@ export function ArticleWorkspace({
         if (previousSelected) {
           setSelected((current) => current ? { ...current, state: { ...(current.state ?? emptyState(current)), isRead: previousSelected.state?.isRead ?? false } } : current);
         }
-        setOperationError("Não foi possível atualizar o estado de leitura.");
-        toast.error("Não foi possível atualizar o estado de leitura.");
+        setOperationError(t("errors.readStateFailed"));
+        toast.error(t("errors.readStateFailed"));
       }
     },
-    [items, patchItem, persistInOrder, selected, unreadOnly],
+    [items, patchItem, persistInOrder, selected, t, unreadOnly],
   );
 
   const toggleSaved = useCallback(
@@ -241,7 +243,7 @@ export function ArticleWorkspace({
       if (selected?.id === id) setSelected((s) => (s ? { ...s, state: { ...(s.state ?? emptyState(s)), isSaved } } : s));
       try {
         await persistInOrder(key, () => setSaved(id, isSaved));
-        toast.success(isSaved ? "Salvo" : "Removido dos salvos");
+        toast.success(isSaved ? t("saved") : t("unsaved"));
       } catch {
         if (mutationRequest.current.get(key) !== request) return;
         if (previousItem && scope.kind === "saved" && !isSaved) {
@@ -254,11 +256,11 @@ export function ArticleWorkspace({
         if (previousSelected) {
           setSelected((current) => current ? { ...current, state: { ...(current.state ?? emptyState(current)), isSaved: previousSelected.state?.isSaved ?? false } } : current);
         }
-        setOperationError("Não foi possível atualizar os artigos salvos.");
-        toast.error("Não foi possível atualizar os artigos salvos.");
+        setOperationError(t("errors.savedStateFailed"));
+        toast.error(t("errors.savedStateFailed"));
       }
     },
-    [items, patchItem, persistInOrder, scope.kind, selected],
+    [items, patchItem, persistInOrder, scope.kind, selected, t],
   );
 
   const doMarkAll = useCallback(() => {
@@ -274,16 +276,16 @@ export function ArticleWorkspace({
       );
       try {
         const count = await markAllRead(scope);
-        toast.success(count ? `${count} artigos marcados como lidos` : "Nada para marcar");
+        toast.success(count ? t("markedRead", { count }) : t("nothingToMark"));
       } catch {
         setItems(previousItems);
         setHasMore(previousHasMore);
         setSelected(previousSelected);
-        setOperationError("Não foi possível marcar os artigos como lidos.");
-        toast.error("Não foi possível marcar os artigos como lidos.");
+        setOperationError(t("errors.markAllFailed"));
+        toast.error(t("errors.markAllFailed"));
       }
     });
-  }, [hasMore, items, scope, selected, unreadOnly]);
+  }, [hasMore, items, scope, selected, t, unreadOnly]);
 
   const refreshFeed = useCallback(() => {
     if (scope.kind !== "feed") return;
@@ -300,14 +302,14 @@ export function ArticleWorkspace({
         setItems(fresh.items);
         setHasMore(fresh.hasMore);
         setPage(0);
-        toast.success(res.added ? `${res.added} novos artigos` : "Nenhum artigo novo");
+        toast.success(res.added ? t("newArticles", { count: res.added }) : t("noNewArticles"));
         router.refresh();
       } catch {
-        setOperationError("Não foi possível atualizar o feed.");
-        toast.error("Não foi possível atualizar o feed.");
+        setOperationError(t("errors.refreshFailed"));
+        toast.error(t("errors.refreshFailed"));
       }
     });
-  }, [query, router, scope, unreadOnly]);
+  }, [query, router, scope, t, unreadOnly]);
 
   function loadMore() {
     if (loadingMoreRef.current) return;
@@ -370,12 +372,7 @@ export function ArticleWorkspace({
     void updateSettingsAction({ listView: next });
   };
 
-  const empty =
-    scope.kind === "saved"
-      ? "Nenhum artigo salvo."
-      : unreadOnly
-        ? "Tudo lido por aqui. ✓"
-        : "Nenhum artigo encontrado.";
+  const empty = scope.kind === "saved" ? t("empty.saved") : unreadOnly ? t("empty.allRead") : t("empty.none");
 
   return (
     <div className="flex h-full min-h-0">
@@ -395,8 +392,8 @@ export function ArticleWorkspace({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title="Atualizar feed"
-                aria-label="Atualizar feed"
+                title={t("refreshFeed")}
+                aria-label={t("refreshFeed")}
                 disabled={pending}
                 onClick={refreshFeed}
               >
@@ -408,15 +405,15 @@ export function ArticleWorkspace({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title={unreadOnly ? "Mostrar todos" : "Só não lidos"}
-                aria-label={unreadOnly ? "Mostrar todos" : "Só não lidos"}
+                title={unreadOnly ? t("showAll") : t("unreadOnly")}
+                aria-label={unreadOnly ? t("showAll") : t("unreadOnly")}
                 onClick={() => router.replace(buildUrl({ unread: unreadOnly ? "0" : null, a: null }))}
               >
                 {unreadOnly ? <EyeOff /> : <Eye />}
               </Button>
             )}
             {scope.kind !== "saved" && (
-              <Button variant="ghost" size="icon-sm" title="Marcar tudo como lido (Shift+A)" aria-label="Marcar tudo como lido" disabled={pending} onClick={doMarkAll}>
+              <Button variant="ghost" size="icon-sm" title={t("markAllReadShortcut")} aria-label={t("markAllRead")} disabled={pending} onClick={doMarkAll}>
                 <CheckCheck />
               </Button>
             )}
@@ -429,16 +426,16 @@ export function ArticleWorkspace({
             className="relative"
           >
             <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar (/)" className="h-8 pl-8" />
+            <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="h-8 pl-8" />
           </form>
           {scope.kind === "today" && aiEnabled && (
             <p className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">
-              <Sparkles className="size-3 text-ai" /> Ordenado pela prioridade da IA quando disponível.
+              <Sparkles className="size-3 text-ai" /> {t("aiOrdered")}
             </p>
           )}
           {feedError && (
             <p role="status" className="flex items-center gap-1.5 text-[0.6875rem] text-warning">
-              <TriangleAlert className="size-3" /> Último erro: {feedError}
+              <TriangleAlert className="size-3" /> {t("lastError", { error: feedError })}
             </p>
           )}
           {operationError && (
@@ -468,7 +465,7 @@ export function ArticleWorkspace({
               {hasMore && (
                 <div className="p-4">
                   <Button className="w-full" onClick={loadMore} disabled={loadingMore}>
-                    {loadingMore ? <Loader2 className="animate-spin" /> : "Carregar mais"}
+                    {loadingMore ? <Loader2 className="animate-spin" /> : t("loadMore")}
                   </Button>
                 </div>
               )}
@@ -478,7 +475,7 @@ export function ArticleWorkspace({
         {selected && (
           <ResizeHandle
             className="hidden xl:block"
-            label="Redimensionar lista de artigos"
+            label={t("resizeList")}
             dragging={listSize.dragging}
             {...listSize.handleProps}
           />

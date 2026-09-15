@@ -1,9 +1,13 @@
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { ThreadList } from "./thread-list";
 import { MobileThreadList } from "./mobile-thread-list";
 
-export const metadata = { title: "Chat" };
+export async function generateMetadata() {
+  const t = await getTranslations("metadata");
+  return { title: t("chat") };
+}
 
 export default async function ChatLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();

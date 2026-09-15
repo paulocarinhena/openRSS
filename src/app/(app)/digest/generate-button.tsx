@@ -4,10 +4,12 @@ import { Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { generateDigestAction } from "@/app/actions/ai";
 import { Button } from "@/components/ui/button";
 
 export function GenerateDigestButton({ disabled }: { disabled?: boolean }) {
+  const t = useTranslations("digest");
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
@@ -18,7 +20,7 @@ export function GenerateDigestButton({ disabled }: { disabled?: boolean }) {
         start(async () => {
           const res = await generateDigestAction();
           if (res.ok) {
-            toast.success("Digest gerado");
+            toast.success(t("generated"));
             router.push("/digest");
             router.refresh();
           } else toast.error(res.error);
@@ -26,7 +28,7 @@ export function GenerateDigestButton({ disabled }: { disabled?: boolean }) {
       }
     >
       {pending ? <Loader2 className="animate-spin" /> : <Sparkles />}
-      {pending ? "Gerando…" : "Gerar agora"}
+      {pending ? t("generating") : t("generateNow")}
     </Button>
   );
 }

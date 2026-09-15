@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Dialog } from "radix-ui";
 import type { SidebarData } from "@/lib/queries";
 import { signOut } from "@/lib/auth-client";
@@ -58,6 +59,7 @@ const UNFILED_ZONE = "unfiled";
 const folderZoneId = (folderId: string) => `folder:${folderId}`;
 
 export function AppShell({ sidebar, user, children }: { sidebar: SidebarData; user: User; children: React.ReactNode }) {
+  const t = useTranslations("shell");
   const pathname = usePathname();
   // O menu mobile fica aberto só na rota em que foi aberto: navegar o fecha sem precisar de efeito.
   const [openOn, setOpenOn] = useState<string | null>(null);
@@ -72,22 +74,22 @@ export function AppShell({ sidebar, user, children }: { sidebar: SidebarData; us
         className="relative hidden w-(--sidebar-w) shrink-0 border-r border-border bg-sidebar lg:flex"
       >
         <SidebarContent sidebar={sidebar} user={user} />
-        <ResizeHandle label="Redimensionar barra lateral" dragging={sidebarSize.dragging} {...sidebarSize.handleProps} />
+        <ResizeHandle label={t("resizeSidebar")} dragging={sidebarSize.dragging} {...sidebarSize.handleProps} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-12 items-center gap-2 border-b border-border px-3 lg:hidden">
           <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
             <Dialog.Trigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Abrir menu">
+              <Button variant="ghost" size="icon-sm" aria-label={t("openMenu")}>
                 <Menu />
               </Button>
             </Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
               <Dialog.Content className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] border-r border-border bg-sidebar shadow-card outline-none lg:hidden">
-                <Dialog.Title className="sr-only">Menu principal</Dialog.Title>
-                <Dialog.Description className="sr-only">Navegação, feeds e opções da conta.</Dialog.Description>
+                <Dialog.Title className="sr-only">{t("mainMenu")}</Dialog.Title>
+                <Dialog.Description className="sr-only">{t("mainMenuDescription")}</Dialog.Description>
                 <SidebarContent sidebar={sidebar} user={user} onClose={() => setMobileOpen(false)} />
               </Dialog.Content>
             </Dialog.Portal>
@@ -117,6 +119,7 @@ function moveSubscription(data: SidebarData, { subscriptionId, folderId }: Move)
 }
 
 function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user: User; onClose?: () => void }) {
+  const t = useTranslations("shell");
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -134,7 +137,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
   );
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
-  const folderName = (id: string | null) => (id ? (data.folders.find((f) => f.id === id)?.name ?? "pasta") : "Sem pasta");
+  const folderName = (id: string | null) => (id ? (data.folders.find((f) => f.id === id)?.name ?? t("folderFallback")) : t("unfiled"));
 
   function clearExpandTimer() {
     if (expandTimer.current) clearTimeout(expandTimer.current);
@@ -174,8 +177,8 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
     startMove(async () => {
       applyMove({ subscriptionId: sub.id, folderId });
       const res = await updateSubscriptionAction(sub.id, { folderId });
-      if (res.ok) toast.success(`“${sub.title}” movido para ${folderName(folderId)}`);
-      else toast.error(res.error || "Não foi possível mover o feed.");
+      if (res.ok) toast.success(t("feedMoved", { feed: sub.title, folder: folderName(folderId) }));
+      else toast.error(res.error || t("moveFeedFailed"));
     });
   }
 
@@ -190,7 +193,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
         <div className="flex items-center">
           <ThemeToggle />
           {onClose && (
-            <Button variant="ghost" size="icon-sm" aria-label="Fechar menu" onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" aria-label={t("closeMenu")} onClick={onClose}>
               <X />
             </Button>
           )}
@@ -202,27 +205,27 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
           folders={data.folders}
           trigger={
             <Button variant="primary" className="w-full">
-              <Plus /> Adicionar feed
+              <Plus /> {t("addFeed")}
             </Button>
           }
         />
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        <NavRow href="/" icon={<Sparkles className="size-4" />} label="Hoje" active={isActive("/")} />
-        <NavRow href="/all" icon={<Inbox className="size-4" />} label="Todos" count={data.totalUnread} active={isActive("/all")} />
-        <NavRow href="/saved" icon={<Bookmark className="size-4" />} label="Salvos" count={data.savedCount} muted active={isActive("/saved")} />
-        <NavRow href="/digest" icon={<Newspaper className="size-4" />} label="Digest" active={isActive("/digest")} />
-        <NavRow href="/chat" icon={<MessageSquare className="size-4" />} label="Chat" active={isActive("/chat")} />
+        <NavRow href="/" icon={<Sparkles className="size-4" />} label={t("nav.today")} active={isActive("/")} />
+        <NavRow href="/all" icon={<Inbox className="size-4" />} label={t("nav.all")} count={data.totalUnread} active={isActive("/all")} />
+        <NavRow href="/saved" icon={<Bookmark className="size-4" />} label={t("nav.saved")} count={data.savedCount} muted active={isActive("/saved")} />
+        <NavRow href="/digest" icon={<Newspaper className="size-4" />} label={t("nav.digest")} active={isActive("/digest")} />
+        <NavRow href="/chat" icon={<MessageSquare className="size-4" />} label={t("nav.chat")} active={isActive("/chat")} />
 
         <div className="mt-5 mb-1 flex items-center justify-between pr-1 pl-2">
-          <p className="eyebrow">Feeds</p>
+          <p className="eyebrow">{t("feeds")}</p>
           <Button
             variant="ghost"
             size="icon-sm"
             className={cn("size-6", creatingFolder && "bg-sidebar-active text-foreground")}
-            title="Nova pasta"
-            aria-label="Nova pasta"
+            title={t("newFolder")}
+            aria-label={t("newFolder")}
             aria-expanded={creatingFolder}
             onClick={() => setCreatingFolder((v) => !v)}
           >
@@ -238,12 +241,12 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
           onDragEnd={onDragEnd}
           onDragCancel={resetDrag}
           accessibility={{
-            screenReaderInstructions: { draggable: "Para mover o feed, pressione e arraste até uma pasta." },
+            screenReaderInstructions: { draggable: t("dnd.instructions") },
             announcements: {
-              onDragStart: () => "Arrastando feed.",
-              onDragOver: ({ over }) => (over ? "Sobre uma pasta." : "Fora de uma pasta."),
-              onDragEnd: ({ over }) => (over ? "Feed solto na pasta." : "Movimento cancelado."),
-              onDragCancel: () => "Movimento cancelado.",
+              onDragStart: () => t("dnd.start"),
+              onDragOver: ({ over }) => (over ? t("dnd.overFolder") : t("dnd.outsideFolder")),
+              onDragEnd: ({ over }) => (over ? t("dnd.dropped") : t("dnd.cancelled")),
+              onDragCancel: () => t("dnd.cancelled"),
             },
           }}
         >
@@ -264,7 +267,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
                     <button
                       type="button"
                       aria-expanded={open}
-                      aria-label={open ? `Recolher ${folder.name}` : `Expandir ${folder.name}`}
+                      aria-label={open ? t("collapseFolder", { name: folder.name }) : t("expandFolder", { name: folder.name })}
                       onClick={() => setCollapsed((c) => ({ ...c, [folder.id]: open }))}
                       className="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-l-md text-muted-foreground hover:text-foreground"
                     >
@@ -285,7 +288,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
                   {open && (
                     <div className="mt-0.5 mb-1 ml-3 border-l border-border pl-2">
                       {folder.subscriptions.length === 0 ? (
-                        <p className="px-2 py-1 text-[0.6875rem] text-muted-foreground">Pasta vazia</p>
+                        <p className="px-2 py-1 text-[0.6875rem] text-muted-foreground">{t("emptyFolder")}</p>
                       ) : (
                         folder.subscriptions.map((s) => (
                           <DraggableFeedRow key={s.id} sub={s} nested active={isActive(`/feed/${s.feedId}`)} suppressClick={suppressClick} />
@@ -300,12 +303,12 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
 
           <DropZone id={UNFILED_ZONE} disabled={!draggingFromFolder} className="mt-1 flex flex-col">
             {(data.unfiled.length > 0 && data.folders.length > 0) || draggingFromFolder ? (
-              <p className="eyebrow mt-3 mb-1 px-2">Sem pasta</p>
+              <p className="eyebrow mt-3 mb-1 px-2">{t("unfiled")}</p>
             ) : null}
             {draggingFromFolder && (
               <div className="mx-1 mb-1 flex animate-[ai-fade-in_180ms_ease-out] items-center gap-2 rounded-md border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
                 <FolderOutput className="size-3.5 shrink-0" />
-                Solte aqui para tirar da pasta
+                {t("dropToUnfile")}
               </div>
             )}
             {data.unfiled.map((s) => (
@@ -324,7 +327,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
         </DndContext>
 
         {data.folders.length === 0 && data.unfiled.length === 0 && (
-          <p className="px-2 py-2 text-xs text-muted-foreground">Nenhum feed ainda.</p>
+          <p className="px-2 py-2 text-xs text-muted-foreground">{t("noFeeds")}</p>
         )}
       </nav>
 
@@ -333,7 +336,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
           <p className="truncate text-xs font-medium">{user.name}</p>
           <p className="truncate text-[0.6875rem] text-muted-foreground">{user.email}</p>
         </div>
-        <Button asChild variant="ghost" size="icon-sm" aria-label="Configurações" title="Configurações">
+        <Button asChild variant="ghost" size="icon-sm" aria-label={t("settings")} title={t("settings")}>
           <Link href="/settings">
             <Settings />
           </Link>
@@ -341,8 +344,8 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Sair"
-          title="Sair"
+          aria-label={t("signOut")}
+          title={t("signOut")}
           onClick={async () => {
             await signOut();
             router.replace("/login");
@@ -358,6 +361,7 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
 
 /** Campo inline para criar uma pasta (Enter cria, Esc cancela). */
 function NewFolderInput({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("shell");
   const router = useRouter();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -372,7 +376,7 @@ function NewFolderInput({ onClose }: { onClose: () => void }) {
         setError(res.error);
         return;
       }
-      toast.success(`Pasta “${value}” criada`);
+      toast.success(t("folderCreated", { name: value }));
       onClose();
       router.refresh();
     });
@@ -398,8 +402,8 @@ function NewFolderInput({ onClose }: { onClose: () => void }) {
           value={name}
           maxLength={60}
           disabled={pending}
-          placeholder="Nome da pasta"
-          aria-label="Nome da nova pasta"
+          placeholder={t("folderNamePlaceholder")}
+          aria-label={t("newFolderName")}
           aria-invalid={Boolean(error)}
           onChange={(e) => {
             setName(e.target.value);
@@ -422,8 +426,8 @@ function NewFolderInput({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={!name.trim()}
-            title="Criar pasta"
-            aria-label="Criar pasta"
+            title={t("createFolder")}
+            aria-label={t("createFolder")}
             className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-40"
           >
             <Check className="size-3.5" />
@@ -433,7 +437,7 @@ function NewFolderInput({ onClose }: { onClose: () => void }) {
       {error ? (
         <p role="alert" aria-live="assertive" className="mt-1 px-1 text-[0.6875rem] text-destructive">{error}</p>
       ) : (
-        <p className="mt-1 px-1 text-[0.625rem] text-muted-foreground">Enter para criar · Esc para cancelar</p>
+        <p className="mt-1 px-1 text-[0.625rem] text-muted-foreground">{t("folderInputHint")}</p>
       )}
     </form>
   );
@@ -527,11 +531,12 @@ function NavRow({
 }
 
 function FeedRow({ sub, active, nested }: { sub: SidebarSub; active: boolean; nested?: boolean }) {
+  const t = useTranslations("shell");
   return (
     <NavRow
       className={cn(nested && "h-7 text-[0.8125rem]")}
       href={`/feed/${sub.feedId}`}
-      icon={sub.hasError ? <TriangleAlert className="size-4 text-warning" aria-label={sub.lastError ?? "Erro no feed"} /> : <FeedIcon src={sub.iconUrl} />}
+      icon={sub.hasError ? <TriangleAlert className="size-4 text-warning" aria-label={sub.lastError ?? t("feedError")} /> : <FeedIcon src={sub.iconUrl} />}
       label={sub.title}
       count={sub.unread}
       active={active}

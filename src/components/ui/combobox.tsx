@@ -3,6 +3,7 @@
 import { Popover } from "radix-ui";
 import { Check, ChevronsUpDown, Loader2, Plus, Search } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type ComboboxOption = {
@@ -23,13 +24,13 @@ export function Combobox({
   value,
   onValueChange,
   options,
-  placeholder = "Selecione…",
-  searchPlaceholder = "Buscar…",
-  emptyText = "Nenhum resultado.",
+  placeholder: placeholderProp,
+  searchPlaceholder: searchPlaceholderProp,
+  emptyText: emptyTextProp,
   searchable,
   allowCustom,
   loading,
-  loadingText = "Carregando…",
+  loadingText: loadingTextProp,
   onOpenChange: onOpenChangeProp,
   disabled,
   size = "md",
@@ -56,6 +57,11 @@ export function Combobox({
   id?: string;
   "aria-label"?: string;
 }) {
+  const t = useTranslations("ui.combobox");
+  const placeholder = placeholderProp ?? t("placeholder");
+  const searchPlaceholder = searchPlaceholderProp ?? t("searchPlaceholder");
+  const emptyText = emptyTextProp ?? t("empty");
+  const loadingText = loadingTextProp ?? t("loading");
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -74,10 +80,10 @@ export function Combobox({
     const renderedFiltered = list.length;
     const typed = query.trim();
     if (allowCustom && typed && !options.some((o) => o.value === typed)) {
-      list.push({ value: typed, label: `Usar “${typed}”`, icon: <Plus /> });
+      list.push({ value: typed, label: t("useCustom", { value: typed }), icon: <Plus /> });
     }
     return { list, hidden: Math.max(0, filtered.length - renderedFiltered) };
-  }, [allowCustom, options, query, value]);
+  }, [allowCustom, options, query, t, value]);
   const filtered = items.list;
 
   function onOpenChange(next: boolean) {
@@ -259,7 +265,7 @@ export function Combobox({
             })}
             {items.hidden > 0 && (
               <li className="px-3 py-2 text-center text-[0.6875rem] text-muted-foreground">
-                +{items.hidden} itens — refine a busca
+                {t("hidden", { count: items.hidden })}
               </li>
             )}
           </ul>
