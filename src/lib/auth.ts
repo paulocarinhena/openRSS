@@ -3,14 +3,16 @@ import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
-import { db, dbProvider } from "@/lib/db";
+import { db, getDbProvider } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { readAppSecret } from "@/lib/env";
+import { lazyObject } from "@/lib/lazy";
 
-export const auth = betterAuth({
+// Lazy: o provider só é conhecido depois do assistente de instalação.
+export const auth = lazyObject(() => betterAuth({
   secret: readAppSecret(),
   baseURL: process.env.BETTER_AUTH_URL,
-  database: prismaAdapter(db, { provider: dbProvider }),
+  database: prismaAdapter(db, { provider: getDbProvider() }),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
@@ -68,6 +70,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [nextCookies()],
-});
+}));
 
 export type AuthSession = typeof auth.$Infer.Session;

@@ -23,11 +23,12 @@ RUN npm run build && npm prune --omit=dev --no-audit --no-fund
 
 # ── Runtime ──
 FROM base AS runner
+# O banco é escolhido no assistente de primeira execução e gravado em /data/config.json.
+# Defina DATABASE_URL para pular o assistente (ex.: docker-compose.postgres.yml).
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
-    DATABASE_PROVIDER=sqlite \
-    DATABASE_URL=file:/data/openrss.db
+    OPENRSS_DATA_DIR=/data
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /data && chown node:node /data
@@ -37,7 +38,6 @@ COPY --from=builder --chown=node:node /app/src/lib/env.ts ./src/lib/env.ts
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 COPY --from=builder --chown=node:node /app/.next ./.next
-COPY --chown=node:node docker-entrypoint.sh ./
 
 USER node
 VOLUME ["/data"]
@@ -45,4 +45,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
   CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
+# Migrations são aplicadas pelo próprio app na inicialização (src/instrumentation-node.ts).
+CMD ["node", "node_modules/next/dist/bin/next", "start"]

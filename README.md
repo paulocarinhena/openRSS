@@ -2,7 +2,7 @@
 
 Leitor RSS self-hosted, simples e rápido, inspirado no Feedly — com IA integrada (OpenAI, Anthropic, OpenRouter ou qualquer API OpenAI-compatible, inclusive modelos locais).
 
-Feito para instâncias pequenas (até ~5 usuários simultâneos) rodando em **um único container com SQLite**. Precisa de mais? Troque para **PostgreSQL** com uma variável de ambiente.
+Feito para instâncias pequenas (até ~5 usuários simultâneos) rodando em **um único container com SQLite**. Precisa de mais? Escolha **PostgreSQL** no assistente de instalação.
 
 ## Recursos
 
@@ -23,19 +23,22 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 
 
 ## Rodando com Docker
 
-### SQLite (padrão)
-
 ```bash
-export APP_SECRET=$(openssl rand -base64 32)
 docker compose up -d --build
 ```
 
-Acesse http://localhost:3000 e crie a conta de administrador. Os dados ficam no volume `openrss-data` (`/data/openrss.db`).
+Acesse http://localhost:3000. Na primeira visita, o **assistente de instalação** pergunta qual banco usar:
 
-### PostgreSQL
+- **SQLite** — nada a configurar; o arquivo fica em `/data/openrss.db`.
+- **PostgreSQL** — informe host, porta, usuário, senha e nome do banco. O openRSS testa a conexão e, se o banco ainda não existir, oferece criá-lo (o usuário precisa da permissão `CREATEDB`).
+
+Em seguida crie a conta de administrador. Tudo que o assistente gera (`config.json` com o banco escolhido e o `APP_SECRET`, além do SQLite) fica no volume `openrss-data`, montado em `/data`, e sobrevive a atualizações da imagem.
+
+### PostgreSQL embutido
+
+Para subir um Postgres junto com o app (o assistente é pulado, pois `DATABASE_URL` já vem definida):
 
 ```bash
-export APP_SECRET=$(openssl rand -base64 32)
 export POSTGRES_PASSWORD=$(openssl rand -hex 32)
 docker compose -f docker-compose.postgres.yml up -d --build
 ```
@@ -44,12 +47,15 @@ docker compose -f docker-compose.postgres.yml up -d --build
 
 ### Variáveis de ambiente
 
+Todas são opcionais. Variáveis definidas no ambiente têm precedência sobre `config.json`.
+
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `APP_SECRET` | — | **Obrigatória.** Mínimo de 16 caracteres; placeholders são rejeitados. Protege sessões e criptografa chaves de IA. Não troque depois de cadastrar chaves. |
+| `OPENRSS_DATA_DIR` | `/data` (Docker) · `./data` (dev) | Pasta com `config.json` e o banco SQLite. |
+| `APP_SECRET` | gerado no primeiro boot | Mínimo de 16 caracteres; placeholders são rejeitados. Protege sessões e criptografa chaves de IA. Salvo em `config.json` quando gerado. Não troque depois de cadastrar chaves. |
 | `BETTER_AUTH_URL` | `http://localhost:3000` | URL pública do app. |
-| `DATABASE_PROVIDER` | `sqlite` | `sqlite` ou `postgresql`. |
-| `DATABASE_URL` | `file:/data/openrss.db` | Caminho do SQLite ou URL do Postgres. |
+| `DATABASE_URL` | — | Defina para pular o assistente: `file:...` (SQLite) ou `postgresql://...`. O provider é inferido pela URL. |
+| `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql`; só necessário se a URL for ambígua. |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge na rede local). |
 | `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno. |
 
@@ -58,18 +64,20 @@ docker compose -f docker-compose.postgres.yml up -d --build
 Requer Node.js 22.12+ e npm 10+.
 
 ```bash
-cp .env.example .env          # gere e ajuste APP_SECRET
+cp .env.example .env
 npm ci                        # instalação reproduzível; gera os clients Prisma
-npm run db:deploy             # aplica migrations (SQLite em ./data)
 npm run dev
 ```
+
+Sem `DATABASE_URL` no `.env`, o app abre o assistente de instalação em `/setup`, como no Docker; as migrations são aplicadas pelo próprio app na inicialização. Para pular o assistente, defina `DATABASE_URL=file:./data/openrss.db` no `.env`.
 
 Scripts úteis:
 
 | Script | O que faz |
 |---|---|
 | `npm run db:generate` | Regenera `prisma/sqlite` e `prisma/postgres` a partir de `prisma/schema.base.prisma` e os dois clients. |
-| `npm run db:migrate -- --name <nome>` | Cria migration para o provider do `.env` (rode com cada provider). |
+| `npm run db:migrate -- --name <nome>` | Cria migration para o provider do `.env`/`config.json` (rode com cada provider). |
+| `npm run db:deploy` | Aplica migrations manualmente (o app já faz isso ao iniciar). |
 | `npm run typecheck` / `npm run lint` / `npm test` | Checagens. |
 
 O CI executa `npm ci`, geração e verificação dos schemas, lint, typecheck, testes e build. Antes de abrir um PR, reproduza localmente com:
@@ -79,15 +87,16 @@ npm run db:generate
 npm run lint
 npm run typecheck
 npm test
-APP_SECRET=$(openssl rand -base64 32) DISABLE_SCHEDULER=true npm run build
+DISABLE_SCHEDULER=true npm run build
 ```
 
 ## Operação
 
 - Verifique a saúde em `GET /api/health` ou com `docker compose ps`.
 - Consulte logs com `docker compose logs -f openrss`.
-- Atualize gerando backup do volume/banco, baixando a revisão desejada e executando `docker compose up -d --build`. As migrations são aplicadas automaticamente antes do servidor iniciar.
-- Faça backup do volume `openrss-data` no SQLite ou use as ferramentas de backup do PostgreSQL. Teste periodicamente a restauração.
+- Atualize gerando backup do volume/banco, baixando a revisão desejada e executando `docker compose up -d --build`. As migrations são aplicadas automaticamente pelo app ao iniciar.
+- Faça backup do volume `openrss-data` (contém `config.json` com o `APP_SECRET` e, no SQLite, o banco) e, no PostgreSQL, use as ferramentas de backup do próprio banco. Teste periodicamente a restauração.
+- Para refazer o assistente de instalação, remova a chave `database` de `/data/config.json` (mantenha `appSecret`) e reinicie o container.
 - Imagens publicadas no GHCR recebem uma tag imutável `sha-<commit completo>`, além da tag Git e de `latest` na branch padrão. Em produção, prefira a tag `sha-*` para rollback e implantação reproduzível.
 - Para usar uma tag local específica no Compose, defina `OPENRSS_IMAGE_TAG`; o padrão de builds locais é `local`, não `latest`.
 - Nunca versiona `.env`. Apenas `.env.example`, sem segredos reais, é mantido no repositório.
@@ -102,7 +111,7 @@ O Prisma não aceita provider dinâmico, então:
   npm run db:migrate -- --name minha_mudanca                                   # SQLite
   DATABASE_PROVIDER=postgresql DATABASE_URL=postgresql://... npm run db:migrate -- --name minha_mudanca
   ```
-- São gerados dois clients (`src/generated/prisma` e `src/generated/prisma-postgres`); `src/lib/db.ts` escolhe em runtime conforme `DATABASE_PROVIDER`.
+- São gerados dois clients (`src/generated/prisma` e `src/generated/prisma-postgres`); `src/lib/db.ts` escolhe em runtime conforme `src/lib/env.ts` (ambiente > `config.json`).
 - Mantenha os modelos portáveis: sem `@db.*` e sem arrays escalares.
 
 ### Migrando de SQLite para PostgreSQL

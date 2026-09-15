@@ -1,5 +1,6 @@
-# openRSS com SQLite (padrão) — um único container, dados no volume "openrss-data".
-#   APP_SECRET=$(openssl rand -base64 32) docker compose up -d --build
+# openRSS — um único container. Na primeira visita, o assistente pergunta qual banco usar
+# (SQLite ou PostgreSQL). Config, segredo e o banco SQLite ficam no volume "openrss-data".
+#   docker compose up -d --build
 services:
   openrss:
     build: .
@@ -8,10 +9,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      APP_SECRET: ${APP_SECRET:?defina APP_SECRET}
+      # Opcional: se vazio, é gerado no primeiro boot e salvo em /data/config.json.
+      APP_SECRET: ${APP_SECRET:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      DATABASE_PROVIDER: sqlite
-      DATABASE_URL: file:/data/openrss.db
+      # Opcional: defina para pular o assistente (ex.: postgresql://user:pass@host:5432/openrss).
+      DATABASE_URL: ${DATABASE_URL:-}
       ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
       DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
     volumes:

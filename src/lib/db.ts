@@ -1,10 +1,17 @@
 import "server-only";
 import { PrismaClient } from "@/generated/prisma/client";
-import { readDatabaseProvider, readDatabaseUrl } from "@/lib/env";
+import { readDatabaseProvider, readDatabaseUrl, type DatabaseProvider } from "@/lib/env";
+import { lazyObject } from "@/lib/lazy";
 
-export const dbProvider = readDatabaseProvider();
+let provider: DatabaseProvider | undefined;
+
+/** Provider em uso. Lança SetupRequiredError enquanto o assistente não concluir. */
+export function getDbProvider() {
+  return (provider ??= readDatabaseProvider());
+}
 
 function createClient() {
+  const dbProvider = getDbProvider();
   const url = readDatabaseUrl(dbProvider);
 
   if (dbProvider === "postgresql") {
@@ -25,19 +32,23 @@ function createClient() {
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const db = globalForPrisma.prisma ?? createClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+// Instanciado na primeira consulta: em modo setup os módulos carregam sem tocar no banco.
+export const db = lazyObject<PrismaClient>(() => {
+  const client = globalForPrisma.prisma ?? createClient();
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  return client;
+});
 
 /** Filtro `contains` case-insensitive portável (SQLite já é insensível para ASCII). */
 export function icontains(value: string) {
-  return dbProvider === "postgresql"
+  return getDbProvider() === "postgresql"
     ? { contains: value, mode: "insensitive" as const }
     : { contains: value };
 }
 
 /** Ajustes de SQLite para concorrência com poucos usuários. */
 export async function tuneDatabase() {
-  if (dbProvider !== "sqlite") return;
+  if (getDbProvider() !== "sqlite") return;
   await db.$queryRawUnsafe("PRAGMA journal_mode = WAL;");
   await db.$queryRawUnsafe("PRAGMA synchronous = NORMAL;");
 }

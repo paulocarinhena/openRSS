@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, getDbProvider } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { requireAdmin } from "@/lib/session";
 import { AdminPanel } from "./admin-panel";
@@ -19,7 +19,7 @@ export default async function AdminPage() {
       currentUserId={admin.id}
       settings={{ allowRegistration: settings.allowRegistration, refreshIntervalMinutes: settings.refreshIntervalMinutes, retentionDays: settings.retentionDays }}
       users={users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, subscriptions: u._count.subscriptions }))}
-      stats={{ feeds: stats[0], articles: stats[1], failingFeeds: stats[2], database: process.env.DATABASE_PROVIDER === "postgresql" ? "PostgreSQL" : "SQLite" }}
+      stats={{ feeds: stats[0], articles: stats[1], failingFeeds: stats[2], database: getDbProvider() === "postgresql" ? "PostgreSQL" : "SQLite" }}
     />
   );
 }

@@ -1,5 +1,6 @@
-# openRSS com PostgreSQL — para instâncias com mais usuários.
-#   APP_SECRET=$(openssl rand -base64 32) POSTGRES_PASSWORD=$(openssl rand -hex 32) docker compose -f docker-compose.postgres.yml up -d --build
+# openRSS com PostgreSQL embutido — para instâncias com mais usuários.
+# DATABASE_URL já vem definida, então o assistente de instalação é pulado.
+#   POSTGRES_PASSWORD=$(openssl rand -hex 32) docker compose -f docker-compose.postgres.yml up -d --build
 services:
   postgres:
     image: postgres:17.6-alpine
@@ -26,12 +27,17 @@ services:
     ports:
       - "3000:3000"
     environment:
-      APP_SECRET: ${APP_SECRET:?defina APP_SECRET}
+      # Opcional: se vazio, é gerado no primeiro boot e salvo em /data/config.json.
+      APP_SECRET: ${APP_SECRET:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://openrss:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@postgres:5432/openrss
       ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
       DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
+    volumes:
+      # Guarda o APP_SECRET gerado (config.json) entre atualizações.
+      - openrss-data:/data
 
 volumes:
   openrss-pg:
+  openrss-data:
