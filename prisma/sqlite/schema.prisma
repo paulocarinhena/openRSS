@@ -247,7 +247,8 @@ model Digest {
   model      String?
   createdAt  DateTime @default(now())
 
-  @@unique([userId, day])
+  @@index([userId, day])
+  @@index([userId, createdAt])
   @@map("digest")
 }
 

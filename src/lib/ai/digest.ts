@@ -49,11 +49,7 @@ async function generateDigestUnlocked(userId: string, now: Date) {
   if (articles.length === 0) {
     // Texto persistido no idioma da interface vigente na geração.
     const empty = staticTranslator(settings.uiLanguage, "digest")("empty");
-    return db.digest.upsert({
-      where: { userId_day: { userId, day } },
-      create: { userId, day, content: empty, articleIds: "[]" },
-      update: { content: empty, articleIds: "[]" },
-    });
+    return db.digest.create({ data: { userId, day, content: empty, articleIds: "[]", createdAt: now } });
   }
 
   const selected = articles
@@ -75,27 +71,22 @@ ${languageInstruction(settings.language)}`,
     maxOutputTokens: 2500,
   });
 
-  const data = { content: text, articleIds: JSON.stringify(selected.map((a) => a.id)), model: modelId, createdAt: now };
-  return db.digest.upsert({
-    where: { userId_day: { userId, day } },
-    create: { userId, day, ...data },
-    update: data,
-  });
+  const data = { userId, day, content: text, articleIds: JSON.stringify(selected.map((a) => a.id)), model: modelId, createdAt: now };
+  return db.digest.create({ data });
 }
 
 export async function generateDigest(userId: string, now = new Date()) {
-  const day = dayInTimezone(now, (await db.userSettings.upsert({ where: { userId }, create: { userId }, update: {} })).timezone);
-  const result = await withLock(`digest:${userId}:${day}`, 5 * 60_000, () => generateDigestUnlocked(userId, now));
+  const result = await withLock(`digest:${userId}`, 5 * 60_000, () => generateDigestUnlocked(userId, now));
   if (!result) throw new AiError("digestInProgress");
   return result;
 }
 
-/** Chamado de hora em hora: gera digests agendados que ainda não existem hoje. */
+/** Chamado de hora em hora: gera o digest do dia, pulando quem já tem um (manual ou automático) hoje. */
 export async function runScheduledDigests(now = new Date()) {
   const users = await db.userSettings.findMany({ where: { digestEnabled: true } });
   for (const s of users) {
     if (!digestTimeReached(now, s.timezone, s.digestHour)) continue;
-    const exists = await db.digest.findUnique({ where: { userId_day: { userId: s.userId, day: dayInTimezone(now, s.timezone) } } });
+    const exists = await db.digest.findFirst({ where: { userId: s.userId, day: dayInTimezone(now, s.timezone) } });
     if (exists) continue;
     try {
       await generateDigest(s.userId, now);

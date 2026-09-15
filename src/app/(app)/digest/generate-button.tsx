@@ -21,7 +21,7 @@ export function GenerateDigestButton({ disabled }: { disabled?: boolean }) {
           const res = await generateDigestAction();
           if (res.ok) {
             toast.success(t("generated"));
-            router.push("/digest");
+            router.push(`/digest?id=${res.id}`);
             router.refresh();
           } else toast.error(res.error);
         })

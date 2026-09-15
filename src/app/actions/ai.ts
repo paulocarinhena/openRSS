@@ -174,13 +174,14 @@ export async function listModelsAction(id: string) {
 
 export async function generateDigestAction() {
   const user = await requireUser();
+  let digest;
   try {
-    await generateDigest(user.id);
+    digest = await generateDigest(user.id);
   } catch (err) {
     return failed(err);
   }
   revalidatePath("/digest");
-  return { ok: true as const };
+  return { ok: true as const, id: digest.id };
 }
 
 /** Classifica os não lidos recentes (botão manual em Configurações). */
