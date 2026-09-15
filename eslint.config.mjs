@@ -15,9 +15,6 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Clients Prisma gerados
     "src/generated/**",
-    // Configs .mjs usam o parser Babel do Next, incompatível com ESLint 10.
-    "eslint.config.mjs",
-    "postcss.config.mjs",
   ]),
 ]);
 

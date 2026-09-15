@@ -9,6 +9,10 @@ updates:
       # typescript-eslint (via eslint-config-next) does not support TypeScript 7 yet.
       - dependency-name: "typescript"
         versions: [">=7"]
+      # eslint-config-next still bundles eslint-plugin-import/jsx-a11y/react
+      # whose peerDependencies cap at eslint@9.
+      - dependency-name: "eslint"
+        versions: [">=10"]
   - package-ecosystem: docker
     directory: /
     schedule:
