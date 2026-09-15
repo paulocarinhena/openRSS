@@ -9,7 +9,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://github.com/paulocarinhena/openRSS/pkgs/container/openrss"><img src="https://img.shields.io/badge/GHCR-ghcr.io%2Fpaulocarinhena%2Fopenrss-2496ED?logo=docker&logoColor=white" alt="GHCR"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22.12-339933?logo=node.js&logoColor=white" alt="Node.js">
-  <img src="https://img.shields.io/badge/docker-compose-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
 </p>
 
 <p align="center">
@@ -26,6 +26,8 @@
 Leitor RSS **self-hosted**, simples e rápido, inspirado no Feedly — com **IA integrada** (OpenAI, Anthropic, OpenRouter ou qualquer API OpenAI-compatible, inclusive modelos locais via Ollama, LM Studio ou vLLM).
 
 Feito para instâncias pequenas (até ~5 usuários simultâneos) em **um único container com SQLite**. Precisa de mais escala? Escolha **PostgreSQL** no assistente de instalação.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
 
 ### Capturas de tela
 
@@ -197,10 +199,6 @@ Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Aut
 
 Para desenvolvedores → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 
-### Apoie o projeto
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
-
 ### Licença
 
 [Apache License 2.0](LICENSE) · [NOTICE](NOTICE)
@@ -212,6 +210,8 @@ Para desenvolvedores → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 A **self-hosted** RSS reader — simple, fast, and inspired by Feedly — with **built-in AI** (OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible API, including local models via Ollama, LM Studio, or vLLM).
 
 Built for small instances (up to ~5 concurrent users) in a **single container with SQLite**. Need more scale? Choose **PostgreSQL** in the setup wizard.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
 
 ### Screenshots
 
@@ -383,10 +383,6 @@ Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Aut
 
 For developers → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 
-### Support the project
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
-
 ### License
 
 [Apache License 2.0](LICENSE) · [NOTICE](NOTICE)
@@ -398,6 +394,8 @@ For developers → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 Lector RSS **self-hosted**, simple y rápido, inspirado en Feedly — con **IA integrada** (OpenAI, Anthropic, OpenRouter o cualquier API compatible con OpenAI, incluidos modelos locales vía Ollama, LM Studio o vLLM).
 
 Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en **un solo contenedor con SQLite**. ¿Necesitas más escala? Elige **PostgreSQL** en el asistente de instalación.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
 
 ### Capturas de pantalla
 
@@ -568,10 +566,6 @@ Todas opcionales. Las variables de entorno tienen **precedencia** sobre `config.
 Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Auth · AI SDK 7
 
 Para desarrolladores → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
-
-### Apoya el proyecto
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
 
 ### Licencia
 
