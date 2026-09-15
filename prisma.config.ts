@@ -1,10 +1,12 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
-import { readDatabaseProvider, readDatabaseUrl } from "./src/lib/env";
+import { readDatabaseUrl, resolveDatabaseConfig } from "./src/lib/env";
 
-const provider = readDatabaseProvider();
+// Prisma generate also runs before the first-run setup creates config.json.
+const database = resolveDatabaseConfig();
+const provider = database?.provider ?? "sqlite";
 const dir = provider === "postgresql" ? "postgres" : "sqlite";
-const url = readDatabaseUrl(provider);
+const url = database?.url ?? readDatabaseUrl(provider);
 
 export default defineConfig({
   schema: `prisma/${dir}/schema.prisma`,
