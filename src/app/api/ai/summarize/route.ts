@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
 import { getUserSettings } from "@/lib/app-settings";
 import { resolveModel } from "@/lib/ai/providers";
-import { articleText, errorMessage, languageName } from "@/lib/ai/content";
+import { articleText, errorMessage, languageInstruction } from "@/lib/ai/content";
 
 const body = z.object({ articleId: z.string(), force: z.boolean().optional() });
 
@@ -48,8 +48,9 @@ export async function POST(request: Request) {
 
   const result = streamText({
     model: resolved.model,
-    instructions: `Você resume artigos para um leitor de RSS. Responda em ${languageName(settings.language)}, em Markdown.
-Formato: uma frase TL;DR em negrito, depois 3 a 6 tópicos curtos com os pontos principais. Se houver números, datas ou nomes relevantes, mantenha-os. Não invente nada que não esteja no texto.`,
+    instructions: `Você resume artigos para um leitor de RSS, em Markdown.
+Formato: uma frase TL;DR em negrito, depois 3 a 6 tópicos curtos com os pontos principais. Se houver números, datas ou nomes relevantes, mantenha-os. Não invente nada que não esteja no texto.
+${languageInstruction(settings.language)}`,
     prompt: articleText(article),
     maxOutputTokens: 800,
     onFinish: async ({ text }) => {

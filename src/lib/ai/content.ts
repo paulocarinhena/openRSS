@@ -16,6 +16,16 @@ export function articleText(
 export const languageName = (code: string) =>
   ({ "pt-BR": "português do Brasil", en: "English", es: "español" })[code] ?? code;
 
+/**
+ * Instrução de idioma reforçada: o modelo tende a "espelhar" o idioma do
+ * artigo-fonte e ignorar uma instrução simples, então repetimos o requisito
+ * e deixamos explícito que o idioma do artigo não deve influenciar a resposta.
+ */
+export const languageInstruction = (code: string) => {
+  const name = languageName(code);
+  return `IMPORTANTE: responda somente em ${name}, do início ao fim, mesmo que o artigo ou os trechos fornecidos estejam em outro idioma. Nunca copie ou troque para o idioma do texto-fonte.`;
+};
+
 /** Mensagem legível para o usuário no idioma da interface (padrão pt-BR para logs). */
 export function errorMessage(err: unknown, locale: string = defaultLocale): string {
   const t = staticTranslator(locale, "ai.errors");

@@ -5,7 +5,7 @@ import { stripHtml, truncate } from "@/lib/utils";
 import { withLock } from "@/lib/jobs/lock";
 import { staticTranslator } from "@/i18n/static";
 import { resolveModel } from "./providers";
-import { errorMessage, languageName } from "./content";
+import { errorMessage, languageInstruction } from "./content";
 import { AiError } from "./errors";
 
 const MAX_ARTICLES = 80;
@@ -63,11 +63,12 @@ async function generateDigestUnlocked(userId: string, now: Date) {
   const { model, modelId } = await resolveModel(userId);
   const { text } = await generateText({
     model,
-    instructions: `Você escreve o digest diário de um leitor de RSS, em ${languageName(settings.language)} e Markdown.
+    instructions: `Você escreve o digest diário de um leitor de RSS, em Markdown.
 - Agrupe os artigos por tema com títulos "## Tema".
 - Em cada tema, escreva 1 a 3 frases sintetizando o que aconteceu e liste os artigos mais relevantes como links no formato [título](/article/ID).
 - Comece com um parágrafo curto "Em resumo" com os 3 fatos mais importantes.
-- Não invente fatos; use apenas os trechos fornecidos. Omita artigos irrelevantes.${settings.interests ? `\nInteresses do usuário (priorize): ${settings.interests}` : ""}`,
+- Não invente fatos; use apenas os trechos fornecidos. Omita artigos irrelevantes.${settings.interests ? `\nInteresses do usuário (priorize): ${settings.interests}` : ""}
+${languageInstruction(settings.language)}`,
     prompt: selected
       .map((a) => `ID: ${a.id}\nFeed: ${a.feed.title}\nTítulo: ${a.title}\nTrecho: ${truncate(a.snippet ?? stripHtml(a.contentHtml ?? ""), 300)}`)
       .join("\n---\n"),
