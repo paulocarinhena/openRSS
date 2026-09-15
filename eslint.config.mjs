@@ -5,6 +5,7 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  { settings: { react: { version: "19.3.0" } } },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -14,6 +15,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Clients Prisma gerados
     "src/generated/**",
+    // Configs .mjs usam o parser Babel do Next, incompatível com ESLint 10.
+    "eslint.config.mjs",
+    "postcss.config.mjs",
   ]),
 ]);
 
