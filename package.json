@@ -54,7 +54,7 @@
     "server-only": "^0.0.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
-    "undici": "^7.29.1",
+    "undici": "^8.10.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {
