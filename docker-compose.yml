@@ -7,11 +7,11 @@ services:
     image: openrss:${OPENRSS_IMAGE_TAG:-local}
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "8285:3000"
     environment:
       # Opcional: se vazio, é gerado no primeiro boot e salvo em /data/config.json.
       APP_SECRET: ${APP_SECRET:-}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8285}
       # Opcional: defina para pular o assistente (ex.: postgresql://user:pass@host:5432/openrss).
       DATABASE_URL: ${DATABASE_URL:-}
       ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
