@@ -124,6 +124,12 @@ Configurações → IA → **Adicionar**:
 
 Use **Testar** para validar a conexão. Admins podem marcar o provedor como **global** para todos os usuários.
 
+## Apoie o projeto
+
+Se o openRSS é útil para você, considere apoiar o desenvolvimento:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
+
 ## Licença
 
 Distribuído sob a [Apache License 2.0](LICENSE). Veja também [NOTICE](NOTICE).
