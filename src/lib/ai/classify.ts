@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { stripHtml, truncate } from "@/lib/utils";
 import { resolveModel } from "./providers";
-import { errorMessage, languageName } from "./content";
+import { errorMessage, languageName, languageInstruction } from "./content";
 
 const BATCH = 20;
 const MAX_PER_RUN = 100;
@@ -47,6 +47,7 @@ export async function classifyForUser(userId: string, articleIds: string[]) {
         model,
         output: Output.object({ schema }),
         instructions: `Você é um filtro de relevância para um leitor de RSS. Dê uma nota de 0 a 100 para cada artigo segundo os interesses do usuário (100 = imperdível, 0 = irrelevante). "reason" deve ter no máximo 12 palavras, em ${languageName(settings.language)}. Retorne todos os ids recebidos.
+${languageInstruction(settings.language)}
 
 Interesses do usuário:
 ${settings.interests}`,

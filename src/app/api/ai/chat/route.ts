@@ -6,7 +6,7 @@ import { db, icontains } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
 import { getUserSettings } from "@/lib/app-settings";
 import { resolveModel } from "@/lib/ai/providers";
-import { articleText, errorMessage, languageName } from "@/lib/ai/content";
+import { articleText, errorMessage, languageInstruction } from "@/lib/ai/content";
 import { parseJsonArray, truncate } from "@/lib/utils";
 import { acquireLock } from "@/lib/jobs/lock";
 
@@ -99,9 +99,10 @@ export async function POST(request: Request) {
   try {
     result = streamText({
       model: resolved.model,
-      instructions: `Você é o assistente de leitura do openRSS. Responda em ${languageName(settings.language)}, em Markdown, de forma direta.
+      instructions: `Você é o assistente de leitura do openRSS. Responda em Markdown, de forma direta.
 Use as ferramentas para buscar e ler artigos dos feeds do usuário quando a pergunta exigir. Cite artigos como links [título](/article/ID). Não invente fatos que não estejam nos artigos; diga quando não encontrar.
-Data atual: ${new Date().toISOString().slice(0, 10)}.${context}`,
+Data atual: ${new Date().toISOString().slice(0, 10)}.
+${languageInstruction(settings.language)}${context}`,
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: isStepCount(6),
