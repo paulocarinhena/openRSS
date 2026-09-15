@@ -1,144 +1,578 @@
 # openRSS
 
-Leitor RSS self-hosted, simples e rápido, inspirado no Feedly — com IA integrada (OpenAI, Anthropic, OpenRouter ou qualquer API OpenAI-compatible, inclusive modelos locais).
+<p align="center">
+  <strong>Leitor RSS self-hosted com IA integrada</strong><br>
+  <em>Self-hosted RSS reader with built-in AI · Lector RSS self-hosted con IA integrada</em>
+</p>
 
-Feito para instâncias pequenas (até ~5 usuários simultâneos) rodando em **um único container com SQLite**. Precisa de mais? Escolha **PostgreSQL** no assistente de instalação.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
+  <a href="https://github.com/paulocarinhena/openRSS/pkgs/container/openrss"><img src="https://img.shields.io/badge/GHCR-ghcr.io%2Fpaulocarinhena%2Fopenrss-2496ED?logo=docker&logoColor=white" alt="GHCR"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D22.12-339933?logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/docker-compose-ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+</p>
 
-## Recursos
+<p align="center">
+  <strong>Idioma / Language / Idioma:</strong>
+  <a href="#português-brasil">Português</a> ·
+  <a href="#english">English</a> ·
+  <a href="#español">Español</a>
+</p>
 
-- **Leitura**: Hoje (priorizado), Todos, Salvos, pastas e feeds; visualizações de cartões, títulos ou revista; modo artigo completo (Readability); busca; atalhos de teclado (`j/k`, `o`, `m`, `s`, `Shift+A`, `/`).
-- **Feeds**: descoberta automática a partir da URL do site, RSS/Atom/RDF, atualização em segundo plano com ETag/Last-Modified e backoff em erros, importação/exportação OPML, retenção configurável.
-- **IA**
-  - **Resumir** artigo (streaming, com cache).
-  - **Digest diário** dos não lidos, agrupado por tema, automático ou sob demanda.
-  - **Chat** com seus feeds — a IA busca e lê artigos via ferramentas.
-  - **Priorização**: nota 0–100 para artigos novos com base nos seus interesses.
-  - Provedores **globais** (admin) e **pessoais** (cada usuário), chaves criptografadas (AES-256-GCM).
-- **Usuários**: email + senha; o primeiro cadastro vira admin; cadastro aberto/fechado; admin cria usuários.
-- **Temas** Light e Dark (ver `docs/design/`).
+---
 
-## Stack
+## Português (Brasil)
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 (SQLite / PostgreSQL via driver adapters) · Better Auth · AI SDK 7.
+Leitor RSS **self-hosted**, simples e rápido, inspirado no Feedly — com **IA integrada** (OpenAI, Anthropic, OpenRouter ou qualquer API OpenAI-compatible, inclusive modelos locais via Ollama, LM Studio ou vLLM).
 
-## Rodando com Docker
+Feito para instâncias pequenas (até ~5 usuários simultâneos) em **um único container com SQLite**. Precisa de mais escala? Escolha **PostgreSQL** no assistente de instalação.
 
-```bash
-docker compose up -d --build
-```
+### Capturas de tela
 
-Acesse http://localhost:3000. Na primeira visita, o **assistente de instalação** pergunta qual banco usar:
+| Leitor de artigos | Chat com IA |
+|:---:|:---:|
+| ![Leitor de artigos com modo artigo completo e resumo por IA](docs/screenshots/reader.png) | ![Chat com IA que busca e lê artigos dos seus feeds](docs/screenshots/chat.png) |
+| Modo leitura com Readability, resumo e navegação entre artigos | Converse com seus feeds — a IA busca e lê artigos por você |
 
-- **SQLite** — nada a configurar; o arquivo fica em `/data/openrss.db`.
-- **PostgreSQL** — informe host, porta, usuário, senha e nome do banco. O openRSS testa a conexão e, se o banco ainda não existir, oferece criá-lo (o usuário precisa da permissão `CREATEDB`).
+### Principais recursos
 
-Em seguida crie a conta de administrador. Tudo que o assistente gera (`config.json` com o banco escolhido e o `APP_SECRET`, além do SQLite) fica no volume `openrss-data`, montado em `/data`, e sobrevive a atualizações da imagem.
+**Leitura**
+- Visão **Hoje** (priorizada por IA), **Todos**, **Salvos**, pastas e feeds individuais
+- Visualizações em cartões, grade ou só títulos
+- Modo **artigo completo** (Readability) e busca instantânea
+- Atalhos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar lido), `s` (salvar), `Shift+A` (marcar todos), `/` (buscar)
 
-### PostgreSQL embutido
+**Feeds**
+- Descoberta automática a partir da URL do site
+- Suporte a RSS, Atom e RDF
+- Atualização em segundo plano com ETag/Last-Modified e backoff em erros
+- Importação e exportação **OPML**
+- Retenção configurável de artigos
 
-Para subir um Postgres junto com o app (o assistente é pulado, pois `DATABASE_URL` já vem definida):
+**Usuários**
+- Autenticação por email e senha (Better Auth)
+- O **primeiro cadastro** vira administrador
+- Cadastro aberto ou fechado; admin pode criar usuários
 
-```bash
-export POSTGRES_PASSWORD=$(openssl rand -hex 32)
-docker compose -f docker-compose.postgres.yml up -d --build
-```
+**Temas**
+- Light e Dark — veja [`docs/design/`](docs/design/)
 
-`POSTGRES_PASSWORD` não possui valor padrão: o Compose interrompe antes de subir os serviços se ela não for definida.
+### Integrações de IA
 
-### Variáveis de ambiente
-
-Todas são opcionais. Variáveis definidas no ambiente têm precedência sobre `config.json`.
-
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `OPENRSS_DATA_DIR` | `/data` (Docker) · `./data` (dev) | Pasta com `config.json` e o banco SQLite. |
-| `APP_SECRET` | gerado no primeiro boot | Mínimo de 16 caracteres; placeholders são rejeitados. Protege sessões e criptografa chaves de IA. Salvo em `config.json` quando gerado. Não troque depois de cadastrar chaves. |
-| `BETTER_AUTH_URL` | `http://localhost:3000` | URL pública do app. |
-| `DATABASE_URL` | — | Defina para pular o assistente: `file:...` (SQLite) ou `postgresql://...`. O provider é inferido pela URL. |
-| `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql`; só necessário se a URL for ambígua. |
-| `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge na rede local). |
-| `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno. |
-
-## Desenvolvimento
-
-Requer Node.js 22.12+ e npm 10+.
-
-```bash
-cp .env.example .env
-npm ci                        # instalação reproduzível; gera os clients Prisma
-npm run dev
-```
-
-Sem `DATABASE_URL` no `.env`, o app abre o assistente de instalação em `/setup`, como no Docker; as migrations são aplicadas pelo próprio app na inicialização. Para pular o assistente, defina `DATABASE_URL=file:./data/openrss.db` no `.env`.
-
-Scripts úteis:
-
-| Script | O que faz |
-|---|---|
-| `npm run db:generate` | Regenera `prisma/sqlite` e `prisma/postgres` a partir de `prisma/schema.base.prisma` e os dois clients. |
-| `npm run db:migrate -- --name <nome>` | Cria migration para o provider do `.env`/`config.json` (rode com cada provider). |
-| `npm run db:deploy` | Aplica migrations manualmente (o app já faz isso ao iniciar). |
-| `npm run typecheck` / `npm run lint` / `npm test` | Checagens. |
-
-O CI executa `npm ci`, geração e verificação dos schemas, lint, typecheck, testes e build. Antes de abrir um PR, reproduza localmente com:
-
-```bash
-npm run db:generate
-npm run lint
-npm run typecheck
-npm test
-DISABLE_SCHEDULER=true npm run build
-```
-
-## Operação
-
-- Verifique a saúde em `GET /api/health` ou com `docker compose ps`.
-- Consulte logs com `docker compose logs -f openrss`.
-- Atualize gerando backup do volume/banco, baixando a revisão desejada e executando `docker compose up -d --build`. As migrations são aplicadas automaticamente pelo app ao iniciar.
-- Faça backup do volume `openrss-data` (contém `config.json` com o `APP_SECRET` e, no SQLite, o banco) e, no PostgreSQL, use as ferramentas de backup do próprio banco. Teste periodicamente a restauração.
-- Para refazer o assistente de instalação, remova a chave `database` de `/data/config.json` (mantenha `appSecret`) e reinicie o container.
-- Imagens publicadas no GHCR recebem uma tag imutável `sha-<commit completo>`, além da tag Git e de `latest` na branch padrão. Em produção, prefira a tag `sha-*` para rollback e implantação reproduzível.
-- Para usar uma tag local específica no Compose, defina `OPENRSS_IMAGE_TAG`; o padrão de builds locais é `local`, não `latest`.
-- Nunca versiona `.env`. Apenas `.env.example`, sem segredos reais, é mantido no repositório.
-
-### Banco dual (SQLite / PostgreSQL)
-
-O Prisma não aceita provider dinâmico, então:
-
-- **Edite só** `prisma/schema.base.prisma`. `npm run db:generate` gera `prisma/sqlite/schema.prisma` e `prisma/postgres/schema.prisma`.
-- Cada provider tem sua pasta de migrations. Ao mudar o schema, crie a migration nos dois:
-  ```bash
-  npm run db:migrate -- --name minha_mudanca                                   # SQLite
-  DATABASE_PROVIDER=postgresql DATABASE_URL=postgresql://... npm run db:migrate -- --name minha_mudanca
-  ```
-- São gerados dois clients (`src/generated/prisma` e `src/generated/prisma-postgres`); `src/lib/db.ts` escolhe em runtime conforme `src/lib/env.ts` (ambiente > `config.json`).
-- Mantenha os modelos portáveis: sem `@db.*` e sem arrays escalares.
-
-### Migrando de SQLite para PostgreSQL
-
-1. Exporte o OPML de cada usuário (Configurações → Feeds → Exportar).
-2. Suba a instância com Postgres e recrie os usuários.
-3. Importe os OPMLs. (Estado de lido/salvo e histórico não são migrados.)
-
-## Configurando IA
-
-Configurações → IA → **Adicionar**:
-
-| Tipo | Base URL | Exemplo de modelo |
+| Provedor | Base URL | Exemplo de modelo |
 |---|---|---|
 | OpenAI | opcional | `gpt-5-mini` |
 | Anthropic | opcional | `claude-sonnet-5` |
 | OpenRouter | opcional | `anthropic/claude-sonnet-5` |
-| OpenAI-compatible | **obrigatória** — ex.: Ollama `http://host.docker.internal:11434/v1`, LM Studio `http://host.docker.internal:1234/v1` | `llama3.2` |
+| OpenAI-compatible | **obrigatória** (Ollama, LM Studio, vLLM…) | `llama3.2` |
 
-Use **Testar** para validar a conexão. Admins podem marcar o provedor como **global** para todos os usuários.
+**O que a IA faz no openRSS:**
 
-## Apoie o projeto
+- **Resumir** artigos em streaming, com cache
+- **Digest diário** dos não lidos, agrupado por tema (automático ou sob demanda)
+- **Chat** com seus feeds — a IA busca e lê artigos via ferramentas
+- **Priorização** de artigos novos (nota 0–100 com base nos seus interesses)
+- Provedores **globais** (admin) e **pessoais** (cada usuário)
+- Chaves de API criptografadas com **AES-256-GCM**
 
-Se o openRSS é útil para você, considere apoiar o desenvolvimento:
+Configure em **Configurações → IA → Adicionar**. Use **Testar** para validar a conexão antes de salvar.
+
+### Instalação
+
+> **Para agentes automatizados:** siga os passos abaixo na ordem. Todos os comandos assumem um terminal com Git, Docker (Compose v2) ou Node.js 22.12+ instalado.
+
+#### Pré-requisitos
+
+- **Docker (recomendado):** Docker 24+ e Docker Compose v2
+- **Desenvolvimento local:** Node.js ≥ 22.12 e npm ≥ 10
+
+#### Método A — Docker + SQLite (recomendado)
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+docker compose up -d --build
+```
+
+Aguarde 30–60 segundos e verifique:
+
+```bash
+curl -sf http://localhost:8285/api/health
+```
+
+Depois:
+
+1. Abra **http://localhost:8285/setup**
+2. Escolha **SQLite** e conclua o assistente
+3. Crie a conta de administrador em **http://localhost:8285/register**
+4. Faça login em **http://localhost:8285/login**
+
+Dados persistem no volume Docker `openrss-data` (`/data/config.json` e `/data/openrss.db`).
+
+#### Método B — Docker + PostgreSQL embutido
+
+Para instâncias com mais usuários. O assistente `/setup` é **pulado** porque `DATABASE_URL` já vem definida.
+
+**Linux / macOS:**
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+export POSTGRES_PASSWORD=$(openssl rand -hex 32)
+docker compose -f docker-compose.postgres.yml up -d --build
+curl -sf http://localhost:8285/api/health
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+$env:POSTGRES_PASSWORD = -join ((48..57 + 65..70) | Get-Random -Count 64 | ForEach-Object { [char]$_ })
+docker compose -f docker-compose.postgres.yml up -d --build
+curl http://localhost:8285/api/health
+```
+
+Depois crie o admin em **http://localhost:8285/register**.
+
+`POSTGRES_PASSWORD` **não possui valor padrão** — o Compose interrompe antes de subir se ela não for definida.
+
+#### Método C — Imagem pré-publicada (GHCR)
+
+O repositório ainda é necessário para os arquivos `docker-compose*.yml`. A imagem publicada fica em:
+
+```
+ghcr.io/paulocarinhena/openrss:latest
+```
+
+Para usar a imagem publicada em vez de build local, substitua `build: .` por `image: ghcr.io/paulocarinhena/openrss:latest` no serviço `openrss` do compose. Em produção, prefira a tag imutável `sha-<commit completo>`.
+
+#### Método D — Desenvolvimento local
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+cp .env.example .env
+npm ci
+npm run dev
+```
+
+- App em **http://localhost:3000** (dev usa porta **3000**; Docker usa **8285**)
+- Sem `DATABASE_URL` no `.env` → assistente em `/setup`
+
+#### Pós-instalação (todos os métodos)
+
+1. Verifique saúde: `GET /api/health`
+2. Faça login em `/login`
+3. Adicione feeds pela URL do site ou importe OPML
+4. Configure IA: **Configurações → IA → Adicionar → Testar**
+5. **Ollama / LM Studio no Docker:** use base URL `http://host.docker.internal:11434/v1` (Ollama) ou `http://host.docker.internal:1234/v1` (LM Studio)
+
+#### Variáveis de ambiente
+
+Todas são opcionais. Variáveis de ambiente têm **precedência** sobre `config.json`.
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `OPENRSS_DATA_DIR` | `/data` (Docker) · `./data` (dev) | Pasta com `config.json` e banco SQLite |
+| `APP_SECRET` | gerado no 1º boot | Mín. 16 caracteres; protege sessões e criptografa chaves de IA |
+| `BETTER_AUTH_URL` | `http://localhost:8285` (Docker) | URL pública do app |
+| `DATABASE_URL` | — | Defina para pular o assistente (`file:...` ou `postgresql://...`) |
+| `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql` |
+| `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge) |
+| `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno |
+
+#### Solução de problemas
+
+| Problema | Ação |
+|---|---|
+| Container não sobe | `docker compose logs -f openrss` |
+| Assistente `/setup` não aparece | `DATABASE_URL` já definida ou banco configurado em `config.json` |
+| Feeds locais (RSS-Bridge) não funcionam | Defina `ALLOW_PRIVATE_FEEDS=true` |
+| IA local no Docker não conecta | Use `host.docker.internal` na base URL |
+
+### Stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Auth · AI SDK 7
+
+Para desenvolvedores → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+
+### Apoie o projeto
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
 
-## Licença
+### Licença
 
-Distribuído sob a [Apache License 2.0](LICENSE). Veja também [NOTICE](NOTICE).
+[Apache License 2.0](LICENSE) · [NOTICE](NOTICE)
+
+---
+
+## English
+
+A **self-hosted** RSS reader — simple, fast, and inspired by Feedly — with **built-in AI** (OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible API, including local models via Ollama, LM Studio, or vLLM).
+
+Built for small instances (up to ~5 concurrent users) in a **single container with SQLite**. Need more scale? Choose **PostgreSQL** in the setup wizard.
+
+### Screenshots
+
+| Article reader | AI chat |
+|:---:|:---:|
+| ![Article reader with full-text mode and AI summary](docs/screenshots/reader.png) | ![AI chat that searches and reads articles from your feeds](docs/screenshots/chat.png) |
+| Readability mode, summaries, and article navigation | Chat with your feeds — AI searches and reads articles for you |
+
+### Key features
+
+**Reading**
+- **Today** view (AI-prioritized), **All**, **Saved**, folders, and individual feeds
+- Card, grid, or title-only layouts
+- **Full article** mode (Readability) and instant search
+- Keyboard shortcuts: `j`/`k` (navigate), `o` (open), `m` (mark read), `s` (save), `Shift+A` (mark all), `/` (search)
+
+**Feeds**
+- Automatic feed discovery from a website URL
+- RSS, Atom, and RDF support
+- Background refresh with ETag/Last-Modified and error backoff
+- **OPML** import and export
+- Configurable article retention
+
+**Users**
+- Email and password authentication (Better Auth)
+- The **first signup** becomes administrator
+- Open or closed registration; admin can create users
+
+**Themes**
+- Light and Dark — see [`docs/design/`](docs/design/)
+
+### AI integrations
+
+| Provider | Base URL | Example model |
+|---|---|---|
+| OpenAI | optional | `gpt-5-mini` |
+| Anthropic | optional | `claude-sonnet-5` |
+| OpenRouter | optional | `anthropic/claude-sonnet-5` |
+| OpenAI-compatible | **required** (Ollama, LM Studio, vLLM…) | `llama3.2` |
+
+**What AI does in openRSS:**
+
+- **Summarize** articles with streaming and cache
+- **Daily digest** of unread articles, grouped by topic (automatic or on demand)
+- **Chat** with your feeds — AI searches and reads articles via tools
+- **Prioritization** of new articles (0–100 score based on your interests)
+- **Global** providers (admin) and **personal** providers (each user)
+- API keys encrypted with **AES-256-GCM**
+
+Configure at **Settings → AI → Add**. Use **Test** to validate the connection before saving.
+
+### Installation
+
+> **For automated agents:** follow the steps below in order. All commands assume a terminal with Git, Docker (Compose v2), or Node.js 22.12+ installed.
+
+#### Prerequisites
+
+- **Docker (recommended):** Docker 24+ and Docker Compose v2
+- **Local development:** Node.js ≥ 22.12 and npm ≥ 10
+
+#### Method A — Docker + SQLite (recommended)
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+docker compose up -d --build
+```
+
+Wait 30–60 seconds, then verify:
+
+```bash
+curl -sf http://localhost:8285/api/health
+```
+
+Then:
+
+1. Open **http://localhost:8285/setup**
+2. Choose **SQLite** and complete the wizard
+3. Create the admin account at **http://localhost:8285/register**
+4. Log in at **http://localhost:8285/login**
+
+Data persists in the Docker volume `openrss-data` (`/data/config.json` and `/data/openrss.db`).
+
+#### Method B — Docker + bundled PostgreSQL
+
+For larger instances. The `/setup` wizard is **skipped** because `DATABASE_URL` is preconfigured.
+
+**Linux / macOS:**
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+export POSTGRES_PASSWORD=$(openssl rand -hex 32)
+docker compose -f docker-compose.postgres.yml up -d --build
+curl -sf http://localhost:8285/api/health
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+$env:POSTGRES_PASSWORD = -join ((48..57 + 65..70) | Get-Random -Count 64 | ForEach-Object { [char]$_ })
+docker compose -f docker-compose.postgres.yml up -d --build
+curl http://localhost:8285/api/health
+```
+
+Then create the admin at **http://localhost:8285/register**.
+
+`POSTGRES_PASSWORD` has **no default** — Compose stops before starting if it is not set.
+
+#### Method C — Pre-built image (GHCR)
+
+You still need the repository for `docker-compose*.yml` files. Published image:
+
+```
+ghcr.io/paulocarinhena/openrss:latest
+```
+
+To use the published image instead of a local build, replace `build: .` with `image: ghcr.io/paulocarinhena/openrss:latest` in the `openrss` service. In production, prefer the immutable `sha-<full commit>` tag.
+
+#### Method D — Local development
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+cp .env.example .env
+npm ci
+npm run dev
+```
+
+- App at **http://localhost:3000** (dev uses port **3000**; Docker uses **8285**)
+- Without `DATABASE_URL` in `.env` → wizard at `/setup`
+
+#### Post-installation (all methods)
+
+1. Verify health: `GET /api/health`
+2. Log in at `/login`
+3. Add feeds by website URL or import OPML
+4. Configure AI: **Settings → AI → Add → Test**
+5. **Ollama / LM Studio in Docker:** use base URL `http://host.docker.internal:11434/v1` (Ollama) or `http://host.docker.internal:1234/v1` (LM Studio)
+
+#### Environment variables
+
+All optional. Environment variables **override** `config.json`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `OPENRSS_DATA_DIR` | `/data` (Docker) · `./data` (dev) | Folder with `config.json` and SQLite database |
+| `APP_SECRET` | generated on 1st boot | Min. 16 chars; protects sessions and encrypts AI keys |
+| `BETTER_AUTH_URL` | `http://localhost:8285` (Docker) | Public app URL |
+| `DATABASE_URL` | — | Set to skip wizard (`file:...` or `postgresql://...`) |
+| `DATABASE_PROVIDER` | inferred | `sqlite` or `postgresql` |
+| `ALLOW_PRIVATE_FEEDS` | `false` | Allow feeds on private/localhost IPs (e.g. RSS-Bridge) |
+| `DISABLE_SCHEDULER` | `false` | Disable internal scheduler |
+
+#### Troubleshooting
+
+| Problem | Action |
+|---|---|
+| Container won't start | `docker compose logs -f openrss` |
+| `/setup` wizard doesn't appear | `DATABASE_URL` already set or database configured in `config.json` |
+| Local feeds (RSS-Bridge) don't work | Set `ALLOW_PRIVATE_FEEDS=true` |
+| Local AI in Docker won't connect | Use `host.docker.internal` in the base URL |
+
+### Stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Auth · AI SDK 7
+
+For developers → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+
+### Support the project
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
+
+### License
+
+[Apache License 2.0](LICENSE) · [NOTICE](NOTICE)
+
+---
+
+## Español
+
+Lector RSS **self-hosted**, simple y rápido, inspirado en Feedly — con **IA integrada** (OpenAI, Anthropic, OpenRouter o cualquier API compatible con OpenAI, incluidos modelos locales vía Ollama, LM Studio o vLLM).
+
+Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en **un solo contenedor con SQLite**. ¿Necesitas más escala? Elige **PostgreSQL** en el asistente de instalación.
+
+### Capturas de pantalla
+
+| Lector de artículos | Chat con IA |
+|:---:|:---:|
+| ![Lector de artículos con modo artículo completo y resumen por IA](docs/screenshots/reader.png) | ![Chat con IA que busca y lee artículos de tus feeds](docs/screenshots/chat.png) |
+| Modo lectura con Readability, resúmenes y navegación entre artículos | Conversa con tus feeds — la IA busca y lee artículos por ti |
+
+### Recursos principales
+
+**Lectura**
+- Vista **Hoy** (priorizada por IA), **Todos**, **Guardados**, carpetas y feeds individuales
+- Vistas en tarjetas, cuadrícula o solo títulos
+- Modo **artículo completo** (Readability) y búsqueda instantánea
+- Atajos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar leído), `s` (guardar), `Shift+A` (marcar todos), `/` (buscar)
+
+**Feeds**
+- Descubrimiento automático a partir de la URL del sitio
+- Soporte RSS, Atom y RDF
+- Actualización en segundo plano con ETag/Last-Modified y backoff en errores
+- Importación y exportación **OPML**
+- Retención configurable de artículos
+
+**Usuarios**
+- Autenticación por email y contraseña (Better Auth)
+- El **primer registro** se convierte en administrador
+- Registro abierto o cerrado; el admin puede crear usuarios
+
+**Temas**
+- Claro y Oscuro — ver [`docs/design/`](docs/design/)
+
+### Integraciones de IA
+
+| Proveedor | Base URL | Modelo de ejemplo |
+|---|---|---|
+| OpenAI | opcional | `gpt-5-mini` |
+| Anthropic | opcional | `claude-sonnet-5` |
+| OpenRouter | opcional | `anthropic/claude-sonnet-5` |
+| OpenAI-compatible | **obligatoria** (Ollama, LM Studio, vLLM…) | `llama3.2` |
+
+**Qué hace la IA en openRSS:**
+
+- **Resumir** artículos en streaming, con caché
+- **Digest diario** de no leídos, agrupado por tema (automático o bajo demanda)
+- **Chat** con tus feeds — la IA busca y lee artículos mediante herramientas
+- **Priorización** de artículos nuevos (puntuación 0–100 según tus intereses)
+- Proveedores **globales** (admin) y **personales** (cada usuario)
+- Claves de API cifradas con **AES-256-GCM**
+
+Configura en **Configuración → IA → Añadir**. Usa **Probar** para validar la conexión antes de guardar.
+
+### Instalación
+
+> **Para agentes automatizados:** sigue los pasos abajo en orden. Todos los comandos asumen un terminal con Git, Docker (Compose v2) o Node.js 22.12+ instalado.
+
+#### Requisitos previos
+
+- **Docker (recomendado):** Docker 24+ y Docker Compose v2
+- **Desarrollo local:** Node.js ≥ 22.12 y npm ≥ 10
+
+#### Método A — Docker + SQLite (recomendado)
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+docker compose up -d --build
+```
+
+Espera 30–60 segundos y verifica:
+
+```bash
+curl -sf http://localhost:8285/api/health
+```
+
+Después:
+
+1. Abre **http://localhost:8285/setup**
+2. Elige **SQLite** y completa el asistente
+3. Crea la cuenta de administrador en **http://localhost:8285/register**
+4. Inicia sesión en **http://localhost:8285/login**
+
+Los datos persisten en el volumen Docker `openrss-data` (`/data/config.json` y `/data/openrss.db`).
+
+#### Método B — Docker + PostgreSQL integrado
+
+Para instancias más grandes. El asistente `/setup` se **omite** porque `DATABASE_URL` ya está definida.
+
+**Linux / macOS:**
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+export POSTGRES_PASSWORD=$(openssl rand -hex 32)
+docker compose -f docker-compose.postgres.yml up -d --build
+curl -sf http://localhost:8285/api/health
+```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+$env:POSTGRES_PASSWORD = -join ((48..57 + 65..70) | Get-Random -Count 64 | ForEach-Object { [char]$_ })
+docker compose -f docker-compose.postgres.yml up -d --build
+curl http://localhost:8285/api/health
+```
+
+Después crea el admin en **http://localhost:8285/register**.
+
+`POSTGRES_PASSWORD` **no tiene valor predeterminado** — Compose se detiene antes de iniciar si no está definida.
+
+#### Método C — Imagen prepublicada (GHCR)
+
+El repositorio sigue siendo necesario para los archivos `docker-compose*.yml`. Imagen publicada:
+
+```
+ghcr.io/paulocarinhena/openrss:latest
+```
+
+Para usar la imagen publicada en lugar de build local, reemplaza `build: .` por `image: ghcr.io/paulocarinhena/openrss:latest` en el servicio `openrss`. En producción, prefiere la etiqueta inmutable `sha-<commit completo>`.
+
+#### Método D — Desarrollo local
+
+```bash
+git clone https://github.com/paulocarinhena/openRSS.git
+cd openRSS
+cp .env.example .env
+npm ci
+npm run dev
+```
+
+- App en **http://localhost:3000** (dev usa puerto **3000**; Docker usa **8285**)
+- Sin `DATABASE_URL` en `.env` → asistente en `/setup`
+
+#### Post-instalación (todos los métodos)
+
+1. Verifica salud: `GET /api/health`
+2. Inicia sesión en `/login`
+3. Añade feeds por URL del sitio o importa OPML
+4. Configura IA: **Configuración → IA → Añadir → Probar**
+5. **Ollama / LM Studio en Docker:** usa base URL `http://host.docker.internal:11434/v1` (Ollama) o `http://host.docker.internal:1234/v1` (LM Studio)
+
+#### Variables de entorno
+
+Todas opcionales. Las variables de entorno tienen **precedencia** sobre `config.json`.
+
+| Variable | Predeterminado | Descripción |
+|---|---|---|
+| `OPENRSS_DATA_DIR` | `/data` (Docker) · `./data` (dev) | Carpeta con `config.json` y base SQLite |
+| `APP_SECRET` | generado en 1.er arranque | Mín. 16 caracteres; protege sesiones y cifra claves de IA |
+| `BETTER_AUTH_URL` | `http://localhost:8285` (Docker) | URL pública de la app |
+| `DATABASE_URL` | — | Definir para omitir asistente (`file:...` o `postgresql://...`) |
+| `DATABASE_PROVIDER` | inferido | `sqlite` o `postgresql` |
+| `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds en IPs privadas/localhost (ej.: RSS-Bridge) |
+| `DISABLE_SCHEDULER` | `false` | Desactiva el planificador interno |
+
+#### Solución de problemas
+
+| Problema | Acción |
+|---|---|
+| El contenedor no arranca | `docker compose logs -f openrss` |
+| El asistente `/setup` no aparece | `DATABASE_URL` ya definida o base configurada en `config.json` |
+| Feeds locales (RSS-Bridge) no funcionan | Define `ALLOW_PRIVATE_FEEDS=true` |
+| IA local en Docker no conecta | Usa `host.docker.internal` en la base URL |
+
+### Stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 7 · Better Auth · AI SDK 7
+
+Para desarrolladores → [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+
+### Apoya el proyecto
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-pcarinhena-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/pcarinhena)
+
+### Licencia
+
+[Apache License 2.0](LICENSE) · [NOTICE](NOTICE)
