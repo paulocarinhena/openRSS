@@ -1,0 +1,21 @@
+# openRSS com SQLite (padrão) — um único container, dados no volume "openrss-data".
+#   APP_SECRET=$(openssl rand -base64 32) docker compose up -d --build
+services:
+  openrss:
+    build: .
+    image: openrss:${OPENRSS_IMAGE_TAG:-local}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      APP_SECRET: ${APP_SECRET:?defina APP_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      DATABASE_PROVIDER: sqlite
+      DATABASE_URL: file:/data/openrss.db
+      ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
+      DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
+    volumes:
+      - openrss-data:/data
+
+volumes:
+  openrss-data:

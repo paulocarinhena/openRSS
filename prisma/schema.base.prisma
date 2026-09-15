@@ -1,0 +1,293 @@
+// Fonte única dos modelos. NÃO edite prisma/sqlite ou prisma/postgres diretamente:
+// rode `npm run db:schemas` para regenerar os schemas por provider.
+// Mantenha os modelos portáveis entre SQLite e Postgres (sem @db.*, sem arrays escalares).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+// ─── Better Auth ─────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("user") // "admin" | "user"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  folders       Folder[]
+  subscriptions Subscription[]
+  articleStates UserArticle[]
+  aiProviders   AiProvider[]
+  settings      UserSettings?
+  digests       Digest[]
+  chatThreads   ChatThread[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Feeds ───────────────────────────────────────────────────
+
+/// Feed é global (compartilhado entre usuários) e deduplicado pela URL.
+model Feed {
+  id            String    @id @default(cuid())
+  url           String    @unique
+  title         String
+  siteUrl       String?
+  description   String?
+  iconUrl       String?
+  etag          String?
+  lastModified  String?
+  lastFetchedAt DateTime?
+  nextFetchAt   DateTime  @default(now())
+  errorCount    Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subscriptions Subscription[]
+  articles      Article[]
+
+  @@index([nextFetchAt])
+  @@map("feed")
+}
+
+model Folder {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  position      Int            @default(0)
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+
+  @@unique([userId, name])
+  @@map("folder")
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedId      String
+  feed        Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  customTitle String?
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, feedId])
+  @@index([feedId])
+  @@map("subscription")
+}
+
+model Article {
+  id              String    @id @default(cuid())
+  feedId          String
+  feed            Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  guid            String
+  url             String?
+  title           String
+  author          String?
+  contentHtml     String?
+  snippet         String?
+  imageUrl        String?
+  publishedAt     DateTime  @default(now())
+  fullContentHtml String?
+  createdAt       DateTime  @default(now())
+
+  states    UserArticle[]
+  summaries ArticleSummary[]
+
+  @@unique([feedId, guid])
+  @@index([feedId, publishedAt])
+  @@index([publishedAt])
+  @@map("article")
+}
+
+/// Estado do artigo por usuário. Ausência de linha = não lido.
+model UserArticle {
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId      String
+  article        Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  isRead         Boolean   @default(false)
+  isSaved        Boolean   @default(false)
+  readAt         DateTime?
+  savedAt        DateTime?
+  priorityScore  Int?
+  priorityReason String?
+  classifiedAt   DateTime?
+
+  @@id([userId, articleId])
+  @@index([userId, isRead])
+  @@index([userId, isSaved])
+  @@map("user_article")
+}
+
+// ─── IA ──────────────────────────────────────────────────────
+
+/// userId nulo = provedor global (cadastrado pelo admin).
+model AiProvider {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String // "openai" | "anthropic" | "openrouter" | "openai_compatible"
+  name            String
+  baseUrl         String?
+  apiKeyEncrypted String?
+  defaultModel    String?
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@map("ai_provider")
+}
+
+model UserSettings {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiProviderId      String?
+  aiModel           String?
+  language          String   @default("pt-BR")
+  interests         String?
+  classifyEnabled   Boolean  @default(false)
+  digestEnabled     Boolean  @default(false)
+  digestHour        Int      @default(7)
+  timezone          String   @default("America/Sao_Paulo")
+  listView          String   @default("cards") // "titles" | "cards" | "magazine"
+  updatedAt         DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model ArticleSummary {
+  id         String   @id @default(cuid())
+  articleId  String
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  providerId String
+  userId     String   @default("") // vazio para provedor global; dono da credencial para provedor pessoal
+  model      String
+  language   String
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@unique([articleId, providerId, userId, model, language])
+  @@map("article_summary")
+}
+
+model Digest {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day        String // YYYY-MM-DD no fuso do usuário
+  content    String
+  articleIds String // JSON array
+  model      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, day])
+  @@map("digest")
+}
+
+model ChatThread {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String        @default("Nova conversa")
+  articleIds String        @default("[]") // JSON array de artigos de contexto
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  messages   ChatMessage[]
+
+  @@index([userId, updatedAt])
+  @@map("chat_thread")
+}
+
+model ChatMessage {
+  id        String     @id
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      String
+  parts     String // JSON do UIMessage.parts
+  createdAt DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+  @@map("chat_message")
+}
+
+// ─── App ─────────────────────────────────────────────────────
+
+/// Singleton (id = "app").
+model AppSettings {
+  id                     String  @id @default("app")
+  bootstrapAdminEmail    String?
+  allowRegistration      Boolean @default(false)
+  refreshIntervalMinutes Int     @default(30)
+  retentionDays          Int     @default(60)
+
+  @@map("app_settings")
+}
+
+/// Lock simples para jobs em processo (evita execução duplicada em HMR / múltiplas instâncias).
+model JobLock {
+  name      String   @id
+  lockedAt  DateTime
+  expiresAt DateTime
+
+  @@map("job_lock")
+}

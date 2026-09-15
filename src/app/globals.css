@@ -1,0 +1,434 @@
+@import "tailwindcss";
+
+/* Tema Light — docs/design/LIGHT.md */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: oklch(0.985 0.006 250);
+  --foreground: oklch(0.18 0.018 252);
+  --surface: oklch(1 0.002 250);
+  --surface-foreground: oklch(0.18 0.018 252);
+  --primary: oklch(0.36 0.075 251);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.955 0.01 250);
+  --secondary-foreground: oklch(0.18 0.018 252);
+  --accent: oklch(0.94 0.035 251);
+  --accent-foreground: oklch(0.18 0.018 252);
+  --muted: oklch(0.955 0.01 250);
+  --muted-foreground: oklch(0.48 0.018 252);
+  --border: oklch(0.89 0.014 252);
+  --input: oklch(0.89 0.014 252);
+  --ring: oklch(0.36 0.075 251);
+  --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.69 0.14 165);
+  --info: oklch(0.62 0.11 220);
+  --warning: oklch(0.72 0.14 75);
+  --ai: oklch(0.36 0.075 251);
+  --sidebar: oklch(0.97 0.009 250);
+  --sidebar-active: oklch(0.94 0.035 251);
+
+  --radius-sm: 0.45rem;
+  --radius-md: 0.6rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1.05rem;
+  --radius-2xl: 1.35rem;
+  --radius-control: 0.75rem;
+  --radius-input: 1.05rem;
+  --radius-card: 1.35rem;
+
+  --shadow-card: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+  --shadow-control: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tracking-eyebrow: 0;
+  --eyebrow-transform: none;
+}
+
+/* Tema Dark — docs/design/DARK.md */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --surface: #191919;
+  --surface-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1c20;
+  --secondary-foreground: #dadbdf;
+  --accent: #1a1c20;
+  --accent-foreground: #ffffff;
+  --muted: #1a1c20;
+  --muted-foreground: #858990;
+  --border: #212327;
+  --input: #212327;
+  --ring: rgb(255 255 255 / 55%);
+  --destructive: #f87171;
+  --success: #4ade80;
+  --info: #a0c3ec;
+  --warning: #fbbf24;
+  --ai: #c4b5fd;
+  --sidebar: #0a0a0a;
+  --sidebar-active: #1a1c20;
+
+  --radius-control: 9999px;
+  --radius-input: 8px;
+  --radius-card: 8px;
+
+  --shadow-card: none;
+  --shadow-control: none;
+  --tracking-eyebrow: 0.1em;
+  --eyebrow-transform: uppercase;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+  --color-ai: var(--ai);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --radius-control: var(--radius-control);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-control: var(--shadow-control);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: var(--eyebrow-transform);
+  color: var(--muted-foreground);
+}
+
+@keyframes combobox-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Superfícies de IA (resumo) ─────────────────────────────── */
+@keyframes ai-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes ai-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ai-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+@keyframes ai-twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18) rotate(12deg);
+    opacity: 0.75;
+  }
+}
+@keyframes ai-halo {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+@keyframes ai-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@keyframes effort-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes ai-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    color-mix(in oklab, var(--ai) 22%, var(--muted)) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-shimmer 1.6s ease-in-out infinite;
+}
+
+/* Cursor piscando no fim do texto enquanto a IA escreve */
+.ai-streaming .prose-reader > :is(p, h1, h2, h3, h4):last-child::after,
+.ai-streaming .prose-reader > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  background: var(--ai);
+  animation: ai-caret 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-panel,
+  .ai-panel *,
+  .ai-panel *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Ações rápidas do card (hover) ─────────────────────────── */
+.card-actions {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: top right;
+  filter: blur(2px);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out,
+    filter 180ms ease-out;
+}
+.card-actions > * {
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
+}
+.group:hover .card-actions,
+.group:focus-within .card-actions,
+.card-actions[data-visible] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  pointer-events: auto;
+  transition:
+    opacity 240ms ease-out,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 240ms ease-out;
+}
+.group:hover .card-actions > *,
+.group:focus-within .card-actions > *,
+.card-actions[data-visible] > * {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 220ms ease-out,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .card-actions > :nth-child(1),
+.group:focus-within .card-actions > :nth-child(1) {
+  transition-delay: 40ms;
+}
+.group:hover .card-actions > :nth-child(2),
+.group:focus-within .card-actions > :nth-child(2) {
+  transition-delay: 80ms;
+}
+.group:hover .card-actions > :nth-child(3),
+.group:focus-within .card-actions > :nth-child(3) {
+  transition-delay: 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-actions,
+  .card-actions > * {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 150ms ease-out !important;
+  }
+}
+
+/* ── Barras de rolagem finas (vertical e horizontal) ────────── */
+:root {
+  --scrollbar-thumb: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --scrollbar-thumb-hover: color-mix(in oklab, var(--foreground) 38%, transparent);
+}
+
+/* Firefox (sem suporte aos pseudo-elementos ::-webkit-scrollbar) */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
+/* Chrome, Edge e Safari: polegar de ~4px que cresce para ~6px no hover */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  min-height: 32px;
+  min-width: 32px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+  border-width: 2px;
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-hover);
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Conteúdo do artigo no leitor */
+@utility prose-reader {
+  font-size: var(--reader-font-size, 1rem);
+  line-height: 1.7;
+  color: var(--foreground);
+  /* A largura é controlada pelo contêiner do leitor (Estreita/Média/Larga). */
+  max-width: 100%;
+  overflow-wrap: anywhere;
+
+  & :where(p, ul, ol, blockquote, pre, figure, table) {
+    margin-block: 1em;
+  }
+  & :where(h1, h2, h3, h4) {
+    font-weight: 600;
+    line-height: 1.3;
+    margin-block: 1.4em 0.6em;
+  }
+  & :where(h1) { font-size: 1.5rem; }
+  & :where(h2) { font-size: 1.25rem; }
+  & :where(h3) { font-size: 1.1rem; }
+  & :where(a) {
+    color: var(--info);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  & :where(img, video, iframe) {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-input);
+  }
+  & :where(ul) { list-style: disc; padding-left: 1.5em; }
+  & :where(ol) { list-style: decimal; padding-left: 1.5em; }
+  & :where(blockquote) {
+    border-left: 3px solid var(--border);
+    padding-left: 1em;
+    color: var(--muted-foreground);
+  }
+  & :where(pre) {
+    background: var(--secondary);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-input);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+  & :where(code) {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+  }
+  & :where(table) {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  & :where(th, td) {
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.5rem;
+  }
+}
