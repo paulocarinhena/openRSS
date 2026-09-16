@@ -428,7 +428,7 @@ export function ArticleWorkspace({
             className="relative"
           >
             <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchPlaceholder")} className="h-8 pl-8" />
+            <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("search")} className="h-8 pl-8" />
           </form>
           {scope.kind === "today" && aiEnabled && (
             <p className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">

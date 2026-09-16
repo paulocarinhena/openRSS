@@ -188,7 +188,7 @@
     "unreadOnly": "Solo no leídos",
     "markAllRead": "Marcar todo como leído",
     "markAllReadShortcut": "Marcar todo como leído (Shift+A)",
-    "searchPlaceholder": "Buscar (/)",
+    "search": "Buscar",
     "aiOrdered": "Ordenado por prioridad de la IA cuando está disponible.",
     "lastError": "Último error: {error}",
     "loadMore": "Cargar más",
