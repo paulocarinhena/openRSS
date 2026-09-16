@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
 import { articleText, errorMessage } from "@/lib/ai/content";
-import { mergeAudioParts, requestSpeech, resolveTtsProvider, splitSpeechText, ttsMimeType } from "@/lib/ai/tts";
+import { mergeAudioParts, requestSpeech, resolveTtsProvider, ttsMimeType } from "@/lib/ai/tts";
 
 const body = z.object({
   articleId: z.string(),
@@ -31,9 +31,9 @@ export async function POST(request: Request) {
           .replace(/[*_#`>]/g, "")
           .replace(/^\s*[-+]\s+/gm, "")
       : articleText(article, 28000);
-    const chunks = splitSpeechText(speechText, 3500, parsed.data.source === "summary" ? 4 : 12);
-    if (!chunks.length) return Response.json({ error: "A notícia não possui texto para narrar." }, { status: 400 });
-    const contentHash = createHash("sha256").update(speechText).digest("hex");
+    const normalizedText = speechText.trim();
+    if (!normalizedText) return Response.json({ error: "A notícia não possui texto para narrar." }, { status: 400 });
+    const contentHash = createHash("sha256").update(normalizedText).digest("hex");
     const cacheKey = {
       articleId: article.id,
       providerId: provider.id,
@@ -61,10 +61,9 @@ export async function POST(request: Request) {
         });
       }
     }
-    // Um único prazo para toda a geração, incluindo notícias divididas em partes.
-    const generationSignal = AbortSignal.any([request.signal, AbortSignal.timeout(180_000)]);
-    const parts: Uint8Array[] = [];
-    for (const chunk of chunks) parts.push(await requestSpeech(provider, chunk, generationSignal));
+    // Envia o texto inteiro em uma única requisição, com limite de dois minutos.
+    const generationSignal = AbortSignal.any([request.signal, AbortSignal.timeout(120_000)]);
+    const parts = [await requestSpeech(provider, normalizedText, generationSignal)];
     const content = mergeAudioParts(parts, provider.responseFormat);
     await db.articleAudio.upsert({
       where: { articleId_providerId_userId_model_voice_format_kind_contentHash: cacheKey },

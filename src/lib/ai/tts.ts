@@ -7,7 +7,7 @@ import { pinnedFetch } from "@/lib/network";
 
 export const TTS_FORMATS = ["mp3", "opus", "aac", "flac", "wav", "pcm"] as const;
 export const TTS_VOICES = ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"] as const;
-const SPEECH_TIMEOUT_MS = 180_000;
+const SPEECH_TIMEOUT_MS = 120_000;
 
 export async function resolveTtsProvider(userId: string) {
   const settings = await getUserSettings(userId);
@@ -24,26 +24,6 @@ export async function resolveTtsProvider(userId: string) {
   const provider = selected ?? personal ?? global;
   if (!provider) throw new Error("Nenhum provedor de áudio configurado. Configure em Configurações → IA.");
   return provider;
-}
-
-export function splitSpeechText(text: string, maxChars = 3500, maxChunks = 8) {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (!normalized) return [];
-  const chunks: string[] = [];
-  let remaining = normalized;
-  while (remaining && chunks.length < maxChunks) {
-    if (remaining.length <= maxChars) {
-      chunks.push(remaining);
-      break;
-    }
-    const window = remaining.slice(0, maxChars + 1);
-    const boundary = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "), window.lastIndexOf("; "), window.lastIndexOf(", "));
-    const cut = boundary > maxChars * 0.55 ? boundary + 1 : maxChars;
-    chunks.push(remaining.slice(0, cut).trim());
-    remaining = remaining.slice(cut).trim();
-  }
-  if (remaining) throw new Error("O texto é longo demais para ser convertido em áudio por inteiro.");
-  return chunks;
 }
 
 export async function requestSpeech(provider: TtsProvider, input: string, signal?: AbortSignal) {
