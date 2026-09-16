@@ -10,12 +10,13 @@ import {
   importOpmlAction,
   renameFolderAction,
   unsubscribeAction,
+  unsubscribeManyAction,
   updateSubscriptionAction,
 } from "@/app/actions/feeds";
 import { relativeTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { Card, Input } from "@/components/ui/input";
+import { Card, Input, Switch } from "@/components/ui/input";
 
 type Sub = {
   id: string;
@@ -33,7 +34,19 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
   const locale = useLocale();
   const [pending, start] = useTransition();
   const [newFolder, setNewFolder] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allSelected = subscriptions.length > 0 && selected.size === subscriptions.length;
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, success?: string) =>
     start(async () => {
@@ -128,11 +141,50 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="eyebrow">{t("subscriptions", { count: subscriptions.length })}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="eyebrow">{t("subscriptions", { count: subscriptions.length })}</h2>
+          {subscriptions.length > 0 && (
+            <div className="flex items-center gap-3 text-sm">
+              <label className="flex items-center gap-2 text-muted-foreground">
+                <Switch
+                  checked={allSelected}
+                  onCheckedChange={() => setSelected(allSelected ? new Set() : new Set(subscriptions.map((s) => s.id)))}
+                />
+                {t("selectAll")}
+              </label>
+              {selected.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => {
+                    if (!window.confirm(t("unsubscribeManyConfirm", { count: selected.size }))) return;
+                    start(async () => {
+                      const res = await unsubscribeManyAction([...selected]);
+                      if (!res.ok) toast.error(res.error ?? t("genericError"));
+                      else {
+                        toast.success(t("unsubscribedMany", { count: res.count }));
+                        setSelected(new Set());
+                      }
+                    });
+                  }}
+                >
+                  <Trash2 /> {t("deleteSelected", { count: selected.size })}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
         <Card className="divide-y divide-border p-0">
           {subscriptions.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">{t("noSubscriptions")}</p>}
           {subscriptions.map((s) => (
             <div key={s.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
+              <Switch
+                className="shrink-0 sm:self-center"
+                aria-label={t("selectFeed", { title: s.customTitle ?? s.title })}
+                checked={selected.has(s.id)}
+                onCheckedChange={() => toggleSelected(s.id)}
+              />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 truncate font-medium">
                   {s.lastError && <TriangleAlert className="size-3.5 shrink-0 text-warning" aria-label={s.lastError} />}
@@ -176,7 +228,14 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                   size="icon-sm"
                   aria-label={t("unsubscribe")}
                   onClick={() => {
-                    if (window.confirm(t("unsubscribeConfirm", { title: s.customTitle ?? s.title }))) run(() => unsubscribeAction(s.id), t("unsubscribed"));
+                    if (!window.confirm(t("unsubscribeConfirm", { title: s.customTitle ?? s.title }))) return;
+                    run(() => unsubscribeAction(s.id), t("unsubscribed"));
+                    setSelected((prev) => {
+                      if (!prev.has(s.id)) return prev;
+                      const next = new Set(prev);
+                      next.delete(s.id);
+                      return next;
+                    });
                   }}
                 >
                   <Trash2 />

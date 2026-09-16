@@ -59,6 +59,13 @@ export async function unsubscribeAction(subscriptionId: string): Promise<Result>
   return { ok: true };
 }
 
+export async function unsubscribeManyAction(subscriptionIds: string[]): Promise<Result<{ count: number }>> {
+  const user = await requireUser();
+  const { count } = await db.subscription.deleteMany({ where: { id: { in: subscriptionIds }, userId: user.id } });
+  revalidatePath("/", "layout");
+  return { ok: true, count };
+}
+
 export async function updateSubscriptionAction(
   subscriptionId: string,
   data: { customTitle?: string | null; folderId?: string | null },
