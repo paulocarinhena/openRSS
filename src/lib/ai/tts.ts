@@ -45,7 +45,7 @@ export async function requestSpeech(provider: TtsProvider, input: string, signal
     );
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      throw new Error("O provedor de áudio demorou demais para responder. Tente novamente ou use trechos menores.");
+      throw new Error("O provedor de áudio demorou mais de dois minutos para responder. Tente novamente.");
     }
     throw error;
   }

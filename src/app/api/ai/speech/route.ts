@@ -9,7 +9,7 @@ import { mergeAudioParts, requestSpeech, resolveTtsProvider, ttsMimeType } from 
 const body = z.object({
   articleId: z.string(),
   source: z.enum(["article", "summary"]).default("article"),
-  text: z.string().trim().min(1).max(12000).optional(),
+  text: z.string().trim().min(1).optional(),
   force: z.boolean().optional(),
 }).refine((value) => value.source !== "summary" || Boolean(value.text), { path: ["text"] });
 
