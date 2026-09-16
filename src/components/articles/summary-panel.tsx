@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { cn, stripHtml } from "@/lib/utils";
+import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 
@@ -104,7 +105,7 @@ export function SummaryPanel({
           format === "html" ? (
             <div
               className={cn("prose-reader animate-[ai-fade-in_300ms_ease-out]", streaming && "ai-streaming")}
-              dangerouslySetInnerHTML={{ __html: text }}
+              dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(text) }}
             />
           ) : (
             <div className={cn("animate-[ai-fade-in_300ms_ease-out]", streaming && "ai-streaming")}>

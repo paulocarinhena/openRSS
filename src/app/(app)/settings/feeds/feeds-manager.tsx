@@ -229,12 +229,19 @@ export function FeedsManager({ folders, subscriptions }: { folders: { id: string
                   aria-label={t("unsubscribe")}
                   onClick={() => {
                     if (!window.confirm(t("unsubscribeConfirm", { title: s.customTitle ?? s.title }))) return;
-                    run(() => unsubscribeAction(s.id), t("unsubscribed"));
-                    setSelected((prev) => {
-                      if (!prev.has(s.id)) return prev;
-                      const next = new Set(prev);
-                      next.delete(s.id);
-                      return next;
+                    start(async () => {
+                      const res = await unsubscribeAction(s.id);
+                      if (!res.ok) {
+                        toast.error(res.error ?? t("genericError"));
+                        return;
+                      }
+                      toast.success(t("unsubscribed"));
+                      setSelected((prev) => {
+                        if (!prev.has(s.id)) return prev;
+                        const next = new Set(prev);
+                        next.delete(s.id);
+                        return next;
+                      });
                     });
                   }}
                 >

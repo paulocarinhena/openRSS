@@ -228,7 +228,7 @@ model ArticleSummary {
   content    String
   createdAt  DateTime @default(now())
 
-  @@unique([articleId, providerId, userId, model, language, kind])
+  @@unique([articleId, providerId, userId, model, language, kind], map: "article_summary_unique_key")
   @@map("article_summary")
 }
 

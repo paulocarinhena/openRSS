@@ -3,19 +3,24 @@ import { defaultLocale } from "@/i18n/config";
 import { staticTranslator } from "@/i18n/static";
 import { AiError } from "./errors";
 
+type ArticleContentSource = { contentHtml?: string | null; fullContentHtml?: string | null; snippet?: string | null };
+
+/** Fonte de conteúdo priorizada: HTML completo extraído > HTML do feed > snippet. */
+const rawContentHtml = (a: ArticleContentSource) => a.fullContentHtml ?? a.contentHtml ?? a.snippet ?? "";
+
 /** ~4 chars por token; limita o conteúdo enviado ao modelo. */
 export function articleText(
-  a: { title: string; url?: string | null; author?: string | null; contentHtml?: string | null; fullContentHtml?: string | null; snippet?: string | null },
+  a: ArticleContentSource & { title: string; url?: string | null; author?: string | null },
   maxChars = 24000,
 ) {
-  const body = stripHtml(a.fullContentHtml ?? a.contentHtml ?? a.snippet ?? "");
+  const body = stripHtml(rawContentHtml(a));
   const header = [`Título: ${a.title}`, a.author && `Autor: ${a.author}`, a.url && `URL: ${a.url}`].filter(Boolean);
   return [...header, "", truncate(body, maxChars)].join("\n");
 }
 
 /** HTML do artigo (sem cortar tags no meio), para traduções que devem preservar a formatação original. */
-export function articleHtml(a: { contentHtml?: string | null; fullContentHtml?: string | null; snippet?: string | null }, maxChars = 20000) {
-  const html = a.fullContentHtml ?? a.contentHtml ?? a.snippet ?? "";
+export function articleHtml(a: ArticleContentSource, maxChars = 20000) {
+  const html = rawContentHtml(a);
   if (html.length <= maxChars) return html;
   const cut = html.lastIndexOf(">", maxChars);
   return cut > 0 ? html.slice(0, cut + 1) : html.slice(0, maxChars);
