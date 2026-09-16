@@ -228,6 +228,8 @@
       "configureAi": "Configure an AI provider in Settings",
       "summarizing": "Summarizing…",
       "summarize": "Summarize",
+      "translating": "Translating…",
+      "translate": "Translate",
       "askAi": "Ask AI",
       "loadingFull": "Loading the full article…",
       "noContent": "This item has no content in the feed."
@@ -244,6 +246,18 @@
       "closeSummary": "Close summary",
       "copyFailed": "Could not copy."
     },
+    "translate": {
+      "title": "AI translation",
+      "writing": "Translating…",
+      "reading": "Reading the article…",
+      "cached": "cached",
+      "copy": "Copy",
+      "copySummary": "Copy translation",
+      "regenerate": "Translate again",
+      "close": "Close",
+      "closeSummary": "Close translation",
+      "copyFailed": "Could not copy."
+    },
     "errors": {
       "notFound": "Article not found.",
       "openFailed": "Could not open the article.",
@@ -254,6 +268,7 @@
       "http": "Failed (HTTP {status})",
       "emptyModelResponse": "The model returned no content.",
       "summarizeFailed": "Failed to summarize.",
+      "translateFailed": "Failed to translate.",
       "loadFailed": "Could not load.",
       "noOriginalLink": "Article has no original link.",
       "extractFailed": "Could not extract the content.",

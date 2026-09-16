@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, Copy, RotateCcw, Sparkles, X } from "lucide-react";
+import { Check, Copy, Languages, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 
@@ -18,16 +18,21 @@ export function SummaryPanel({
   meta,
   onRegenerate,
   onClose,
+  namespace = "articles.summary",
+  format = "markdown",
 }: {
   text: string;
   streaming: boolean;
   meta: SummaryMeta | null;
   onRegenerate: () => void;
   onClose: () => void;
+  namespace?: "articles.summary" | "articles.translate";
+  format?: "markdown" | "html";
 }) {
-  const t = useTranslations("articles.summary");
+  const t = useTranslations(namespace);
   const ref = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
+  const Icon = namespace === "articles.translate" ? Languages : Sparkles;
 
   // Traz o painel para a vista quando ele aparece.
   useEffect(() => {
@@ -36,7 +41,7 @@ export function SummaryPanel({
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(format === "html" ? stripHtml(text) : text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -64,7 +69,7 @@ export function SummaryPanel({
       <header className="flex items-center gap-2.5 px-4 pt-3.5 pb-2">
         <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-ai/12 text-ai">
           {streaming && <span aria-hidden className="absolute inset-0 animate-[ai-halo_1.8s_ease-out_infinite] rounded-full bg-ai/25" />}
-          <Sparkles className={cn("relative size-3.5", streaming && "animate-[ai-twinkle_1.6s_ease-in-out_infinite]")} />
+          <Icon className={cn("relative size-3.5", streaming && "animate-[ai-twinkle_1.6s_ease-in-out_infinite]")} />
         </span>
 
         <div className="min-w-0 flex-1">
@@ -96,9 +101,16 @@ export function SummaryPanel({
 
       <div className="px-4 pb-4">
         {text ? (
-          <div className={cn("animate-[ai-fade-in_300ms_ease-out]", streaming && "ai-streaming")}>
-            <Markdown className="max-w-none text-[0.875rem] [&_li]:my-1 [&_ul]:my-2">{text}</Markdown>
-          </div>
+          format === "html" ? (
+            <div
+              className={cn("prose-reader animate-[ai-fade-in_300ms_ease-out]", streaming && "ai-streaming")}
+              dangerouslySetInnerHTML={{ __html: text }}
+            />
+          ) : (
+            <div className={cn("animate-[ai-fade-in_300ms_ease-out]", streaming && "ai-streaming")}>
+              <Markdown className="max-w-none text-[0.875rem] [&_li]:my-1 [&_ul]:my-2">{text}</Markdown>
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-2.5 py-1.5" aria-hidden>
             {SKELETON.map((width, i) => (

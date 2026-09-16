@@ -32,6 +32,6 @@ describe("AI provider model listing security", () => {
 describe("AI summary cache schema", () => {
   it("partitions summaries by provider and credential owner", () => {
     const schema = readFileSync(join(process.cwd(), "prisma", "schema.base.prisma"), "utf8");
-    expect(schema).toContain("@@unique([articleId, providerId, userId, model, language])");
+    expect(schema).toContain("@@unique([articleId, providerId, userId, model, language, kind])");
   });
 });

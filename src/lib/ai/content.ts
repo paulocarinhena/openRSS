@@ -13,6 +13,14 @@ export function articleText(
   return [...header, "", truncate(body, maxChars)].join("\n");
 }
 
+/** HTML do artigo (sem cortar tags no meio), para traduções que devem preservar a formatação original. */
+export function articleHtml(a: { contentHtml?: string | null; fullContentHtml?: string | null; snippet?: string | null }, maxChars = 20000) {
+  const html = a.fullContentHtml ?? a.contentHtml ?? a.snippet ?? "";
+  if (html.length <= maxChars) return html;
+  const cut = html.lastIndexOf(">", maxChars);
+  return cut > 0 ? html.slice(0, cut + 1) : html.slice(0, maxChars);
+}
+
 export const languageName = (code: string) =>
   ({ "pt-BR": "português do Brasil", en: "English", es: "español" })[code] ?? code;
 

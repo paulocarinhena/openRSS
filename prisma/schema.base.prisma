@@ -224,10 +224,11 @@ model ArticleSummary {
   userId     String   @default("") // vazio para provedor global; dono da credencial para provedor pessoal
   model      String
   language   String
+  kind       String   @default("summary") // "summary" | "translate"
   content    String
   createdAt  DateTime @default(now())
 
-  @@unique([articleId, providerId, userId, model, language])
+  @@unique([articleId, providerId, userId, model, language, kind])
   @@map("article_summary")
 }
 

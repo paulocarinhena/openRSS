@@ -228,6 +228,8 @@
       "configureAi": "Configura un proveedor de IA en Configuración",
       "summarizing": "Resumiendo…",
       "summarize": "Resumir",
+      "translating": "Traduciendo…",
+      "translate": "Traducir",
       "askAi": "Preguntar a la IA",
       "loadingFull": "Cargando el artículo completo…",
       "noContent": "Este elemento no tiene contenido en el feed."
@@ -244,6 +246,18 @@
       "closeSummary": "Cerrar resumen",
       "copyFailed": "No se pudo copiar."
     },
+    "translate": {
+      "title": "Traducción de la IA",
+      "writing": "Traduciendo…",
+      "reading": "Leyendo el artículo…",
+      "cached": "en caché",
+      "copy": "Copiar",
+      "copySummary": "Copiar traducción",
+      "regenerate": "Traducir de nuevo",
+      "close": "Cerrar",
+      "closeSummary": "Cerrar traducción",
+      "copyFailed": "No se pudo copiar."
+    },
     "errors": {
       "notFound": "Artículo no encontrado.",
       "openFailed": "No se pudo abrir el artículo.",
@@ -254,6 +268,7 @@
       "http": "Error (HTTP {status})",
       "emptyModelResponse": "El modelo no devolvió contenido.",
       "summarizeFailed": "Error al resumir.",
+      "translateFailed": "Error al traducir.",
       "loadFailed": "No se pudo cargar.",
       "noOriginalLink": "El artículo no tiene enlace original.",
       "extractFailed": "No se pudo extraer el contenido.",

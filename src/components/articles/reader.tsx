@@ -10,6 +10,7 @@ import {
   CircleCheck,
   ExternalLink,
   FileText,
+  Languages,
   Loader2,
   MessageSquare,
   MoveHorizontal,
@@ -75,6 +76,9 @@ export function Reader({
   const [summary, setSummary] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryMeta, setSummaryMeta] = useState<SummaryMeta | null>(null);
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translationMeta, setTranslationMeta] = useState<SummaryMeta | null>(null);
   const [readerError, setReaderError] = useState<string | null>(null);
   const [chatPending, startChat] = useTransition();
   const [readerWidth, setReaderWidth] = useReaderWidth();
@@ -85,12 +89,19 @@ export function Reader({
   const isSaved = article.state?.isSaved ?? false;
   const html = showFull && fullHtml ? fullHtml : article.contentHtml;
 
-  async function summarize(force = false) {
+  async function streamAiText(
+    endpoint: string,
+    force: boolean,
+    setText: (v: string | null) => void,
+    setMeta: (v: SummaryMeta | null) => void,
+    setBusy: (v: boolean) => void,
+    fallbackErrorKey: "errors.summarizeFailed" | "errors.translateFailed",
+  ) {
     setReaderError(null);
-    setSummarizing(true);
-    setSummary("");
+    setBusy(true);
+    setText("");
     try {
-      const res = await fetch("/api/ai/summarize", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ articleId: article.id, force }),
@@ -99,7 +110,7 @@ export function Reader({
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? t("errors.http", { status: res.status }));
       }
-      setSummaryMeta({ model: res.headers.get("x-model"), cached: res.headers.get("x-cached") === "1" });
+      setMeta({ model: res.headers.get("x-model"), cached: res.headers.get("x-cached") === "1" });
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let text = "";
@@ -107,18 +118,21 @@ export function Reader({
         const { done, value } = await reader.read();
         if (done) break;
         text += decoder.decode(value, { stream: true });
-        setSummary(text);
+        setText(text);
       }
       if (!text.trim()) throw new Error(t("errors.emptyModelResponse"));
     } catch (err) {
-      const message = err instanceof Error ? err.message : t("errors.summarizeFailed");
-      setSummary(null);
+      const message = err instanceof Error ? err.message : t(fallbackErrorKey);
+      setText(null);
       setReaderError(message);
       toast.error(message);
     } finally {
-      setSummarizing(false);
+      setBusy(false);
     }
   }
+
+  const summarize = (force = false) => streamAiText("/api/ai/summarize", force, setSummary, setSummaryMeta, setSummarizing, "errors.summarizeFailed");
+  const translate = (force = false) => streamAiText("/api/ai/translate", force, setTranslation, setTranslationMeta, setTranslating, "errors.translateFailed");
 
   function toggleFull() {
     setReaderError(null);
@@ -227,6 +241,10 @@ export function Reader({
                 <Sparkles className={cn("text-ai", summarizing && "animate-[ai-twinkle_1.6s_ease-in-out_infinite]")} />
                 {summarizing ? t("reader.summarizing") : t("reader.summarize")}
               </Button>
+              <Button size="sm" onClick={() => translate(false)} disabled={!aiEnabled || translating} title={aiEnabled ? undefined : t("reader.configureAi")}>
+                {translating ? <Loader2 className="animate-spin text-ai" /> : <Languages className="text-ai" />}
+                {translating ? t("reader.translating") : t("reader.translate")}
+              </Button>
               <Button
                 size="sm"
                 disabled={!aiEnabled || chatPending}
@@ -245,6 +263,18 @@ export function Reader({
               meta={summaryMeta}
               onRegenerate={() => summarize(true)}
               onClose={() => setSummary(null)}
+            />
+          )}
+
+          {translation !== null && (
+            <SummaryPanel
+              namespace="articles.translate"
+              format="html"
+              text={translation}
+              streaming={translating}
+              meta={translationMeta}
+              onRegenerate={() => translate(true)}
+              onClose={() => setTranslation(null)}
             />
           )}
 
