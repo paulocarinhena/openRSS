@@ -1,17 +1,18 @@
 import { db } from "@/lib/db";
-import { getUserSettings } from "@/lib/app-settings";
+import { getAppSettings, getUserSettings } from "@/lib/app-settings";
 import { requireUser } from "@/lib/session";
 import { PROVIDER_META } from "@/lib/ai/providers";
 import { AiSettings, type ProviderRow } from "./ai-settings";
 
 export default async function AiSettingsPage() {
   const user = await requireUser();
-  const [providers, settings] = await Promise.all([
+  const [providers, settings, appSettings] = await Promise.all([
     db.aiProvider.findMany({
       where: { OR: [{ userId: user.id }, { userId: null }] },
       orderBy: [{ userId: "desc" }, { createdAt: "asc" }],
     }),
     getUserSettings(user.id),
+    getAppSettings(),
   ]);
 
   const rows: ProviderRow[] = providers.map((p) => ({
@@ -24,6 +25,7 @@ export default async function AiSettingsPage() {
     enabled: p.enabled,
     hasKey: Boolean(p.apiKeyEncrypted),
     editable: p.userId ? true : user.role === "admin",
+    isSystemDefault: p.id === appSettings.defaultAiProviderId,
   }));
 
   return (
@@ -31,6 +33,7 @@ export default async function AiSettingsPage() {
       providers={rows}
       meta={PROVIDER_META}
       isAdmin={user.role === "admin"}
+      systemDefaultModel={appSettings.defaultAiModel ?? ""}
       settings={{
         aiProviderId: settings.aiProviderId,
         aiModel: settings.aiModel ?? "",

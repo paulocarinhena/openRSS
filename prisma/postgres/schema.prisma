@@ -287,6 +287,8 @@ model AppSettings {
   allowRegistration      Boolean @default(false)
   refreshIntervalMinutes Int     @default(30)
   retentionDays          Int     @default(60)
+  defaultAiProviderId    String?
+  defaultAiModel         String?
 
   @@map("app_settings")
 }

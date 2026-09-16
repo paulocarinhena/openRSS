@@ -7,7 +7,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { AiProvider } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import { getUserSettings } from "@/lib/app-settings";
+import { getAppSettings, getUserSettings } from "@/lib/app-settings";
 import { createPinnedWebFetch, pinnedFetch, resolveNetworkTarget } from "@/lib/network";
 import { AiError, AiNotConfiguredError } from "./errors";
 
@@ -58,16 +58,22 @@ export type ResolvedModel = { model: LanguageModel; modelId: string; provider: A
 
 /**
  * Resolve o modelo: provider/model explícitos → preferências do usuário →
- * primeiro provedor disponível (do usuário, depois global) com defaultModel.
+ * padrão do sistema definido pelo admin → primeiro provedor disponível
+ * (do usuário, depois global) com defaultModel.
  */
 export async function resolveModel(userId: string, opts: { providerId?: string; model?: string } = {}): Promise<ResolvedModel> {
   const settings = await getUserSettings(userId);
   const providers = await availableProviders(userId);
   if (providers.length === 0) throw new AiNotConfiguredError();
+  const appSettings = await getAppSettings();
 
-  const wantedId = opts.providerId ?? settings.aiProviderId;
+  const wantedId = opts.providerId ?? settings.aiProviderId ?? appSettings.defaultAiProviderId;
   const provider = providers.find((p) => p.id === wantedId) ?? providers[0];
-  const modelId = opts.model || (provider.id === settings.aiProviderId ? settings.aiModel : null) || provider.defaultModel;
+  const modelId =
+    opts.model ||
+    (provider.id === settings.aiProviderId ? settings.aiModel : null) ||
+    (provider.id === appSettings.defaultAiProviderId ? appSettings.defaultAiModel : null) ||
+    provider.defaultModel;
   if (!modelId) throw new AiNotConfiguredError("noDefaultModel", { name: provider.name });
 
   return { model: createModel(provider, modelId), modelId, provider };

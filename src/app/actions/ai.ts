@@ -6,7 +6,7 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { requireUser } from "@/lib/session";
+import { requireAdmin, requireUser } from "@/lib/session";
 import { createModel, listModels, listModelsFor, PROVIDER_TYPES } from "@/lib/ai/providers";
 import { errorMessage } from "@/lib/ai/content";
 import { generateDigest } from "@/lib/ai/digest";
@@ -91,10 +91,51 @@ export async function deleteProviderAction(id: string) {
       db.articleSummary.deleteMany({ where: { providerId: id } }),
       db.aiProvider.delete({ where: { id } }),
       db.userSettings.updateMany({ where: { aiProviderId: id }, data: { aiProviderId: null, aiModel: null } }),
+      db.appSettings.updateMany({ where: { defaultAiProviderId: id }, data: { defaultAiProviderId: null, defaultAiModel: null } }),
     ]);
   } catch (err) {
     return failed(err);
   }
+  revalidatePath("/settings", "layout");
+  return { ok: true as const };
+}
+
+/** Marca um provedor/modelo já cadastrado como padrão do sistema (usado por quem não tem preferência própria). */
+export async function setSystemDefaultAction(providerId: string, model: string) {
+  await requireAdmin();
+  const t = await getTranslations("ai.actionErrors");
+  const trimmedModel = model.trim();
+  if (!trimmedModel) return { ok: false as const, error: t("modelRequired") };
+
+  const provider = await db.aiProvider.findUnique({ where: { id: providerId } });
+  if (!provider) return { ok: false as const, error: t("providerNotFound") };
+
+  try {
+    await db.$transaction([
+      ...(provider.userId
+        ? [db.aiProvider.update({ where: { id: providerId }, data: { userId: null } })]
+        : []),
+      db.appSettings.upsert({
+        where: { id: "app" },
+        create: { id: "app", defaultAiProviderId: providerId, defaultAiModel: trimmedModel },
+        update: { defaultAiProviderId: providerId, defaultAiModel: trimmedModel },
+      }),
+    ]);
+  } catch (err) {
+    return failed(err);
+  }
+  revalidatePath("/settings", "layout");
+  return { ok: true as const };
+}
+
+/** Remove o padrão de sistema (o fallback volta a ser o primeiro provedor disponível). */
+export async function clearSystemDefaultAction() {
+  await requireAdmin();
+  await db.appSettings.upsert({
+    where: { id: "app" },
+    create: { id: "app", defaultAiProviderId: null, defaultAiModel: null },
+    update: { defaultAiProviderId: null, defaultAiModel: null },
+  });
   revalidatePath("/settings", "layout");
   return { ok: true as const };
 }

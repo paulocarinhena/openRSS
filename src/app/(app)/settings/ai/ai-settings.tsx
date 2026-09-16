@@ -1,15 +1,17 @@
 "use client";
 
-import { Loader2, Pencil, Plus, Trash2, Zap } from "lucide-react";
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2, Zap } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
   classifyRecentAction,
+  clearSystemDefaultAction,
   deleteProviderAction,
   fetchModelsAction,
   listModelsAction,
   saveProviderAction,
+  setSystemDefaultAction,
   testProviderAction,
 } from "@/app/actions/ai";
 import { updateSettingsAction } from "@/app/actions/settings";
@@ -31,6 +33,7 @@ export type ProviderRow = {
   enabled: boolean;
   hasKey: boolean;
   editable: boolean;
+  isSystemDefault: boolean;
 };
 
 type Settings = {
@@ -42,14 +45,30 @@ type Settings = {
   digestHour: number;
 };
 
-export function AiSettings({ providers, meta, isAdmin, settings }: { providers: ProviderRow[]; meta: Meta; isAdmin: boolean; settings: Settings }) {
+export function AiSettings({
+  providers,
+  meta,
+  isAdmin,
+  settings,
+  systemDefaultModel,
+}: {
+  providers: ProviderRow[];
+  meta: Meta;
+  isAdmin: boolean;
+  settings: Settings;
+  systemDefaultModel: string;
+}) {
   const t = useTranslations("ai.settings");
   const [editing, setEditing] = useState<Partial<ProviderRow> | null>(null);
   const [prefs, setPrefs] = useState(settings);
   const [pending, start] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const currentDefault = providers.find((p) => p.isSystemDefault);
+  const [defaultProviderId, setDefaultProviderId] = useState(currentDefault?.id ?? "");
+  const [defaultModelDraft, setDefaultModelDraft] = useState(systemDefaultModel);
 
   const selectedProvider = providers.find((p) => p.id === prefs.aiProviderId) ?? providers.find((p) => p.enabled);
+  const selectedDefaultProvider = providers.find((p) => p.id === defaultProviderId);
 
   function savePrefs(e: React.FormEvent) {
     e.preventDefault();
@@ -97,6 +116,11 @@ export function AiSettings({ providers, meta, isAdmin, settings }: { providers: 
                   <span className="rounded-full border border-border px-1.5 text-[0.625rem] font-normal text-muted-foreground">
                     {p.scope === "global" ? t("scopeGlobalTag") : t("scopeUserTag")}
                   </span>
+                  {p.isSystemDefault && (
+                    <span className="whitespace-nowrap rounded-full border border-primary px-1.5 text-[0.625rem] font-normal text-primary">
+                      {t("systemDefaultTag")}
+                    </span>
+                  )}
                   {!p.enabled && <span className="text-[0.625rem] text-warning">{t("disabled")}</span>}
                 </p>
                 <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">
@@ -144,6 +168,71 @@ export function AiSettings({ providers, meta, isAdmin, settings }: { providers: 
           ))}
         </Card>
       </section>
+
+      {isAdmin && (
+        <section className="flex flex-col gap-3">
+          <h2 className="eyebrow">{t("systemDefaultSection")}</h2>
+          <Card className="grid gap-4 sm:grid-cols-2">
+            <Field label={t("systemDefaultProvider")}>
+              <Combobox
+                aria-label={t("systemDefaultProvider")}
+                value={defaultProviderId}
+                onValueChange={(v) => {
+                  setDefaultProviderId(v);
+                  setDefaultModelDraft(providers.find((p) => p.id === v)?.defaultModel ?? "");
+                }}
+                options={providers.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                  description: `${meta[p.type].label}${p.defaultModel ? ` · ${p.defaultModel}` : ""}`,
+                }))}
+              />
+            </Field>
+            <Field label={t("systemDefaultModelLabel")}>
+              <ModelCombobox
+                value={defaultModelDraft}
+                onValueChange={setDefaultModelDraft}
+                placeholder={selectedDefaultProvider?.defaultModel ? t("providerDefault", { model: selectedDefaultProvider.defaultModel }) : undefined}
+                cacheKey={defaultProviderId || null}
+                unavailableReason={t("addProviderFirst")}
+                load={() => listModelsAction(defaultProviderId)}
+              />
+            </Field>
+            <p className="text-xs text-muted-foreground sm:col-span-2">{t("setSystemDefaultHint")}</p>
+            <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
+              <Button
+                variant="primary"
+                disabled={pending || !defaultProviderId || !defaultModelDraft}
+                onClick={() =>
+                  start(async () => {
+                    const res = await setSystemDefaultAction(defaultProviderId, defaultModelDraft);
+                    if (res.ok) toast.success(t("systemDefaultSet"));
+                    else toast.error(res.error);
+                  })
+                }
+              >
+                <ShieldCheck /> {t("setSystemDefault")}
+              </Button>
+              {currentDefault && (
+                <Button
+                  variant="ghost"
+                  disabled={pending}
+                  onClick={() =>
+                    start(async () => {
+                      await clearSystemDefaultAction();
+                      setDefaultProviderId("");
+                      setDefaultModelDraft("");
+                      toast.success(t("systemDefaultRemoved"));
+                    })
+                  }
+                >
+                  {t("removeSystemDefault")}
+                </Button>
+              )}
+            </div>
+          </Card>
+        </section>
+      )}
 
       <form onSubmit={savePrefs} className="flex flex-col gap-3">
         <h2 className="eyebrow">{t("preferences")}</h2>
