@@ -18,7 +18,7 @@ export function AdminPanel({
   stats,
 }: {
   currentUserId: string;
-  settings: { allowRegistration: boolean; refreshIntervalMinutes: number; retentionDays: number };
+  settings: { allowRegistration: boolean; refreshIntervalMinutes: number };
   users: User[];
   stats: { feeds: number; articles: number; failingFeeds: number; database: string };
 }) {
@@ -76,9 +76,6 @@ export function AdminPanel({
               value={settings.refreshIntervalMinutes}
               onChange={(e) => setSettings({ ...settings, refreshIntervalMinutes: Number(e.target.value) })}
             />
-          </Field>
-          <Field label={t("retention")} hint={t("retentionHint")}>
-            <Input type="number" min={7} max={3650} value={settings.retentionDays} onChange={(e) => setSettings({ ...settings, retentionDays: Number(e.target.value) })} />
           </Field>
         </Card>
         <div>

@@ -12,16 +12,17 @@ export function SettingsTabs({ isAdmin }: { isAdmin: boolean }) {
     { href: "/settings", label: t("general") },
     { href: "/settings/feeds", label: t("feeds") },
     { href: "/settings/ai", label: t("ai") },
+    ...(isAdmin ? [{ href: "/settings/cleanup", label: t("cleanup") }] : []),
     ...(isAdmin ? [{ href: "/settings/admin", label: t("admin") }] : []),
   ];
   return (
-    <nav className="flex gap-1 border-b border-border">
+    <nav className="flex gap-1 overflow-x-auto border-b border-border">
       {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           className={cn(
-            "-mb-px border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground",
+            "-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground",
             pathname === tab.href && "border-primary font-medium text-foreground",
           )}
         >

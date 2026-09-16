@@ -11,7 +11,6 @@ import { actionErrorMessage } from "@/lib/action-errors";
 const appSchema = z.object({
   allowRegistration: z.boolean(),
   refreshIntervalMinutes: z.number().int().min(5).max(1440),
-  retentionDays: z.number().int().min(7).max(3650),
 });
 
 export async function updateAppSettingsAction(input: z.input<typeof appSchema>) {
@@ -20,6 +19,21 @@ export async function updateAppSettingsAction(input: z.input<typeof appSchema>) 
   if (!parsed.success) return { ok: false as const, error: actionErrorMessage(await getTranslations("admin.errors"), parsed.error) };
   await db.appSettings.upsert({ where: { id: "app" }, create: { id: "app", ...parsed.data }, update: parsed.data });
   revalidatePath("/settings/admin");
+  return { ok: true as const };
+}
+
+const retentionSchema = z.number().int().min(1).max(3650);
+
+export async function updateRetentionDaysAction(input: number) {
+  await requireAdmin();
+  const parsed = retentionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: (await getTranslations("settings.cleanup"))("invalidDays") };
+  await db.appSettings.upsert({
+    where: { id: "app" },
+    create: { id: "app", retentionDays: parsed.data },
+    update: { retentionDays: parsed.data },
+  });
+  revalidatePath("/settings/cleanup");
   return { ok: true as const };
 }
 

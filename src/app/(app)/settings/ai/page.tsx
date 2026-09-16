@@ -2,12 +2,16 @@ import { db } from "@/lib/db";
 import { getAppSettings, getUserSettings } from "@/lib/app-settings";
 import { requireUser } from "@/lib/session";
 import { PROVIDER_META } from "@/lib/ai/providers";
-import { AiSettings, type ProviderRow } from "./ai-settings";
+import { AiSettings, type ProviderRow, type TtsProviderRow } from "./ai-settings";
 
 export default async function AiSettingsPage() {
   const user = await requireUser();
-  const [providers, settings, appSettings] = await Promise.all([
+  const [providers, ttsProviders, settings, appSettings] = await Promise.all([
     db.aiProvider.findMany({
+      where: { OR: [{ userId: user.id }, { userId: null }] },
+      orderBy: [{ userId: "desc" }, { createdAt: "asc" }],
+    }),
+    db.ttsProvider.findMany({
       where: { OR: [{ userId: user.id }, { userId: null }] },
       orderBy: [{ userId: "desc" }, { createdAt: "asc" }],
     }),
@@ -27,16 +31,30 @@ export default async function AiSettingsPage() {
     editable: p.userId ? true : user.role === "admin",
     isSystemDefault: p.id === appSettings.defaultAiProviderId,
   }));
+  const ttsRows: TtsProviderRow[] = ttsProviders.map((p) => ({
+    id: p.id,
+    scope: p.userId ? "user" : "global",
+    name: p.name,
+    baseUrl: p.baseUrl,
+    model: p.model,
+    voice: p.voice,
+    responseFormat: p.responseFormat,
+    enabled: p.enabled,
+    hasKey: Boolean(p.apiKeyEncrypted),
+    editable: p.userId ? true : user.role === "admin",
+  }));
 
   return (
     <AiSettings
       providers={rows}
+      ttsProviders={ttsRows}
       meta={PROVIDER_META}
       isAdmin={user.role === "admin"}
       systemDefaultModel={appSettings.defaultAiModel ?? ""}
       settings={{
         aiProviderId: settings.aiProviderId,
         aiModel: settings.aiModel ?? "",
+        ttsProviderId: settings.ttsProviderId,
         interests: settings.interests ?? "",
         classifyEnabled: settings.classifyEnabled,
         digestEnabled: settings.digestEnabled,

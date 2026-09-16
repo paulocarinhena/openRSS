@@ -20,11 +20,12 @@ export async function ArticleView({ scope, searchParams }: { scope: ArticleScope
   const unreadOnly = scope.kind === "saved" ? params.unread === "1" : params.unread !== "0";
   const query = params.q?.trim() || undefined;
 
-  const [initial, settings, selected, providers, feed] = await Promise.all([
+  const [initial, settings, selected, providers, ttsProviders, feed] = await Promise.all([
     listArticles(user.id, scope, { unreadOnly, query }),
     getUserSettings(user.id),
     params.a ? getArticle(user.id, params.a) : null,
     db.aiProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
+    db.ttsProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
     scope.kind === "feed" ? db.feed.findUnique({ where: { id: scope.feedId }, select: { lastError: true, errorCount: true, siteUrl: true } }) : null,
   ]);
 
@@ -40,6 +41,7 @@ export async function ArticleView({ scope, searchParams }: { scope: ArticleScope
       listView={normalizeListView(settings.listView)}
       timezone={settings.timezone}
       aiEnabled={providers > 0}
+      ttsEnabled={ttsProviders > 0}
       feedError={feed && feed.errorCount > 0 ? feed.lastError : null}
     />
   );

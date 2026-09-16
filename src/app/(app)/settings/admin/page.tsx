@@ -17,7 +17,7 @@ export default async function AdminPage() {
   return (
     <AdminPanel
       currentUserId={admin.id}
-      settings={{ allowRegistration: settings.allowRegistration, refreshIntervalMinutes: settings.refreshIntervalMinutes, retentionDays: settings.retentionDays }}
+      settings={{ allowRegistration: settings.allowRegistration, refreshIntervalMinutes: settings.refreshIntervalMinutes }}
       users={users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, subscriptions: u._count.subscriptions }))}
       stats={{ feeds: stats[0], articles: stats[1], failingFeeds: stats[2], database: getDbProvider() === "postgresql" ? "PostgreSQL" : "SQLite" }}
     />

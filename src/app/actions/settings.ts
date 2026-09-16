@@ -13,6 +13,7 @@ import { actionErrorMessage } from "@/lib/action-errors";
 const schema = z.object({
   aiProviderId: z.string().nullable().optional(),
   aiModel: z.string().trim().max(200).nullable().optional(),
+  ttsProviderId: z.string().nullable().optional(),
   language: z.string().min(2).max(10).optional(),
   uiLanguage: z.enum(locales).optional(),
   interests: z.string().max(4000).nullable().optional(),
@@ -32,6 +33,10 @@ export async function updateSettingsAction(input: z.input<typeof schema>) {
 
   if (data.aiProviderId) {
     const allowed = await db.aiProvider.count({ where: { id: data.aiProviderId, OR: [{ userId: user.id }, { userId: null }] } });
+    if (!allowed) return { ok: false as const, error: t("invalidProvider") };
+  }
+  if (data.ttsProviderId) {
+    const allowed = await db.ttsProvider.count({ where: { id: data.ttsProviderId, enabled: true, OR: [{ userId: user.id }, { userId: null }] } });
     if (!allowed) return { ok: false as const, error: t("invalidProvider") };
   }
 

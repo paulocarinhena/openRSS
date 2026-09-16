@@ -17,7 +17,10 @@ export default async function ArticlePage({ params }: PageProps<"/article/[id]">
       update: { isRead: true, readAt: new Date() },
     });
   }
-  const providers = await db.aiProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } });
+  const [providers, ttsProviders] = await Promise.all([
+    db.aiProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
+    db.ttsProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
+  ]);
 
-  return <StandaloneReader article={{ ...article, state: article.state ? { ...article.state, isRead: true } : null }} aiEnabled={providers > 0} />;
+  return <StandaloneReader article={{ ...article, state: article.state ? { ...article.state, isRead: true } : null }} aiEnabled={providers > 0} ttsEnabled={ttsProviders > 0} />;
 }

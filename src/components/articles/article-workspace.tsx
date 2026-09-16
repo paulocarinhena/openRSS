@@ -29,6 +29,7 @@ export function ArticleWorkspace({
   listView: initialView,
   timezone,
   aiEnabled,
+  ttsEnabled,
   feedError,
 }: {
   scope: ArticleScope;
@@ -40,6 +41,7 @@ export function ArticleWorkspace({
   listView: ListView;
   timezone: string;
   aiEnabled: boolean;
+  ttsEnabled: boolean;
   feedError: string | null;
 }) {
   const t = useTranslations("articles");
@@ -487,6 +489,7 @@ export function ArticleWorkspace({
           key={selected.id}
           article={selected}
           aiEnabled={aiEnabled}
+          ttsEnabled={ttsEnabled}
           onClose={close}
           onPrev={selectedIndex > 0 ? () => move(-1) : undefined}
           onNext={selectedIndex !== -1 && selectedIndex < items.length - 1 ? () => move(1) : undefined}

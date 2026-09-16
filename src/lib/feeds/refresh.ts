@@ -158,7 +158,7 @@ export async function subscribe(
   return subscription;
 }
 
-/** Remove artigos antigos, lidos e não salvos por ninguém. */
+/** Remove artigos antigos que não foram salvos por nenhum usuário. */
 export async function applyRetention() {
   const { retentionDays } = await getAppSettings();
   const cutoff = new Date(Date.now() - retentionDays * 86400000);
@@ -168,16 +168,6 @@ export async function applyRetention() {
       AND NOT EXISTS (
         SELECT 1 FROM "user_article" saved
         WHERE saved."articleId" = "article"."id" AND saved."isSaved" = true
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM "subscription" sub
-        WHERE sub."feedId" = "article"."feedId"
-          AND NOT EXISTS (
-            SELECT 1 FROM "user_article" state
-            WHERE state."articleId" = "article"."id"
-              AND state."userId" = sub."userId"
-              AND state."isRead" = true
-          )
       )
   `;
   await db.feed.deleteMany({ where: { subscriptions: { none: {} } } });

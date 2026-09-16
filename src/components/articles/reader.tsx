@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   ArrowLeft,
+  AudioLines,
   Bookmark,
   ChevronDown,
   ChevronUp,
@@ -10,11 +11,13 @@ import {
   CircleCheck,
   ExternalLink,
   FileText,
+  Headphones,
   Languages,
   Loader2,
   MessageSquare,
   MoveHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
@@ -30,6 +33,7 @@ import { READER_WIDTH_ORDER, READER_WIDTHS, useReaderWidth } from "@/hooks/use-r
 export function Reader({
   article,
   aiEnabled,
+  ttsEnabled,
   onClose,
   onPrev,
   onNext,
@@ -39,6 +43,7 @@ export function Reader({
 }: {
   article: ArticleDetail;
   aiEnabled: boolean;
+  ttsEnabled: boolean;
   onClose?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
@@ -80,6 +85,11 @@ export function Reader({
   const [translating, setTranslating] = useState(false);
   const [translationMeta, setTranslationMeta] = useState<SummaryMeta | null>(null);
   const [readerError, setReaderError] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioModel, setAudioModel] = useState<string | null>(null);
+  const [audioSource, setAudioSource] = useState<"article" | "summary">("article");
+  const [generatingAudioSource, setGeneratingAudioSource] = useState<"article" | "summary" | null>(null);
+  const audioRequest = useRef<AbortController | null>(null);
   const [chatPending, startChat] = useTransition();
   const [readerWidth, setReaderWidth] = useReaderWidth();
   const widthConfig = READER_WIDTHS[readerWidth];
@@ -88,6 +98,55 @@ export function Reader({
   const isRead = article.state?.isRead ?? true;
   const isSaved = article.state?.isSaved ?? false;
   const html = showFull && fullHtml ? fullHtml : article.contentHtml;
+
+  useEffect(() => () => {
+    audioRequest.current?.abort();
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+  }, [audioUrl]);
+
+  async function generateAudio(source: "article" | "summary" = "article", force = false) {
+    setReaderError(null);
+    setAudioSource(source);
+    setGeneratingAudioSource(source);
+    audioRequest.current?.abort();
+    const controller = new AbortController();
+    audioRequest.current = controller;
+    try {
+      const response = await fetch("/api/ai/speech", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ articleId: article.id, source, text: source === "summary" ? summary : undefined, force }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? t("errors.audioFailed"));
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error(t("errors.emptyAudio"));
+      setAudioUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return URL.createObjectURL(blob);
+      });
+      setAudioModel(response.headers.get("x-tts-model"));
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      const message = error instanceof Error ? error.message : t("errors.audioFailed");
+      setReaderError(message);
+      toast.error(message);
+    } finally {
+      if (audioRequest.current === controller) {
+        audioRequest.current = null;
+        setGeneratingAudioSource(null);
+      }
+    }
+  }
+
+  function cancelAudio() {
+    audioRequest.current?.abort();
+    audioRequest.current = null;
+    setGeneratingAudioSource(null);
+  }
 
   async function streamAiText(
     endpoint: string,
@@ -114,12 +173,25 @@ export function Reader({
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let text = "";
+      let frame: number | null = null;
+      let pendingText = "";
+      const renderNextFrame = (value: string) => {
+        pendingText = value;
+        if (frame !== null) return;
+        frame = window.requestAnimationFrame(() => {
+          frame = null;
+          setText(pendingText);
+        });
+      };
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         text += decoder.decode(value, { stream: true });
-        setText(text);
+        renderNextFrame(text);
       }
+      text += decoder.decode();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      setText(text);
       if (!text.trim()) throw new Error(t("errors.emptyModelResponse"));
     } catch (err) {
       const message = err instanceof Error ? err.message : t(fallbackErrorKey);
@@ -253,8 +325,50 @@ export function Reader({
                 {chatPending ? <Loader2 className="animate-spin" /> : <MessageSquare className="text-ai" />}
                 {t("reader.askAi")}
               </Button>
+              <Button
+                size="sm"
+                disabled={!ttsEnabled}
+                title={!ttsEnabled ? t("reader.configureTts") : generatingAudioSource === "article" ? t("reader.cancelAudio") : undefined}
+                aria-label={generatingAudioSource === "article" ? t("reader.cancelAudio") : t("reader.generateAudio")}
+                onClick={() => generatingAudioSource === "article" ? cancelAudio() : generateAudio("article")}
+                className={cn(
+                  "transition-[color,background-color,border-color,box-shadow] duration-300",
+                  generatingAudioSource === "article" && "border-ai/30 bg-ai/10 text-ai shadow-[0_0_0_3px_color-mix(in_oklab,var(--ai)_10%,transparent),0_8px_24px_color-mix(in_oklab,var(--ai)_12%,transparent)] hover:bg-ai/15",
+                )}
+              >
+                {generatingAudioSource === "article" ? (
+                  <>
+                    <span className="relative flex size-4 items-center justify-center">
+                      <span aria-hidden className="absolute -inset-1 animate-[ai-halo_1.8s_ease-out_infinite] rounded-full bg-ai/20" />
+                      <AudioLines className="relative animate-[ai-twinkle_900ms_ease-in-out_infinite] text-ai" />
+                    </span>
+                    <span>{t("reader.generatingAudio")}</span>
+                    <span className="ml-1 flex items-center gap-1 border-l border-ai/25 pl-2 text-[0.6875rem] font-semibold">
+                      <X className="size-3" />
+                      {t("reader.cancel")}
+                    </span>
+                  </>
+                ) : (
+                  <><Headphones className="text-ai" />{t("reader.generateAudio")}</>
+                )}
+              </Button>
             </div>
           </header>
+
+          {audioUrl && (
+            <section className="ai-panel rounded-card border border-ai/25 bg-[color-mix(in_oklab,var(--ai)_5%,var(--surface))] p-4" aria-label={t(audioSource === "summary" ? "audio.summaryTitle" : "audio.title")}>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-full bg-ai/12 text-ai"><Headphones className="size-3.5" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold">{t(audioSource === "summary" ? "audio.summaryTitle" : "audio.title")}</p>
+                  {audioModel && <p className="truncate font-mono text-[0.625rem] text-muted-foreground">{audioModel}</p>}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => generateAudio(audioSource, true)}>{t("audio.regenerate")}</Button>
+                <Button variant="ghost" size="icon-sm" aria-label={t("audio.close")} onClick={() => setAudioUrl((current) => { if (current) URL.revokeObjectURL(current); return null; })}>×</Button>
+              </div>
+              <audio className="w-full" controls preload="metadata" src={audioUrl}>{t("audio.unsupported")}</audio>
+            </section>
+          )}
 
           {summary !== null && (
             <SummaryPanel
@@ -263,6 +377,9 @@ export function Reader({
               meta={summaryMeta}
               onRegenerate={() => summarize(true)}
               onClose={() => setSummary(null)}
+              onGenerateAudio={ttsEnabled ? () => generateAudio("summary") : undefined}
+              onCancelAudio={cancelAudio}
+              audioBusy={generatingAudioSource === "summary"}
             />
           )}
 

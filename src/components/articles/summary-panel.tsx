@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Languages, RotateCcw, Sparkles, X } from "lucide-react";
+import { AudioLines, Check, Copy, Headphones, Languages, RotateCcw, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -19,6 +19,9 @@ export function SummaryPanel({
   meta,
   onRegenerate,
   onClose,
+  onGenerateAudio,
+  onCancelAudio,
+  audioBusy = false,
   namespace = "articles.summary",
   format = "markdown",
 }: {
@@ -27,6 +30,9 @@ export function SummaryPanel({
   meta: SummaryMeta | null;
   onRegenerate: () => void;
   onClose: () => void;
+  onGenerateAudio?: () => void;
+  onCancelAudio?: () => void;
+  audioBusy?: boolean;
   namespace?: "articles.summary" | "articles.translate";
   format?: "markdown" | "html";
 }) {
@@ -87,6 +93,26 @@ export function SummaryPanel({
 
         {!streaming && text && (
           <div className="flex animate-[ai-fade-in_240ms_ease-out] items-center">
+            {onGenerateAudio && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title={audioBusy ? t("cancelAudio") : t("listen")}
+                aria-label={audioBusy ? t("cancelAudio") : t("listen")}
+                onClick={audioBusy ? onCancelAudio : onGenerateAudio}
+                className={cn("relative transition-[color,background-color,box-shadow] duration-300", audioBusy && "bg-ai/12 text-ai shadow-[0_0_0_3px_color-mix(in_oklab,var(--ai)_12%,transparent)] hover:bg-ai/18")}
+              >
+                {audioBusy ? (
+                  <>
+                    <span aria-hidden className="absolute inset-0 animate-[ai-halo_1.8s_ease-out_infinite] rounded-full bg-ai/20" />
+                    <AudioLines className="relative animate-[ai-twinkle_900ms_ease-in-out_infinite]" />
+                    <span aria-hidden className="absolute -right-0.5 -top-0.5 flex size-3.5 items-center justify-center rounded-full border border-surface bg-foreground text-surface shadow-sm">
+                      <X className="size-2.5 stroke-[2.5]" />
+                    </span>
+                  </>
+                ) : <Headphones />}
+              </Button>
+            )}
             <Button variant="ghost" size="icon-sm" title={t("copy")} aria-label={t("copySummary")} onClick={copy}>
               {copied ? <Check className="text-success" /> : <Copy />}
             </Button>

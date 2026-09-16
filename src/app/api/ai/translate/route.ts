@@ -65,5 +65,12 @@ ${languageInstruction(settings.language)}`,
     onError: ({ error }) => console.error("[ai:translate]", errorMessage(error)),
   });
 
-  return result.toTextStreamResponse({ headers: { "x-model": resolved.modelId } });
+  return result.toTextStreamResponse({
+    headers: {
+      "x-model": resolved.modelId,
+      "cache-control": "no-cache, no-transform",
+      "content-encoding": "identity",
+      "x-accel-buffering": "no",
+    },
+  });
 }

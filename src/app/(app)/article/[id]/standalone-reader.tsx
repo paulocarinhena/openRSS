@@ -6,7 +6,7 @@ import type { ArticleDetail } from "@/lib/queries";
 import { setRead, setSaved } from "@/app/actions/articles";
 import { Reader } from "@/components/articles/reader";
 
-export function StandaloneReader({ article: initial, aiEnabled }: { article: ArticleDetail; aiEnabled: boolean }) {
+export function StandaloneReader({ article: initial, aiEnabled, ttsEnabled }: { article: ArticleDetail; aiEnabled: boolean; ttsEnabled: boolean }) {
   const router = useRouter();
   const [article, setArticle] = useState(initial);
   const state = article.state ?? {
@@ -27,6 +27,7 @@ export function StandaloneReader({ article: initial, aiEnabled }: { article: Art
         standalone
         article={article}
         aiEnabled={aiEnabled}
+        ttsEnabled={ttsEnabled}
         onClose={() => router.back()}
         onToggleRead={async () => {
           setArticle({ ...article, state: { ...state, isRead: !state.isRead } });
