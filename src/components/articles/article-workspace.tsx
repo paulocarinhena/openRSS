@@ -277,8 +277,17 @@ export function ArticleWorkspace({
         article ? { ...article, state: { ...(article.state ?? emptyState(article)), isRead: true } } : article,
       );
       try {
-        const count = await markAllRead(scope);
+        const { count, nextFeedId } = await markAllRead(scope);
         toast.success(count ? t("markedRead", { count }) : t("nothingToMark"));
+        if (nextFeedId) {
+          const params = new URLSearchParams(window.location.search);
+          params.delete("a");
+          params.delete("q");
+          const qs = params.toString();
+          router.push(qs ? `/feed/${nextFeedId}?${qs}` : `/feed/${nextFeedId}`);
+        } else {
+          router.refresh();
+        }
       } catch {
         setItems(previousItems);
         setHasMore(previousHasMore);
@@ -287,7 +296,7 @@ export function ArticleWorkspace({
         toast.error(t("errors.markAllFailed"));
       }
     });
-  }, [hasMore, items, scope, selected, t, unreadOnly]);
+  }, [hasMore, items, router, scope, selected, t, unreadOnly]);
 
   const refreshFeed = useCallback(() => {
     if (scope.kind !== "feed") return;

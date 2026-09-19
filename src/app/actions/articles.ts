@@ -7,7 +7,8 @@ import { requireUser } from "@/lib/session";
 import { extractFullContent } from "@/lib/feeds/extract";
 import { findPreviewImage } from "@/lib/feeds/preview-image";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
-import { articleScopeWhere, getArticle, listArticles, type ArticleScope } from "@/lib/queries";
+import { nextUnreadFeedId, orderedSidebarFeeds } from "@/lib/feeds/next-unread";
+import { articleScopeWhere, getArticle, getSidebarData, listArticles, type ArticleScope } from "@/lib/queries";
 
 /** Carrega o artigo para o leitor e marca como lido. */
 export async function openArticleAction(articleId: string) {
@@ -71,23 +72,29 @@ export async function markAllRead(scope: ArticleScope) {
     select: { id: true },
   });
   const ids = rows.map((row) => row.id);
-  if (ids.length === 0) return 0;
-
-  const now = new Date();
-  for (let i = 0; i < ids.length; i += 500) {
-    const chunk = ids.slice(i, i + 500);
-    await db.$transaction(
-      chunk.map((articleId) =>
-        db.userArticle.upsert({
-          where: { userId_articleId: { userId: user.id, articleId } },
-          create: { userId: user.id, articleId, isRead: true, readAt: now },
-          update: { isRead: true, readAt: now },
-        }),
-      ),
-    );
+  if (ids.length > 0) {
+    const now = new Date();
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = ids.slice(i, i + 500);
+      await db.$transaction(
+        chunk.map((articleId) =>
+          db.userArticle.upsert({
+            where: { userId_articleId: { userId: user.id, articleId } },
+            create: { userId: user.id, articleId, isRead: true, readAt: now },
+            update: { isRead: true, readAt: now },
+          }),
+        ),
+      );
+    }
+    revalidatePath("/", "layout");
   }
-  revalidatePath("/", "layout");
-  return ids.length;
+  const nextFeedId = scope.kind === "feed" ? await findNextUnreadFeedId(user.id, scope.feedId) : null;
+  return { count: ids.length, nextFeedId };
+}
+
+async function findNextUnreadFeedId(userId: string, currentFeedId: string) {
+  const sidebar = await getSidebarData(userId);
+  return nextUnreadFeedId(orderedSidebarFeeds(sidebar), currentFeedId);
 }
 
 /** Busca o conteúdo completo do artigo original (Readability) e guarda. */
