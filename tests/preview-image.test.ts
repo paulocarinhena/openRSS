@@ -18,6 +18,11 @@ describe("extractPreviewImage", () => {
     expect(extractPreviewImage(`<link rel="image_src" href="//cdn.test/x.webp">`, "https://site.test/")).toBe("https://cdn.test/x.webp");
   });
 
+  it("não desfaz uma entidade produzida pela troca anterior", () => {
+    const html = `<meta property="og:image" content="https://cdn.test/a.jpg?q=&amp;quot;hi">`;
+    expect(extractPreviewImage(html, "https://site.test/")).toBe("https://cdn.test/a.jpg?q=&quot;hi");
+  });
+
   it("retorna null sem imagem ou com esquema inválido", () => {
     expect(extractPreviewImage("<html><head><title>x</title></head></html>", "https://site.test/")).toBeNull();
     expect(extractPreviewImage(`<meta property="og:image" content="javascript:alert(1)">`, "https://site.test/")).toBeNull();

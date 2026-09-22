@@ -8,8 +8,20 @@ function attr(tag: string, name: string): string | undefined {
   return match ? (match[2] ?? match[3] ?? match[4]) : undefined;
 }
 
-const decodeEntities = (s: string) =>
-  s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x2F;/gi, "/");
+/** One pass. Chained replaces turn `&amp;quot;` into `"`. */
+const decodeEntities = (value: string) =>
+  value.replace(/&(?:amp|quot|#39|#(?:x|X)2(?:f|F));/g, (entity) => {
+    switch (entity.toLowerCase()) {
+      case "&amp;":
+        return "&";
+      case "&quot;":
+        return '"';
+      case "&#39;":
+        return "'";
+      default:
+        return "/";
+    }
+  });
 
 /** Extrai a imagem de capa (og:image / twitter:image / image_src) do HTML de uma página. */
 export function extractPreviewImage(html: string, pageUrl: string): string | null {

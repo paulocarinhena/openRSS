@@ -30,6 +30,11 @@ import { FeedIcon } from "@/components/feed-icon";
 import { SummaryPanel, type SummaryMeta } from "./summary-panel";
 import { READER_WIDTH_ORDER, READER_WIDTHS, useReaderWidth } from "@/hooks/use-reader-width";
 
+function visibleTextLength(html: string | null): number {
+  if (!html) return 0;
+  return new DOMParser().parseFromString(html, "text/html").body.textContent?.trim().length ?? 0;
+}
+
 export function Reader({
   article,
   aiEnabled,
@@ -62,12 +67,11 @@ export function Reader({
   useEffect(() => {
     if (article.fullContentHtml || !article.url) return;
     let cancelled = false;
-    const textLength = (h: string | null) => (h ?? "").replace(/<[^>]+>/g, "").trim().length;
     loadFullContent(article.id)
       .then((res) => {
         if (cancelled) return;
         // Só troca se a extração trouxe pelo menos tanto texto quanto o feed.
-        if (res.html && textLength(res.html) >= textLength(article.contentHtml) * 0.8) {
+        if (res.html && visibleTextLength(res.html) >= visibleTextLength(article.contentHtml) * 0.8) {
           setFullHtml(res.html);
           setShowFull(true);
         }

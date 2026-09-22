@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { decrypt, encrypt, maskKey } from "@/lib/crypto";
+import { stripHtml } from "@/lib/utils";
 import { buildSchema } from "../scripts/gen-schemas";
 import { dayInTimezone, hourInTimezone } from "@/lib/ai/digest";
 
@@ -22,6 +23,14 @@ describe("crypto", () => {
 
   it("mascara chaves", () => {
     expect(maskKey("sk-abcdefghijkl")).toBe("sk-••••ijkl");
+  });
+});
+
+describe("stripHtml", () => {
+  it("decodifica cada entidade uma vez", () => {
+    expect(stripHtml("Tom &amp; Jerry")).toBe("Tom & Jerry");
+    expect(stripHtml("&amp;lt;script&amp;gt;")).toBe("&lt;script&gt;");
+    expect(stripHtml("<b>oi</b>")).toBe("oi");
   });
 });
 
