@@ -21,7 +21,7 @@
     "postinstall": "prisma generate --schema prisma/sqlite/schema.prisma && prisma generate --schema prisma/postgres/schema.prisma"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.53",
+    "@ai-sdk/anthropic": "^4.0.58",
     "@ai-sdk/openai": "^4.0.66",
     "@ai-sdk/openai-compatible": "^3.0.48",
     "@ai-sdk/react": "^4.0.103",
