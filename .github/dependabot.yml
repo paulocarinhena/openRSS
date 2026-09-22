@@ -5,6 +5,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      # These packages share types. Separate bumps nest a second copy of `ai`
+      # and break `tsc` on UIMessage.
+      ai-sdk:
+        patterns:
+          - "ai"
+          - "@ai-sdk/*"
     ignore:
       # typescript-eslint (via eslint-config-next) does not support TypeScript 7 yet.
       - dependency-name: "typescript"
