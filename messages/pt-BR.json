@@ -62,8 +62,17 @@
       "INVALID_EMAIL": "Email inválido.",
       "PASSWORD_TOO_SHORT": "A senha precisa ter pelo menos 8 caracteres.",
       "PASSWORD_TOO_LONG": "A senha é longa demais.",
-      "USER_NOT_FOUND": "Usuário não encontrado."
-    }
+      "USER_NOT_FOUND": "Usuário não encontrado.",
+      "ssoFailed": "Não foi possível entrar pelo SSO ({code}).",
+      "account_not_linked": "Já existe uma conta com este e-mail. Entre com a senha e conecte o SSO em Configurações → Geral.",
+      "signup_disabled": "Cadastro pelo SSO desativado. Peça a um administrador para criar sua conta.",
+      "unable_to_create_user": "Não foi possível criar a conta pelo SSO (cadastro fechado?).",
+      "email_not_verified": "O provedor informou que seu e-mail não está verificado.",
+      "access_denied": "Acesso negado pelo provedor de login.",
+      "state_mismatch": "A sessão de login expirou. Tente de novo."
+    },
+    "ssoButton": "Entrar com {name}",
+    "or": "ou"
   },
   "setup": {
     "title": "Configuração inicial",
@@ -625,7 +634,11 @@
       },
       "save": "Salvar",
       "groupStories": "Agrupar notícias do mesmo fato",
-      "groupStoriesHint": "Mostra um único item quando feeds diferentes publicam a mesma notícia; ler uma marca as outras como lidas."
+      "groupStoriesHint": "Mostra um único item quando feeds diferentes publicam a mesma notícia; ler uma marca as outras como lidas.",
+      "sso": "Login único (SSO)",
+      "ssoLinked": "Conta conectada a {name}.",
+      "ssoNotLinked": "Conecte sua conta a {name} para entrar sem senha.",
+      "ssoConnect": "Conectar {name}"
     },
     "errors": {
       "invalidData": "Dados inválidos.",
@@ -670,7 +683,8 @@
       "createUserFailed": "Não foi possível criar o usuário.",
       "ownRole": "Você não pode alterar seu próprio papel.",
       "ownDelete": "Você não pode excluir a si mesmo."
-    }
+    },
+    "passwordLoginDisabled": "O login por senha está desativado (OIDC_DISABLE_PASSWORD_LOGIN): as contas são criadas pelo SSO no primeiro acesso."
   },
   "digest": {
     "eyebrow": "Digest diário",

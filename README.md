@@ -56,7 +56,7 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Retenção configurável de artigos
 
 **Usuários**
-- Autenticação por email e senha (Better Auth)
+- Autenticação por email e senha (Better Auth) e login único via OIDC (Authentik, Authelia, Keycloak…), com vinculação de contas existentes em Configurações → Geral
 - O primeiro cadastro vira administrador
 - Cadastro aberto ou fechado; admin pode criar usuários
 
@@ -187,6 +187,13 @@ Todas são opcionais. Variáveis de ambiente têm precedência sobre `config.jso
 | `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge) |
 | `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificações de regras para IPs privados/localhost (ex.: ntfy na rede local) |
+| `OIDC_ISSUER` | — | Emissor OIDC para login único (ex.: `https://auth.exemplo.com/realms/casa`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternativa ao `OIDC_ISSUER`: URL completa do `.well-known/openid-configuration` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Credenciais do cliente no provedor (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Nome no botão "Entrar com …" |
+| `OIDC_SCOPES` | `openid email profile` | Escopos pedidos |
+| `OIDC_AUTO_REGISTER` | `true` | Cria conta para quem o provedor autenticar; com `false`, vale o "cadastro aberto" da instância |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Só SSO: esconde e desativa o login por senha |
 | `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno |
 
 #### Solução de problemas
@@ -245,7 +252,7 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - Configurable article retention
 
 **Users**
-- Email and password authentication (Better Auth)
+- Email and password authentication (Better Auth) and single sign-on via OIDC (Authentik, Authelia, Keycloak…), with linking of existing accounts in Settings → General
 - The first signup becomes administrator
 - Open or closed registration; admin can create users
 
@@ -376,6 +383,13 @@ All optional. Environment variables override `config.json`.
 | `DATABASE_PROVIDER` | inferred | `sqlite` or `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Allow feeds on private/localhost IPs (e.g. RSS-Bridge) |
 | `ALLOW_PRIVATE_WEBHOOKS` | `false` | Allow rule notifications to private/localhost IPs (e.g. ntfy on your LAN) |
+| `OIDC_ISSUER` | — | OIDC issuer for single sign-on (e.g. `https://auth.example.com/realms/home`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternative to `OIDC_ISSUER`: full `.well-known/openid-configuration` URL |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Client credentials at the provider (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Name on the "Sign in with …" button |
+| `OIDC_SCOPES` | `openid email profile` | Requested scopes |
+| `OIDC_AUTO_REGISTER` | `true` | Create an account for anyone the provider authenticates; with `false`, the instance's open-registration setting applies |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | SSO only: hides and disables password sign-in |
 | `DISABLE_SCHEDULER` | `false` | Disable internal scheduler |
 
 #### Troubleshooting
@@ -434,7 +448,7 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Retención configurable de artículos
 
 **Usuarios**
-- Autenticación por email y contraseña (Better Auth)
+- Autenticación por email y contraseña (Better Auth) e inicio de sesión único vía OIDC (Authentik, Authelia, Keycloak…), con vinculación de cuentas existentes en Ajustes → General
 - El primer registro se convierte en administrador
 - Registro abierto o cerrado; el admin puede crear usuarios
 
@@ -565,6 +579,13 @@ Todas opcionales. Las variables de entorno tienen precedencia sobre `config.json
 | `DATABASE_PROVIDER` | inferido | `sqlite` o `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds en IPs privadas/localhost (ej.: RSS-Bridge) |
 | `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificaciones de reglas a IPs privadas/localhost (ej.: ntfy en la red local) |
+| `OIDC_ISSUER` | — | Emisor OIDC para inicio de sesión único (ej.: `https://auth.ejemplo.com/realms/casa`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternativa a `OIDC_ISSUER`: URL completa de `.well-known/openid-configuration` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Credenciales del cliente en el proveedor (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Nombre en el botón "Entrar con …" |
+| `OIDC_SCOPES` | `openid email profile` | Scopes solicitados |
+| `OIDC_AUTO_REGISTER` | `true` | Crea cuenta para quien el proveedor autentique; con `false`, se aplica el "registro abierto" de la instancia |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Solo SSO: oculta y desactiva el inicio de sesión con contraseña |
 | `DISABLE_SCHEDULER` | `false` | Desactiva el planificador interno |
 
 #### Solución de problemas

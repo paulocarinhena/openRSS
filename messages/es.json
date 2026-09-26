@@ -62,8 +62,17 @@
       "INVALID_EMAIL": "Email inválido.",
       "PASSWORD_TOO_SHORT": "La contraseña debe tener al menos 8 caracteres.",
       "PASSWORD_TOO_LONG": "La contraseña es demasiado larga.",
-      "USER_NOT_FOUND": "Usuario no encontrado."
-    }
+      "USER_NOT_FOUND": "Usuario no encontrado.",
+      "ssoFailed": "No se pudo entrar con SSO ({code}).",
+      "account_not_linked": "Ya existe una cuenta con este correo. Entra con tu contraseña y conecta el SSO en Ajustes → General.",
+      "signup_disabled": "El registro por SSO está desactivado. Pide a un administrador que cree tu cuenta.",
+      "unable_to_create_user": "No se pudo crear la cuenta por SSO (¿registro cerrado?).",
+      "email_not_verified": "El proveedor indicó que tu correo no está verificado.",
+      "access_denied": "Acceso denegado por el proveedor de inicio de sesión.",
+      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo."
+    },
+    "ssoButton": "Entrar con {name}",
+    "or": "o"
   },
   "setup": {
     "title": "Configuración inicial",
@@ -625,7 +634,11 @@
       },
       "save": "Guardar",
       "groupStories": "Agrupar noticias del mismo hecho",
-      "groupStoriesHint": "Muestra un único elemento cuando feeds distintos publican la misma noticia; leer una marca las demás como leídas."
+      "groupStoriesHint": "Muestra un único elemento cuando feeds distintos publican la misma noticia; leer una marca las demás como leídas.",
+      "sso": "Inicio de sesión único (SSO)",
+      "ssoLinked": "Cuenta conectada a {name}.",
+      "ssoNotLinked": "Conecta tu cuenta a {name} para entrar sin contraseña.",
+      "ssoConnect": "Conectar {name}"
     },
     "errors": {
       "invalidData": "Datos inválidos.",
@@ -670,7 +683,8 @@
       "createUserFailed": "No se pudo crear el usuario.",
       "ownRole": "No puedes cambiar tu propio rol.",
       "ownDelete": "No puedes eliminarte a ti mismo."
-    }
+    },
+    "passwordLoginDisabled": "El inicio de sesión con contraseña está desactivado (OIDC_DISABLE_PASSWORD_LOGIN): las cuentas se crean por SSO en el primer acceso."
   },
   "digest": {
     "eyebrow": "Digest diario",

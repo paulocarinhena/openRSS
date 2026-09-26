@@ -62,8 +62,17 @@
       "INVALID_EMAIL": "Invalid email.",
       "PASSWORD_TOO_SHORT": "The password must have at least 8 characters.",
       "PASSWORD_TOO_LONG": "The password is too long.",
-      "USER_NOT_FOUND": "User not found."
-    }
+      "USER_NOT_FOUND": "User not found.",
+      "ssoFailed": "Could not sign in with SSO ({code}).",
+      "account_not_linked": "An account with this email already exists. Sign in with your password and connect SSO in Settings → General.",
+      "signup_disabled": "SSO sign-up is disabled. Ask an administrator to create your account.",
+      "unable_to_create_user": "Could not create the account through SSO (registration closed?).",
+      "email_not_verified": "The provider reported that your email is not verified.",
+      "access_denied": "Access denied by the sign-in provider.",
+      "state_mismatch": "The sign-in session expired. Try again."
+    },
+    "ssoButton": "Sign in with {name}",
+    "or": "or"
   },
   "setup": {
     "title": "Initial setup",
@@ -625,7 +634,11 @@
       },
       "save": "Save",
       "groupStories": "Group stories about the same event",
-      "groupStoriesHint": "Shows a single item when different feeds publish the same news; reading one marks the others as read."
+      "groupStoriesHint": "Shows a single item when different feeds publish the same news; reading one marks the others as read.",
+      "sso": "Single sign-on (SSO)",
+      "ssoLinked": "Account connected to {name}.",
+      "ssoNotLinked": "Connect your account to {name} to sign in without a password.",
+      "ssoConnect": "Connect {name}"
     },
     "errors": {
       "invalidData": "Invalid data.",
@@ -670,7 +683,8 @@
       "createUserFailed": "Could not create the user.",
       "ownRole": "You cannot change your own role.",
       "ownDelete": "You cannot delete yourself."
-    }
+    },
+    "passwordLoginDisabled": "Password sign-in is disabled (OIDC_DISABLE_PASSWORD_LOGIN): accounts are created through SSO on first sign-in."
   },
   "digest": {
     "eyebrow": "Daily digest",
