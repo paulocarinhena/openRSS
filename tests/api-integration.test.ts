@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,11 +13,10 @@ const { runMigrations } = await import("@/lib/setup/migrate");
 await runMigrations({ provider: "sqlite", url: process.env.DATABASE_URL });
 
 const { db } = await import("@/lib/db");
-const { createAppPassword } = await import("@/lib/api/tokens");
+const { createAppPassword, feverApiKey } = await import("@/lib/api/tokens");
 const { handleGReader, longItemId, parseItemId } = await import("@/lib/api/greader");
 const { POST: fever } = await import("@/app/api/fever/route");
 
-const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 
 let password = "";
 let otherPassword = "";
@@ -60,13 +58,13 @@ const form = (data: Record<string, string | string[]>) => {
 };
 
 describe("Fever API", () => {
-  const call = async (query: string, data: Record<string, string> = {}, key = md5(`alice@example.test:${password}`)) => {
+  const call = async (query: string, data: Record<string, string> = {}, key = feverApiKey("alice@example.test", password)) => {
     const res = await fever(new Request(`http://localhost/api/fever?api&${query}`, { method: "POST", body: form({ api_key: key, ...data }) }));
     return res.json() as Promise<Record<string, unknown>>;
   };
 
   it("rejects a wrong api_key", async () => {
-    expect(await call("items", {}, md5("alice@example.test:wrong"))).toEqual({ api_version: 3, auth: 0 });
+    expect(await call("items", {}, feverApiKey("alice@example.test", "wrong"))).toEqual({ api_version: 3, auth: 0 });
   });
 
   it("lists groups, feeds and paged items with numeric ids", async () => {

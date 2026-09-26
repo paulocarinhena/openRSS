@@ -1,12 +1,33 @@
 import "server-only";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, scrypt } from "node:crypto";
+import { promisify } from "node:util";
 import { db } from "@/lib/db";
+import { readAppSecret } from "@/lib/env";
 
-const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
-const md5 = (value: string) => createHash("md5").update(value).digest("hex");
+const scryptAsync = promisify(scrypt) as (value: string, salt: string, keylen: number) => Promise<Buffer>;
 
-/** A api_key da Fever é md5("email:senha"), calculada pelo cliente. */
-export const feverApiKey = (email: string, password: string) => md5(`${email.trim().toLowerCase()}:${password}`);
+/**
+ * Hash guardado no banco para senhas de aplicativo e api_keys da Fever: scrypt (KDF lenta) com
+ * sal fixo derivado do segredo da instância. O sal é determinístico para permitir a busca pelo
+ * hash (índice único); as senhas são aleatórias, então não há senhas repetidas a proteger.
+ * Um cache em memória evita pagar o scrypt a cada requisição dos apps.
+ */
+const hashCache = new Map<string, string>();
+async function storageHash(value: string) {
+  const cached = hashCache.get(value);
+  if (cached) return cached;
+  const hash = (await scryptAsync(value, `openrss:api-token:${readAppSecret()}`, 32)).toString("hex");
+  if (hashCache.size >= 1000) hashCache.delete(hashCache.keys().next().value!);
+  hashCache.set(value, hash);
+  return hash;
+}
+
+/**
+ * A api_key da Fever é md5("email:senha"), calculada pelo próprio app cliente: o protocolo
+ * (https://feedafever.com/api) exige MD5 e não há como trocar sem quebrar os clientes. O MD5 só
+ * reproduz o que o cliente envia; o que fica no banco é o scrypt dessa chave.
+ */
+export const feverApiKey = (email: string, password: string) => createHash("md5").update(`${email.trim().toLowerCase()}:${password}`).digest("hex");
 
 /** Cria uma senha de aplicativo. O texto só existe nesta resposta: o banco guarda apenas hashes. */
 export async function createAppPassword(user: { id: string; email: string }, name: string) {
@@ -15,8 +36,8 @@ export async function createAppPassword(user: { id: string; email: string }, nam
     data: {
       userId: user.id,
       name,
-      secretHash: sha256(password),
-      feverKeyHash: sha256(feverApiKey(user.email, password)),
+      secretHash: await storageHash(password),
+      feverKeyHash: await storageHash(feverApiKey(user.email, password)),
     },
     select: { id: true, name: true, createdAt: true },
   });
@@ -36,11 +57,11 @@ async function resolve(where: { secretHash: string } | { feverKeyHash: string })
 }
 
 /** Senha de aplicativo (Google Reader: ClientLogin e cabeçalho GoogleLogin auth=). */
-export function userFromAppPassword(password: string | null | undefined) {
-  return password ? resolve({ secretHash: sha256(password) }) : Promise.resolve(null);
+export async function userFromAppPassword(password: string | null | undefined) {
+  return password ? resolve({ secretHash: await storageHash(password) }) : null;
 }
 
 /** api_key da Fever. */
-export function userFromFeverKey(apiKey: string | null | undefined) {
-  return apiKey && /^[0-9a-f]{32}$/i.test(apiKey) ? resolve({ feverKeyHash: sha256(apiKey.toLowerCase()) }) : Promise.resolve(null);
+export async function userFromFeverKey(apiKey: string | null | undefined) {
+  return apiKey && /^[0-9a-f]{32}$/i.test(apiKey) ? resolve({ feverKeyHash: await storageHash(apiKey.toLowerCase()) }) : null;
 }

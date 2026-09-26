@@ -1,5 +1,4 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
@@ -340,8 +339,9 @@ export async function handleGReader(request: Request, path: string): Promise<Res
 
   switch (api) {
     case "token":
-      // Clientes pedem um token "T" para as operações de escrita; a autenticação já vem no cabeçalho.
-      return text(createHash("sha256").update(`openrss:greader:${user.tokenId}`).digest("hex").slice(0, 57));
+      // Clientes pedem um token "T" para as operações de escrita e o reenviam; a autenticação já vem
+      // no cabeçalho, então o token só precisa ser estável (o id da senha de aplicativo, que não é segredo).
+      return text(user.tokenId);
     case "user-info":
       return json({ userId: user.id, userName: user.name, userProfileId: user.id, userEmail: user.email });
     case "subscription/list":
