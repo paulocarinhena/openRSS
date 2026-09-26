@@ -41,6 +41,9 @@ const { unsubscribeAction, updateSubscriptionAction } = await import("@/app/acti
 const { applyRuleToExistingAction, deleteRuleAction, previewRuleAction, saveRuleAction } = await import("@/app/actions/rules");
 const { applyRulesToArticles } = await import("@/lib/rules/apply");
 const { GET: offlineArticles } = await import("@/app/api/offline/articles/route");
+const { assignStories } = await import("@/lib/feeds/stories");
+const { setRead } = await import("@/app/actions/articles");
+const { listArticles } = await import("@/lib/queries");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -321,5 +324,44 @@ describe("offline articles API", () => {
 
     currentUser = { id: "", role: "user" };
     expect((await offlineArticles(new Request("http://localhost/api/offline/articles"))).status).toBe(401);
+  });
+});
+
+describe("story grouping", () => {
+  it("groups the same event across feeds, reads them together and collapses the list", async () => {
+    const now = Date.now();
+    const g1 = await createFeed("https://g1.example/feed", [{ guid: "a" }, { guid: "x" }]);
+    const folha = await createFeed("https://folha.example/feed", [{ guid: "b" }]);
+    const same = await createFeed("https://g1-mirror.example/feed", [{ guid: "c" }]);
+    const [a, unrelated] = g1.articles;
+    const b = folha.articles[0];
+    await db.article.update({ where: { id: a.id }, data: { title: "Banco Central mantém Selic em 10,5% ao ano", publishedAt: new Date(now - 3600_000) } });
+    await db.article.update({ where: { id: unrelated.id }, data: { title: "Chuva forte alaga ruas de São Paulo", publishedAt: new Date(now - 3600_000) } });
+    await db.article.update({ where: { id: b.id }, data: { title: "Selic: Banco Central mantém taxa em 10,5%", publishedAt: new Date(now) } });
+    // Mesmo título, mas publicado 5 dias depois: fora da janela.
+    await db.article.update({ where: { id: same.articles[0].id }, data: { title: "Banco Central mantém Selic em 10,5% ao ano", publishedAt: new Date(now + 5 * 86400000) } });
+    await db.subscription.createMany({ data: [g1, folha, same].map((f) => ({ userId: "alice", feedId: f.id })) });
+
+    await assignStories([a.id, unrelated.id]);
+    await assignStories([b.id]);
+    await assignStories([same.articles[0].id]);
+    const byId = new Map((await db.article.findMany({ select: { id: true, storyId: true } })).map((r) => [r.id, r.storyId]));
+    const storyId = byId.get(a.id)!;
+    expect(storyId).toBeTruthy();
+    expect(byId.get(b.id)).toBe(storyId);
+    expect(byId.get(unrelated.id)).toBeNull();
+    expect(byId.get(same.articles[0].id)).toBeNull();
+
+    const listed = await listArticles("alice", { kind: "all" }, { unreadOnly: true });
+    const lead = listed.items.find((i) => i.storyId === storyId)!;
+    expect(listed.items.filter((i) => i.storyId === storyId)).toHaveLength(1);
+    expect(lead.related).toHaveLength(1);
+
+    await setRead(b.id, true);
+    expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a.id } } })).toMatchObject({ isRead: true });
+
+    await db.userSettings.update({ where: { userId: "alice" }, data: { groupStories: false } });
+    const flat = await listArticles("alice", { kind: "all" }, { unreadOnly: false });
+    expect(flat.items.filter((i) => i.storyId === storyId)).toHaveLength(2);
   });
 });

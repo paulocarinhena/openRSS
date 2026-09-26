@@ -14,6 +14,7 @@ export default async function GeneralSettingsPage() {
       uiLanguage={settings.uiLanguage}
       timezone={settings.timezone}
       listView={normalizeListView(settings.listView)}
+      groupStories={settings.groupStories}
       timezones={Intl.supportedValuesOf("timeZone")}
     />
   );

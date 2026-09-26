@@ -42,6 +42,7 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Visão Hoje (priorizada por IA), Todos, Salvos, pastas e feeds individuais
 - Visualizações em cartões, grade ou só títulos
 - Modo artigo completo (Readability) e busca instantânea
+- Notícias do mesmo fato publicadas por feeds diferentes aparecem agrupadas ("+N fontes"); ler uma marca as outras como lidas
 - Apps nativos via API Google Reader e Fever (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) com senhas de aplicativo em Configurações → Apps
 - Instalável como app (PWA) no celular e no desktop, com leitura offline dos artigos salvos e lidos recentemente
 - Atalhos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar lido), `s` (salvar), `Shift+A` (marcar todos), `/` (buscar)
@@ -230,6 +231,7 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - Today view (AI-prioritized), All, Saved, folders, and individual feeds
 - Card, grid, or title-only layouts
 - Full article mode (Readability) and instant search
+- Stories about the same event from different feeds are grouped ("+N sources"); reading one marks the others as read
 - Native apps through the Google Reader and Fever APIs (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) with app passwords in Settings → Apps
 - Installable as an app (PWA) on phone and desktop, with offline reading of saved and recently read articles
 - Keyboard shortcuts: `j`/`k` (navigate), `o` (open), `m` (mark read), `s` (save), `Shift+A` (mark all), `/` (search)
@@ -418,6 +420,7 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Vista Hoy (priorizada por IA), Todos, Guardados, carpetas y feeds individuales
 - Vistas en tarjetas, cuadrícula o solo títulos
 - Modo artículo completo (Readability) y búsqueda instantánea
+- Las noticias del mismo hecho publicadas por feeds distintos aparecen agrupadas ("+N fuentes"); leer una marca las demás como leídas
 - Apps nativas mediante las APIs Google Reader y Fever (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) con contraseñas de aplicación en Ajustes → Apps
 - Instalable como app (PWA) en el móvil y el escritorio, con lectura sin conexión de los artículos guardados y leídos recientemente
 - Atajos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar leído), `s` (guardar), `Shift+A` (marcar todos), `/` (buscar)

@@ -295,7 +295,8 @@
       "extractFailed": "Could not extract the content.",
       "fetchFailed": "Failed to fetch the article."
     },
-    "highlighted": "Highlighted by a rule"
+    "highlighted": "Highlighted by a rule",
+    "moreSources": "{count, plural, one {+# source} other {+# sources}}"
   },
   "feeds": {
     "add": {
@@ -622,7 +623,9 @@
         "search": "search",
         "closeReader": "close reader"
       },
-      "save": "Save"
+      "save": "Save",
+      "groupStories": "Group stories about the same event",
+      "groupStoriesHint": "Shows a single item when different feeds publish the same news; reading one marks the others as read."
     },
     "errors": {
       "invalidData": "Invalid data.",

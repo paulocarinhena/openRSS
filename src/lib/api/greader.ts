@@ -8,7 +8,7 @@ import { subscribe } from "@/lib/feeds/refresh";
 import { localizeError } from "@/lib/localized-error";
 import { userFromAppPassword, type ApiUser } from "./tokens";
 import { articleIdsFromNums, articleNums, ensureMissingRefs } from "./refs";
-import { accessibleArticles, setArticleStates } from "./state";
+import { accessibleArticles, setArticleStates } from "@/lib/article-state";
 
 // Implementação do protocolo "Google Reader" como descrito por FreshRSS/Inoreader/The Old Reader.
 // Base URL para os clientes: https://<host>/api/greader

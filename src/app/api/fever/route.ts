@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { userFromFeverKey, type ApiUser } from "@/lib/api/tokens";
 import { articleIdsFromNums, ensureMissingRefs, refIdFromNum, refNums } from "@/lib/api/refs";
-import { accessibleArticles, setArticleStates } from "@/lib/api/state";
+import { accessibleArticles, setArticleStates } from "@/lib/article-state";
 
 // API Fever (https://feedafever.com/api): usada por Reeder, Unread, ReadKit, Fiery Feeds etc.
 // Ids são inteiros; a autenticação é api_key = md5("email:senha de aplicativo") no corpo do POST.

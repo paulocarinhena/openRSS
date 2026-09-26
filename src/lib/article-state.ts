@@ -31,3 +31,19 @@ export async function setArticleStates(userId: string, articleIds: string[], cha
   }
   return ids.length;
 }
+
+/** Ao ler um artigo agrupado, as outras fontes do mesmo fato (nos feeds do usuário) também contam como lidas. */
+export async function markStorySiblingsRead(userId: string, articleId: string) {
+  const article = await db.article.findUnique({ where: { id: articleId }, select: { storyId: true } });
+  if (!article?.storyId) return 0;
+  const siblings = await db.article.findMany({
+    where: {
+      storyId: article.storyId,
+      id: { not: articleId },
+      feed: { subscriptions: { some: { userId } } },
+      NOT: { states: { some: { userId, isRead: true } } },
+    },
+    select: { id: true },
+  });
+  return setArticleStates(userId, siblings.map((s) => s.id), { isRead: true });
+}

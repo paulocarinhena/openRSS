@@ -3,6 +3,7 @@ import { Cron } from "croner";
 import { tuneDatabase } from "@/lib/db";
 import { applyRetention, refreshDueFeeds } from "@/lib/feeds/refresh";
 import { processNewArticles } from "@/lib/feeds/pipeline";
+import { groupRecentStories } from "@/lib/feeds/stories";
 import { runScheduledDigests } from "@/lib/ai/digest";
 import { withLock } from "./lock";
 
@@ -11,6 +12,8 @@ const globalForJobs = globalThis as unknown as { openrssJobs?: Cron[] };
 export async function startScheduler() {
   if (globalForJobs.openrssJobs) return;
   await tuneDatabase().catch((err) => console.error("[jobs] tuneDatabase", err));
+  // Agrupa os artigos recentes que chegaram antes do agrupamento existir (ou de uma falha).
+  void groupRecentStories().catch((err) => console.error("[jobs] groupRecentStories", err));
 
   const log = (name: string) => (err: unknown) => console.error(`[jobs:${name}]`, err);
 

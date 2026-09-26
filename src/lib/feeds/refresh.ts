@@ -5,6 +5,7 @@ import { withLock } from "@/lib/jobs/lock";
 import { LocalizedError, serializeError } from "@/lib/localized-error";
 import { safeFetch } from "./net";
 import { parseFeed, type ParsedFeed } from "./parse";
+import { assignStories } from "./stories";
 
 const MAX_BACKOFF_MIN = 24 * 60;
 
@@ -29,6 +30,8 @@ export async function ingestItems(feedId: string, items: ParsedFeed["items"]): P
       if (!isUniqueConflict(error)) throw error;
     }
   }
+  // Agrupar é acessório: uma falha aqui não pode perder os artigos já gravados.
+  await assignStories(created).catch((err) => console.error("[stories]", err));
   return created;
 }
 

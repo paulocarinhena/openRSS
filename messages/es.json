@@ -295,7 +295,8 @@
       "extractFailed": "No se pudo extraer el contenido.",
       "fetchFailed": "Error al obtener el artículo."
     },
-    "highlighted": "Destacado por una regla"
+    "highlighted": "Destacado por una regla",
+    "moreSources": "{count, plural, one {+# fuente} other {+# fuentes}}"
   },
   "feeds": {
     "add": {
@@ -622,7 +623,9 @@
         "search": "buscar",
         "closeReader": "cerrar lector"
       },
-      "save": "Guardar"
+      "save": "Guardar",
+      "groupStories": "Agrupar noticias del mismo hecho",
+      "groupStoriesHint": "Muestra un único elemento cuando feeds distintos publican la misma noticia; leer una marca las demás como leídas."
     },
     "errors": {
       "invalidData": "Datos inválidos.",

@@ -156,6 +156,7 @@ model Article {
   imageUrl        String?
   publishedAt     DateTime  @default(now())
   fullContentHtml String?
+  storyId         String? // artigos de feeds diferentes sobre o mesmo fato compartilham este id
   createdAt       DateTime  @default(now())
 
   states    UserArticle[]
@@ -166,6 +167,7 @@ model Article {
   @@unique([feedId, guid])
   @@index([feedId, publishedAt])
   @@index([publishedAt])
+  @@index([storyId])
   @@map("article")
 }
 
@@ -245,6 +247,7 @@ model UserSettings {
   digestHour        Int      @default(7)
   timezone          String   @default("America/Sao_Paulo")
   listView          String   @default("cards") // "titles" | "cards" | "magazine"
+  groupStories      Boolean  @default(true) // agrupa na lista artigos de fontes diferentes sobre o mesmo fato
   updatedAt         DateTime @updatedAt
 
   @@map("user_settings")

@@ -8,6 +8,7 @@ import { extractFullContent } from "@/lib/feeds/extract";
 import { findPreviewImage } from "@/lib/feeds/preview-image";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { localizeError } from "@/lib/localized-error";
+import { markStorySiblingsRead } from "@/lib/article-state";
 import { nextUnreadFeedId, orderedSidebarFeeds } from "@/lib/feeds/next-unread";
 import { articleScopeWhere, getArticle, getSidebarData, listArticles, type ArticleScope } from "@/lib/queries";
 
@@ -22,6 +23,7 @@ export async function openArticleAction(articleId: string) {
       create: { userId: user.id, articleId, isRead: true, readAt: new Date() },
       update: { isRead: true, readAt: new Date() },
     });
+    await markStorySiblingsRead(user.id, articleId);
   }
   return article;
 }
@@ -44,6 +46,7 @@ export async function setRead(articleId: string, isRead: boolean) {
     create: { userId: user.id, articleId, isRead, readAt: isRead ? new Date() : null },
     update: { isRead, readAt: isRead ? new Date() : null },
   });
+  if (isRead) await markStorySiblingsRead(user.id, articleId);
   revalidatePath("/", "layout");
 }
 

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { markStorySiblingsRead } from "@/lib/article-state";
 import { getArticle } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { StandaloneReader } from "./standalone-reader";
@@ -22,6 +23,7 @@ export default async function ArticlePage({ params }: PageProps<"/article/[id]">
       create: { userId: user.id, articleId: id, isRead: true, readAt: new Date() },
       update: { isRead: true, readAt: new Date() },
     });
+    await markStorySiblingsRead(user.id, id);
   }
   const [providers, ttsProviders] = await Promise.all([
     db.aiProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
