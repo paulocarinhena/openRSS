@@ -52,6 +52,7 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Suporte a RSS, Atom e RDF
 - Atualização em segundo plano com ETag/Last-Modified e backoff em erros
 - Importação e exportação OPML
+- Tags para organizar os artigos salvos
 - Salvar qualquer link para ler depois (texto extraído em modo leitura): botão em Salvos, bookmarklet e menu Compartilhar do celular
 - Painel de saúde dos feeds (Configurações → Saúde): com erro, parados, pouco lidos e ativos demais, com limpeza em lote
 - Regras automáticas por título, conteúdo, autor, URL ou nota da IA: marcar como lido, salvar, destacar ou notificar (ntfy, Discord, Slack, Telegram, webhook)
@@ -77,6 +78,8 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 **O que a IA faz no openRSS:**
 
 - Resumir artigos em streaming, com cache
+- Perguntas sobre o artigo direto no leitor
+- Busca semântica (por assunto) nas listas e no chat, com embeddings de um provedor global (OpenAI, OpenRouter ou compatível, como Ollama)
 - Digest diário dos não lidos, agrupado por tema (automático ou sob demanda)
 - Chat com seus feeds — a IA busca e lê artigos via ferramentas
 - Priorização de artigos novos (nota 0–100 com base nos seus interesses)
@@ -250,6 +253,7 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - RSS, Atom, and RDF support
 - Background refresh with ETag/Last-Modified and error backoff
 - OPML import and export
+- Tags to organize saved articles
 - Save any link to read later (text extracted in reader mode): button in Saved, bookmarklet and the phone's Share menu
 - Feed health panel (Settings → Health): failing, stale, rarely read and too active feeds, with bulk cleanup
 - Automatic rules by title, content, author, URL or AI score: mark as read, save, highlight or notify (ntfy, Discord, Slack, Telegram, webhook)
@@ -275,6 +279,8 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 **What AI does in openRSS:**
 
 - Summarize articles with streaming and cache
+- Questions about the article right in the reader
+- Semantic (topic) search in lists and chat, using embeddings from a global provider (OpenAI, OpenRouter or compatible, like Ollama)
 - Daily digest of unread articles, grouped by topic (automatic or on demand)
 - Chat with your feeds — AI searches and reads articles via tools
 - Prioritization of new articles (0–100 score based on your interests)
@@ -448,6 +454,7 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Soporte RSS, Atom y RDF
 - Actualización en segundo plano con ETag/Last-Modified y backoff en errores
 - Importación y exportación OPML
+- Etiquetas para organizar los artículos guardados
 - Guardar cualquier enlace para leer después (texto extraído en modo lectura): botón en Guardados, bookmarklet y el menú Compartir del móvil
 - Panel de salud de los feeds (Ajustes → Salud): con errores, parados, poco leídos y demasiado activos, con limpieza en lote
 - Reglas automáticas por título, contenido, autor, URL o nota de la IA: marcar como leído, guardar, destacar o notificar (ntfy, Discord, Slack, Telegram, webhook)
@@ -473,6 +480,8 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 **Qué hace la IA en openRSS:**
 
 - Resumir artículos en streaming, con caché
+- Preguntas sobre el artículo directamente en el lector
+- Búsqueda semántica (por tema) en las listas y en el chat, con embeddings de un proveedor global (OpenAI, OpenRouter o compatible, como Ollama)
 - Digest diario de no leídos, agrupado por tema (automático o bajo demanda)
 - Chat con tus feeds — la IA busca y lee artículos mediante herramientas
 - Priorización de artículos nuevos (puntuación 0–100 según tus intereses)

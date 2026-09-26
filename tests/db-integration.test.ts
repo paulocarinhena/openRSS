@@ -51,6 +51,8 @@ const { POST: askArticle } = await import("@/app/api/ai/ask/route");
 const { startFakeOpenAI } = await import("./helpers/fake-openai");
 const { addTagAction, deleteTagAction, removeTagAction, renameTagAction } = await import("@/app/actions/tags");
 const { listTags } = await import("@/lib/tags");
+const { setEmbeddingConfigAction } = await import("@/app/actions/embeddings");
+const { embedPending } = await import("@/lib/ai/embeddings");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -513,5 +515,43 @@ describe("tags", () => {
     await deleteTagAction(receitas.id);
     expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a1.id } } })).toMatchObject({ isSaved: true });
     expect((await addTagAction("inexistente", "x")).ok).toBe(false);
+  });
+});
+
+describe("semantic search", () => {
+  it("indexes articles and finds them by topic when the words do not match", async () => {
+    // Embeddings falsos: eixo 0 = esporte, eixo 1 = economia.
+    const topic = (text: string) => {
+      const t = text.toLowerCase();
+      return [/futebol|gol|campeonato|time/.test(t) ? 1 : 0, /juros|inflação|banco|mercado/.test(t) ? 1 : 0, 0.05];
+    };
+    const fake = await startFakeOpenAI({ embed: topic });
+    try {
+      const provider = await db.aiProvider.create({ data: { userId: null, type: "openai_compatible", name: "emb", baseUrl: fake.baseUrl } });
+      expect(await setEmbeddingConfigAction({ providerId: provider.id, model: "fake-embed" })).toEqual({ ok: true });
+
+      const feed = await createFeed("https://semantic.example/feed", [{ guid: "sport" }, { guid: "money" }]);
+      await db.article.update({ where: { id: feed.articles[0].id }, data: { title: "Time vence a final com gol no último minuto" } });
+      await db.article.update({ where: { id: feed.articles[1].id }, data: { title: "Banco central sobe os juros de novo" } });
+      await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+
+      expect(await embedPending()).toBeGreaterThanOrEqual(2);
+      expect(await db.articleEmbedding.count({ where: { modelKey: `${provider.id}:fake-embed` } })).toBeGreaterThanOrEqual(2);
+
+      // "campeonato" não aparece em nenhum título, mas é o mesmo assunto do artigo de esporte.
+      const result = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "campeonato" });
+      expect(result.items.map((i) => i.id)).toEqual([feed.articles[0].id]);
+      expect(result.items[0].matchedBySubject).toBe(true);
+
+      // Palavra exata continua vindo primeiro, sem marca de "por assunto".
+      const exact = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "juros" });
+      expect(exact.items[0]).toMatchObject({ id: feed.articles[1].id, matchedBySubject: false });
+
+      expect(await setEmbeddingConfigAction({ providerId: null, model: "" })).toEqual({ ok: true });
+      const off = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "campeonato" });
+      expect(off.items).toEqual([]);
+    } finally {
+      await fake.close();
+    }
   });
 });

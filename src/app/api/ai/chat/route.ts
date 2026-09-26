@@ -9,6 +9,7 @@ import { resolveModel } from "@/lib/ai/providers";
 import { articleText, errorMessage, languageInstruction } from "@/lib/ai/content";
 import { parseJsonArray, truncate } from "@/lib/utils";
 import { acquireLock } from "@/lib/jobs/lock";
+import { semanticSearch } from "@/lib/ai/embeddings";
 
 export const maxDuration = 120;
 
@@ -55,16 +56,19 @@ export async function POST(request: Request) {
         days: z.number().int().min(1).max(90).optional().describe("Limitar aos últimos N dias"),
       }),
       execute: async ({ query, days }) => {
-        const rows = await db.article.findMany({
-          where: {
-            ...subscribed,
-            OR: [{ title: icontains(query) }, { snippet: icontains(query) }],
-            ...(days ? { publishedAt: { gte: new Date(Date.now() - days * 86400000) } } : {}),
-          },
-          select: { id: true, title: true, snippet: true, publishedAt: true, url: true, feed: { select: { title: true } } },
+        const scope = { ...subscribed, ...(days ? { publishedAt: { gte: new Date(Date.now() - days * 86400000) } } : {}) };
+        const select = { id: true, title: true, snippet: true, publishedAt: true, url: true, feed: { select: { title: true } } } as const;
+        const byWord = await db.article.findMany({
+          where: { ...scope, OR: [{ title: icontains(query) }, { snippet: icontains(query) }] },
+          select,
           orderBy: { publishedAt: "desc" },
           take: 15,
         });
+        // Com a busca semântica ligada, completa com artigos parecidos por assunto.
+        const similar = (await semanticSearch(query, scope, 15).catch(() => null)) ?? [];
+        const missing = similar.map((m) => m.id).filter((id) => !byWord.some((r) => r.id === id));
+        const extra = missing.length ? await db.article.findMany({ where: { id: { in: missing } }, select }) : [];
+        const rows = [...byWord, ...missing.flatMap((id) => extra.filter((r) => r.id === id))].slice(0, 20);
         return rows.map((r) => ({
           id: r.id,
           title: r.title,

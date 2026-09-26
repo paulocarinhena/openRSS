@@ -318,7 +318,8 @@
         "context": "¿Cuál es el contexto?",
         "explainTerms": "Explica los términos técnicos"
       }
-    }
+    },
+    "bySubject": "por tema"
   },
   "feeds": {
     "add": {
@@ -938,6 +939,27 @@
       "invalidName": "Usa de 1 a 40 caracteres.",
       "notFound": "No encontrado.",
       "exists": "Ya existe una etiqueta con ese nombre."
+    }
+  },
+  "semantic": {
+    "title": "Búsqueda semántica",
+    "description": "Encuentra artículos por tema, aunque no tengan las palabras exactas, en la búsqueda de las listas y en el chat. Usa un proveedor global con API de embeddings (OpenAI, OpenRouter o compatible, como Ollama). Los artículos de los últimos 60 días se indexan poco a poco, cada minuto.",
+    "noProviders": "Añade un proveedor global OpenAI, OpenRouter o compatible en “Proveedores” para activarla.",
+    "provider": "Proveedor global",
+    "model": "Modelo de embeddings",
+    "modelHint": "Ej.: {example}",
+    "choose": "Elige…",
+    "enable": "Activar",
+    "update": "Guardar",
+    "disable": "Desactivar",
+    "enabled": "Búsqueda semántica activada. La indexación empezó.",
+    "disabled": "Búsqueda semántica desactivada.",
+    "status": "{indexed} de {total} artículos recientes indexados",
+    "errors": {
+      "modelRequired": "Indica el modelo de embeddings.",
+      "providerInvalid": "Elige un proveedor global OpenAI, OpenRouter o compatible.",
+      "emptyVector": "El proveedor devolvió un vector vacío.",
+      "testFailed": "La prueba del modelo falló: {reason}"
     }
   }
 }

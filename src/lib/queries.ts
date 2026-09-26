@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getLocale } from "next-intl/server";
 import { db, icontains } from "@/lib/db";
 import { localizeError } from "@/lib/localized-error";
+import { semanticSearch } from "@/lib/ai/embeddings";
 import { getUserSettings } from "@/lib/app-settings";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { stripHtml, truncate } from "@/lib/utils";
@@ -142,16 +143,33 @@ export async function listArticles(
   opts: { unreadOnly?: boolean; page?: number; query?: string } = {},
 ) {
   const unreadOnly = opts.unreadOnly ?? scope.kind !== "saved";
+  const base: Prisma.ArticleWhereInput = {
+    AND: [await articleScopeWhere(userId, scope), unreadOnly ? { NOT: { states: { some: { userId, isRead: true } } } } : {}],
+  };
   const where: Prisma.ArticleWhereInput = {
-    AND: [
-      await articleScopeWhere(userId, scope),
-      unreadOnly ? { NOT: { states: { some: { userId, isRead: true } } } } : {},
-      opts.query ? { OR: [{ title: icontains(opts.query) }, { snippet: icontains(opts.query) }] } : {},
-    ],
+    AND: [base, opts.query ? { OR: [{ title: icontains(opts.query) }, { snippet: icontains(opts.query) }] } : {}],
   };
   const page = Math.max(0, opts.page ?? 0);
   const { groupStories } = await getUserSettings(userId);
   const group = (items: ArticleListItem[]) => (groupStories ? groupByStory(items) : items);
+
+  /**
+   * Busca por assunto: na primeira página, depois dos resultados por palavra, entram os artigos
+   * do escopo mais parecidos com a consulta (se o admin ligou a busca semântica).
+   */
+  const withSemantic = async (items: ArticleListItem[]) => {
+    if (!opts.query || page > 0) return items;
+    const matches = await semanticSearch(opts.query, base).catch((err) => {
+      console.error("[semantic]", err instanceof Error ? err.message : err);
+      return null;
+    });
+    const known = new Set(items.map((i) => i.id));
+    const extra = (matches ?? []).filter((m) => !known.has(m.id));
+    if (extra.length === 0) return items;
+    const rows = await db.article.findMany({ where: { id: { in: extra.map((m) => m.id) } }, select: articleSelect(userId) });
+    const byId = new Map(rows.map((r) => [r.id, toListItem(r)]));
+    return [...items, ...extra.flatMap((m) => (byId.has(m.id) ? [{ ...byId.get(m.id)!, matchedBySubject: true }] : []))];
+  };
 
   if (scope.kind === "today") {
     // Ordena por prioridade da IA (quando houver) e depois por data.
@@ -159,7 +177,7 @@ export async function listArticles(
     const sorted = group(
       rows.map(toListItem).sort((a, b) => (b.priorityScore ?? -1) - (a.priorityScore ?? -1) || +b.publishedAt - +a.publishedAt),
     );
-    return { items: sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), hasMore: sorted.length > (page + 1) * PAGE_SIZE };
+    return { items: await withSemantic(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)), hasMore: sorted.length > (page + 1) * PAGE_SIZE };
   }
 
   const rows = await db.article.findMany({
@@ -169,7 +187,7 @@ export async function listArticles(
     skip: page * PAGE_SIZE,
     take: PAGE_SIZE + 1,
   });
-  return { items: group(rows.slice(0, PAGE_SIZE).map(toListItem)), hasMore: rows.length > PAGE_SIZE };
+  return { items: await withSemantic(group(rows.slice(0, PAGE_SIZE).map(toListItem))), hasMore: rows.length > PAGE_SIZE };
 }
 
 /**
@@ -219,6 +237,8 @@ function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof arti
     tags: a.tags.map((t) => t.tag),
     /** Outras fontes do mesmo fato, preenchido por groupByStory. */
     related: [] as RelatedSource[],
+    /** Veio da busca semântica (parecido por assunto), não das palavras da consulta. */
+    matchedBySubject: false,
   };
 }
 

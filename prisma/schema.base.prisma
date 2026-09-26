@@ -159,6 +159,7 @@ model Article {
   audios    ArticleAudio[]
   ref       ArticleRef?
   tags      ArticleTag[]
+  embedding ArticleEmbedding?
 
   @@unique([feedId, guid])
   @@index([feedId, publishedAt])
@@ -338,6 +339,8 @@ model AppSettings {
   retentionDays          Int     @default(90)
   defaultAiProviderId    String?
   defaultAiModel         String?
+  embeddingProviderId    String? // busca semântica: provedor global dos embeddings (null = desligada)
+  embeddingModel         String?
 
   @@map("app_settings")
 }
@@ -423,6 +426,19 @@ model ArticleTag {
   @@id([tagId, articleId])
   @@index([articleId])
   @@map("article_tag")
+}
+
+// Vetor do artigo (título + trecho) para a busca semântica. `modelKey` = "<provedor>:<modelo>":
+// ao trocar de modelo, os vetores antigos deixam de valer e são refeitos aos poucos.
+model ArticleEmbedding {
+  articleId String   @id
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  modelKey  String
+  vector    Bytes // Float32, normalizado (norma 1)
+  createdAt DateTime @default(now())
+
+  @@index([modelKey])
+  @@map("article_embedding")
 }
 
 model JobLock {

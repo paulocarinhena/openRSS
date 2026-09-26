@@ -91,9 +91,11 @@ function RelatedSources({ item, onOpen, className }: { item: ArticleListItem; on
 }
 
 function TagChips({ item }: { item: ArticleListItem }) {
-  if (item.tags.length === 0) return null;
+  const t = useTranslations("articles");
+  if (item.tags.length === 0 && !item.matchedBySubject) return null;
   return (
     <span className="flex flex-wrap gap-1">
+      {item.matchedBySubject && <span className="rounded-full border border-ai/40 px-1.5 text-[0.625rem] text-ai">{t("bySubject")}</span>}
       {item.tags.map((tag) => (
         <span key={tag.id} className="rounded-full bg-secondary px-1.5 text-[0.625rem] text-muted-foreground">
           #{tag.name}

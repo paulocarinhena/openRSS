@@ -2,7 +2,7 @@ import "server-only";
 import { Cron } from "croner";
 import { tuneDatabase } from "@/lib/db";
 import { applyRetention, refreshDueFeeds } from "@/lib/feeds/refresh";
-import { processNewArticles } from "@/lib/feeds/pipeline";
+import { indexPendingEmbeddings, processNewArticles } from "@/lib/feeds/pipeline";
 import { groupRecentStories } from "@/lib/feeds/stories";
 import { runScheduledDigests } from "@/lib/ai/digest";
 import { withLock } from "./lock";
@@ -25,6 +25,7 @@ export async function startScheduler() {
           console.log(`[jobs:refresh] ${created.length} artigos novos`);
           await processNewArticles(created).catch(log("process"));
         }
+        await indexPendingEmbeddings();
       }).catch(log("refresh"));
     }),
     new Cron("5 * * * *", { protect: true }, async () => {
