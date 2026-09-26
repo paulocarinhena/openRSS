@@ -1,11 +1,12 @@
 import "server-only";
 import { pinnedFetch } from "@/lib/network";
+import { LocalizedError, type ServerErrorKey } from "@/lib/localized-error";
 
 export const USER_AGENT = "openRSS/0.1 (+https://github.com/paulocarinhena/openRSS; feed reader)";
 
-export class FetchError extends Error {
-  constructor(message: string, readonly status?: number) {
-    super(message);
+export class FetchError extends LocalizedError {
+  constructor(key: ServerErrorKey, params: Record<string, string | number> = {}, readonly status?: number) {
+    super(key, params);
   }
 }
 
@@ -41,7 +42,8 @@ export async function safeFetch(
         process.env.ALLOW_PRIVATE_FEEDS === "true",
       );
     } catch (error) {
-      throw new FetchError(error instanceof Error ? error.message : String(error));
+      if (error instanceof LocalizedError) throw error;
+      throw new FetchError("connectFailed", { reason: (error instanceof Error ? error.message : String(error)).slice(0, 300) });
     }
     try {
       const res = connection.response;
@@ -50,7 +52,7 @@ export async function safeFetch(
         continue;
       }
       if (res.status === 304) return { status: 304, url: url.toString(), headers: res.headers, body: "" };
-      if (!res.ok) throw new FetchError(`HTTP ${res.status}`, res.status);
+      if (!res.ok) throw new FetchError("httpStatus", { status: res.status }, res.status);
 
       const reader = res.body?.getReader();
       if (!reader) return { status: res.status, url: url.toString(), headers: res.headers, body: "" };
@@ -62,7 +64,7 @@ export async function safeFetch(
         size += value.byteLength;
         if (size > maxBytes) {
           await reader.cancel();
-          throw new FetchError("Resposta excede o tamanho máximo permitido.");
+          throw new FetchError("responseTooLarge");
         }
         chunks.push(value);
       }
@@ -72,7 +74,7 @@ export async function safeFetch(
       await connection.close();
     }
   }
-  throw new FetchError("Redirecionamentos demais.");
+  throw new FetchError("tooManyRedirects");
 }
 
 function decode(buffer: Buffer, headers: { get(name: string): string | null }): string {

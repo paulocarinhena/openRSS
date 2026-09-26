@@ -1,9 +1,12 @@
+import { getLocale } from "next-intl/server";
 import { db } from "@/lib/db";
+import { localizeError } from "@/lib/localized-error";
 import { requireUser } from "@/lib/session";
 import { FeedsManager } from "./feeds-manager";
 
 export default async function FeedsSettingsPage() {
   const user = await requireUser();
+  const locale = await getLocale();
   const [folders, subscriptions] = await Promise.all([
     db.folder.findMany({ where: { userId: user.id }, orderBy: [{ position: "asc" }, { name: "asc" }], select: { id: true, name: true } }),
     db.subscription.findMany({
@@ -24,7 +27,7 @@ export default async function FeedsSettingsPage() {
           title: s.feed.title,
           url: s.feed.url,
           lastFetchedAt: s.feed.lastFetchedAt,
-          lastError: s.feed.errorCount > 0 ? s.feed.lastError : null,
+          lastError: s.feed.errorCount > 0 && s.feed.lastError ? localizeError(s.feed.lastError, locale) : null,
         }))
         .sort((a, b) => (a.customTitle ?? a.title).localeCompare(b.customTitle ?? b.title))}
     />

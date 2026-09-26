@@ -106,8 +106,11 @@
       "pgBadCredentials": "Invalid user or password.",
       "pgNoCreateDb": "The user is not allowed to create databases (CREATEDB).",
       "pgConnectFailed": "Failed to connect to PostgreSQL.",
-      "databaseMissing": "The database \"{database}\" does not exist."
-    }
+      "databaseMissing": "The database \"{database}\" does not exist.",
+      "invalidToken": "Invalid setup token. Copy it from the server log."
+    },
+    "token": "Setup token",
+    "tokenHint": "Printed in the server log at startup (docker compose logs openrss)."
   },
   "shell": {
     "resizeSidebar": "Resize sidebar",
@@ -350,7 +353,8 @@
       "folderExists": "A folder with that name already exists.",
       "opmlRequired": "Select an OPML file.",
       "fileTooLarge": "File too large.",
-      "opmlEmpty": "No feeds found in the OPML."
+      "opmlEmpty": "No feeds found in the OPML.",
+      "opmlTooMany": "The OPML has too many feeds (maximum {max})."
     }
   },
   "chat": {
@@ -550,7 +554,8 @@
       "modelRequired": "Enter a model to test.",
       "invalidProviderType": "Invalid provider type.",
       "apiKeyRequiredForModels": "Enter the API key to load the models.",
-      "baseUrlRequiredForModels": "Enter the Base URL to load the models."
+      "baseUrlRequiredForModels": "Enter the Base URL to load the models.",
+      "foreignProviderDefault": "Only global providers or your own can become the system default."
     },
     "errors": {
       "notConfigured": "No AI provider configured. Set one up in Settings → AI.",
@@ -670,5 +675,27 @@
     "generating": "Generating…",
     "generateNow": "Generate now",
     "empty": "No new articles in the last 24 hours."
+  },
+  "serverErrors": {
+    "invalidUrl": "Only http(s) URLs without credentials are allowed.",
+    "privateNetwork": "The destination points to an unauthorized private network.",
+    "responseTooLarge": "The response exceeds the maximum allowed size.",
+    "tooManyRedirects": "Too many redirects.",
+    "httpStatus": "HTTP {status}",
+    "connectFailed": "Connection failed: {reason}",
+    "feedRefreshing": "This feed is already being refreshed.",
+    "ttsNotConfigured": "No audio provider configured. Set one up in Settings → AI.",
+    "ttsTimeout": "The audio provider took more than two minutes to respond. Try again.",
+    "ttsUnauthorized": "Invalid audio API key or no permission.",
+    "ttsFailed": "Failed to generate audio (HTTP {status}){detail}",
+    "ttsInvalidWav": "The provider returned an invalid WAV segment.",
+    "ttsEmptyWav": "The WAV segment contains no audio data.",
+    "ttsEmptyAudio": "The provider returned empty audio.",
+    "ttsProviderNotFound": "Audio provider not found.",
+    "ttsInvalidFields": "Check the audio provider fields.",
+    "ttsAdminsOnly": "Only administrators can create global providers.",
+    "ttsSourceUnavailable": "The selected AI provider is not available for TTS.",
+    "noPermission": "No permission.",
+    "noTextToNarrate": "This article has no text to narrate."
   }
 }

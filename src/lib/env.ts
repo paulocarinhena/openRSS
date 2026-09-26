@@ -1,6 +1,6 @@
 // Este módulo é copiado sozinho para a imagem Docker e usado pelo prisma.config.ts:
 // só pode depender de módulos nativos do Node.
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -182,6 +182,22 @@ export function readAppSecret(
   writeStoredConfig(dataDir, { version: 1, ...config, appSecret: generated });
   console.log(`openRSS: APP_SECRET gerado e salvo em ${configFilePath(dataDir)}.`);
   return generated;
+}
+
+/**
+ * Token exigido pelo assistente de instalação, derivado do segredo e exibido no log ao iniciar.
+ * Impede que qualquer um que alcance a instância antes do dono escolha o banco de dados.
+ */
+export function setupToken(env: RuntimeEnvironment = processEnv()) {
+  const digest = createHmac("sha256", readAppSecret(env)).update("openrss:setup-token").digest("hex").slice(0, 16);
+  return digest.match(/.{4}/g)!.join("-");
+}
+
+export function isValidSetupToken(input: unknown, env: RuntimeEnvironment = processEnv()) {
+  if (typeof input !== "string") return false;
+  const given = Buffer.from(input.trim().toLowerCase());
+  const expected = Buffer.from(setupToken(env));
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 export function resolveRuntimeConfig(env: RuntimeEnvironment = processEnv()) {

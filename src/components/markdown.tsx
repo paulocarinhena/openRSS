@@ -17,6 +17,9 @@ export function Markdown({ children, className }: { children: string; className?
                 {children}
               </a>
             ),
+          // Texto gerado por IA a partir de conteúdo de terceiros: uma imagem remota carregaria sozinha
+          // e poderia vazar dados da conversa na URL. Mostra só o texto alternativo.
+          img: ({ alt }) => (alt ? <span>{alt}</span> : null),
         }}
       >
         {children}

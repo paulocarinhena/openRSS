@@ -5,6 +5,7 @@ import { Client, escapeIdentifier } from "pg";
 import { z } from "zod";
 import {
   isSetupRequired,
+  isValidSetupToken,
   loadStoredConfig,
   readDataDir,
   resetConfigCache,
@@ -36,9 +37,10 @@ export type PostgresInput = {
   ssl?: boolean;
 };
 
-export type SetupInput =
+export type SetupInput = { token: string } & (
   | { provider: "sqlite" }
-  | ({ provider: "postgresql"; createDatabase?: boolean } & PostgresInput);
+  | ({ provider: "postgresql"; createDatabase?: boolean } & PostgresInput)
+);
 
 type ConnectionResult = { status: "ok" } | { status: "missing-database" } | { status: "error"; message: string };
 
@@ -46,6 +48,8 @@ async function assertSetupMode() {
   // Depois de configurado, o assistente deixa de existir: ninguém reconfigura pela web.
   if (!isSetupRequired()) throw new Error((await errors())("alreadyConfigured"));
 }
+
+const invalidToken = async () => ({ status: "error" as const, message: (await errors())("invalidToken") });
 
 function postgresUrl(input: z.output<typeof postgresSchema>, database = input.database) {
   const auth = `${encodeURIComponent(input.user)}:${encodeURIComponent(input.password)}`;
@@ -93,8 +97,9 @@ async function probePostgres(input: z.output<typeof postgresSchema>): Promise<Co
   }
 }
 
-export async function testPostgresConnection(input: PostgresInput): Promise<ConnectionResult> {
+export async function testPostgresConnection(token: string, input: PostgresInput): Promise<ConnectionResult> {
   await assertSetupMode();
+  if (!isValidSetupToken(token)) return invalidToken();
   const parsed = postgresSchema.safeParse(input);
   if (!parsed.success) return { status: "error", message: actionErrorMessage(await errors(), parsed.error) };
   return probePostgres(parsed.data);
@@ -102,6 +107,7 @@ export async function testPostgresConnection(input: PostgresInput): Promise<Conn
 
 export async function completeSetup(input: SetupInput): Promise<{ status: "ok" } | { status: "error"; message: string }> {
   await assertSetupMode();
+  if (!isValidSetupToken(input.token)) return invalidToken();
   const dataDir = readDataDir();
 
   let database: DatabaseConfig;

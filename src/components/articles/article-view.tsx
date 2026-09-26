@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { getUserSettings } from "@/lib/app-settings";
 import { getArticle, listArticles, scopeTitle, type ArticleScope } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { ArticleWorkspace } from "./article-workspace";
 import { normalizeListView } from "@/lib/list-view";
+import { localizeError } from "@/lib/localized-error";
 
 type Search = { unread?: string; q?: string; a?: string };
 
@@ -42,7 +43,7 @@ export async function ArticleView({ scope, searchParams }: { scope: ArticleScope
       timezone={settings.timezone}
       aiEnabled={providers > 0}
       ttsEnabled={ttsProviders > 0}
-      feedError={feed && feed.errorCount > 0 ? feed.lastError : null}
+      feedError={feed && feed.errorCount > 0 && feed.lastError ? localizeError(feed.lastError, await getLocale()) : null}
     />
   );
 }

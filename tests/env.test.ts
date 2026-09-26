@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   SetupRequiredError,
   isSetupRequired,
+  isValidSetupToken,
   loadStoredConfig,
   readAppSecret,
   readDatabaseProvider,
@@ -12,6 +13,7 @@ import {
   resetConfigCache,
   resolveDatabaseConfig,
   resolveRuntimeConfig,
+  setupToken,
   sqliteUrl,
   writeStoredConfig,
 } from "../src/lib/env";
@@ -120,5 +122,17 @@ describe("app secret", () => {
     const { database, appSecret } = resolveRuntimeConfig({ OPENRSS_DATA_DIR: dataDir });
     expect(database?.provider).toBe("sqlite");
     expect(loadStoredConfig(dataDir)).toEqual({ version: 1, appSecret, database: { provider: "sqlite" } });
+  });
+});
+
+describe("setup token", () => {
+  it("is derived from the app secret and checked exactly", () => {
+    const env = { APP_SECRET: "a-random-secret-for-tests", OPENRSS_DATA_DIR: dataDir };
+    const token = setupToken(env);
+    expect(token).toMatch(/^[0-9a-f]{4}(-[0-9a-f]{4}){3}$/);
+    expect(isValidSetupToken(` ${token.toUpperCase()} `, env)).toBe(true);
+    expect(isValidSetupToken("0000-0000-0000-0000", env)).toBe(false);
+    expect(isValidSetupToken(undefined, env)).toBe(false);
+    expect(setupToken({ ...env, APP_SECRET: "another-random-secret-value" })).not.toBe(token);
   });
 });

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -10,15 +10,18 @@ import { parseOpml } from "@/lib/feeds/opml";
 import { refreshFeed, refreshFeedsNow, subscribe } from "@/lib/feeds/refresh";
 import { classifyNewArticles } from "@/lib/ai/classify";
 import { actionErrorMessage } from "@/lib/action-errors";
+import { localizeError } from "@/lib/localized-error";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 // Mensagens do zod são chaves de feeds.errors.
 const errors = () => getTranslations("feeds.errors");
 
+const MAX_OPML_FEEDS = 500;
+
 const fail = async (err: unknown): Promise<{ ok: false; error: string }> => ({
   ok: false,
-  error: err instanceof z.ZodError ? actionErrorMessage(await errors(), err) : err instanceof Error ? err.message : String(err),
+  error: err instanceof z.ZodError ? actionErrorMessage(await errors(), err) : localizeError(err, await getLocale()),
 });
 
 export async function discoverAction(input: string): Promise<Result<{ feeds: { url: string; title: string; siteUrl: string | null; itemCount: number; subscribed: boolean }[] }>> {
@@ -92,7 +95,7 @@ export async function refreshFeedAction(feedId: string): Promise<Result<{ added:
   const sub = await db.subscription.findFirst({ where: { userId: user.id, feedId } });
   if (!sub) return { ok: false, error: (await errors())("feedNotFound") };
   const { newArticleIds, error } = await refreshFeed(feedId);
-  if (error) return { ok: false, error };
+  if (error) return { ok: false, error: localizeError(error, await getLocale()) };
   void classifyNewArticles(newArticleIds).catch(() => {});
   revalidatePath("/", "layout");
   return { ok: true, added: newArticleIds.length };
@@ -151,6 +154,8 @@ export async function importOpmlAction(formData: FormData): Promise<Result<{ imp
 
   const entries = parseOpml(await file.text());
   if (entries.length === 0) return { ok: false, error: t("opmlEmpty") };
+  // Cada entrada nova dispara uma requisição externa; limita o volume por importação.
+  if (entries.length > MAX_OPML_FEEDS) return { ok: false, error: t("opmlTooMany", { max: MAX_OPML_FEEDS }) };
 
   const folderIds = new Map<string, string>();
   for (const name of new Set(entries.map((e) => e.folder).filter((f): f is string => Boolean(f)))) {

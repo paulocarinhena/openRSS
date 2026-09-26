@@ -64,6 +64,24 @@ describe("sanitizeArticleHtml", () => {
     expect(html).not.toContain("evil.test");
     expect(html).toContain("youtube.com/embed/1");
   });
+
+  it("mantém lazy loading e no-referrer nas imagens", () => {
+    const html = sanitizeArticleHtml('<img src="/a.png" alt="a">', "https://site.test/post");
+    expect(html).toContain('src="https://site.test/a.png"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('referrerpolicy="no-referrer"');
+  });
+});
+
+describe("parseFeed guid", () => {
+  it("não colide itens sem guid, link, título ou data", async () => {
+    const xml = `<?xml version="1.0"?><rss version="2.0"><channel><title>T</title>
+      <item><description>primeiro</description></item>
+      <item><description>segundo</description></item>
+    </channel></rss>`;
+    const feed = await parseFeed(xml, "https://noguid.test/feed");
+    expect(new Set(feed.items.map((i) => i.guid)).size).toBe(2);
+  });
 });
 
 describe("OPML", () => {

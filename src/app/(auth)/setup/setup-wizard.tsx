@@ -26,6 +26,7 @@ export function SetupWizard() {
   const [step, setStep] = useState<Step>("choose");
   const [provider, setProvider] = useState<Provider>("sqlite");
   const [pg, setPg] = useState<PostgresInput>(DEFAULT_PG);
+  const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -35,7 +36,7 @@ export function SetupWizard() {
     setStep("installing");
     try {
       const result = await completeSetup(
-        provider === "sqlite" ? { provider: "sqlite" } : { provider: "postgresql", createDatabase, ...pg },
+        provider === "sqlite" ? { token, provider: "sqlite" } : { token, provider: "postgresql", createDatabase, ...pg },
       );
       if (result.status === "error") {
         setError(result.message);
@@ -64,7 +65,7 @@ export function SetupWizard() {
     setError(null);
     setPending(true);
     try {
-      const result = await testPostgresConnection(pg);
+      const result = await testPostgresConnection(token, pg);
       if (result.status === "error") setError(result.message);
       else if (result.status === "missing-database") setStep("confirm-create");
       else await install();
@@ -111,8 +112,19 @@ export function SetupWizard() {
               );
             })}
           </div>
+          <Field label={t("token")} hint={t("tokenHint")}>
+            <Input
+              name="setup-token"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              required
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="xxxx-xxxx-xxxx-xxxx"
+            />
+          </Field>
           {error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>}
-          <Button type="button" variant="primary" size="lg" onClick={onChoose} disabled={pending}>
+          <Button type="button" variant="primary" size="lg" onClick={onChoose} disabled={pending || !token.trim()}>
             {t("continue")}
           </Button>
         </div>
