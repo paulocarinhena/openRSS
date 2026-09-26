@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { ArticleDetail, ArticleListItem, ArticleScope } from "@/lib/queries";
 import { loadMoreArticles, loadPreviewImagesAction, markAllRead, openArticleAction, setRead, setSaved } from "@/app/actions/articles";
 import { refreshFeedAction } from "@/app/actions/feeds";
+import { SaveLinkDialog } from "@/components/save-link";
 import { updateSettingsAction } from "@/app/actions/settings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -411,6 +412,7 @@ export function ArticleWorkspace({
                 <RefreshCw className={cn(pending && "animate-spin")} />
               </Button>
             )}
+            {scope.kind === "saved" && <SaveLinkDialog />}
             <ViewSwitcher value={view} onChange={changeView} />
             {scope.kind !== "saved" && (
               <Button

@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, Copy, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { BookmarkPlus, Check, Copy, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createApiTokenAction, revokeApiTokenAction } from "@/app/actions/api-tokens";
@@ -36,7 +36,40 @@ function CopyField({ label, value, mono = true }: { label: string; value: string
   );
 }
 
-export function AppsSettings({ tokens, email, greaderUrl, feverUrl }: { tokens: Token[]; email: string; greaderUrl: string; feverUrl: string }) {
+/**
+ * Link "javascript:" para arrastar à barra de favoritos. O React bloqueia javascript: em href,
+ * então o endereço é aplicado direto no elemento (é código nosso, fixo, sem entrada do usuário).
+ */
+function Bookmarklet({ saveUrl, label }: { saveUrl: string; label: string }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const code = `location.href=${JSON.stringify(`${saveUrl}?url=`)}+encodeURIComponent(location.href)`;
+    ref.current?.setAttribute("href", `javascript:${code}`);
+  }, [saveUrl]);
+  return (
+    <a
+      ref={ref}
+      onClick={(e) => e.preventDefault()}
+      className="inline-flex h-8 cursor-grab items-center gap-1.5 self-start rounded-control border border-border px-3 text-sm font-medium hover:bg-accent"
+    >
+      <BookmarkPlus className="size-4" /> {label}
+    </a>
+  );
+}
+
+export function AppsSettings({
+  tokens,
+  email,
+  greaderUrl,
+  feverUrl,
+  saveUrl,
+}: {
+  tokens: Token[];
+  email: string;
+  greaderUrl: string;
+  feverUrl: string;
+  saveUrl: string;
+}) {
   const t = useTranslations("apps");
   const locale = useLocale();
   const [name, setName] = useState("");
@@ -65,6 +98,14 @@ export function AppsSettings({ tokens, email, greaderUrl, feverUrl }: { tokens: 
           <CopyField label={t("feverUrl")} value={feverUrl} />
           <CopyField label={t("username")} value={email} />
           <p className="self-end text-[0.6875rem] text-muted-foreground">{t("clientsHint")}</p>
+        </Card>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="eyebrow">{t("bookmarklet")}</h2>
+        <Card className="flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground">{t("bookmarkletHint")}</p>
+          <Bookmarklet saveUrl={saveUrl} label={t("bookmarkletButton")} />
         </Card>
       </section>
 

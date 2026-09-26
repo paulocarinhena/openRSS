@@ -11,6 +11,7 @@ export function SettingsTabs({ isAdmin }: { isAdmin: boolean }) {
   const tabs = [
     { href: "/settings", label: t("general") },
     { href: "/settings/feeds", label: t("feeds") },
+    { href: "/settings/health", label: t("health") },
     { href: "/settings/ai", label: t("ai") },
     { href: "/settings/rules", label: t("rules") },
     { href: "/settings/apps", label: t("apps") },

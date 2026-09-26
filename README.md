@@ -52,6 +52,8 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Suporte a RSS, Atom e RDF
 - Atualização em segundo plano com ETag/Last-Modified e backoff em erros
 - Importação e exportação OPML
+- Salvar qualquer link para ler depois (texto extraído em modo leitura): botão em Salvos, bookmarklet e menu Compartilhar do celular
+- Painel de saúde dos feeds (Configurações → Saúde): com erro, parados, pouco lidos e ativos demais, com limpeza em lote
 - Regras automáticas por título, conteúdo, autor, URL ou nota da IA: marcar como lido, salvar, destacar ou notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retenção configurável de artigos
 
@@ -248,6 +250,8 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - RSS, Atom, and RDF support
 - Background refresh with ETag/Last-Modified and error backoff
 - OPML import and export
+- Save any link to read later (text extracted in reader mode): button in Saved, bookmarklet and the phone's Share menu
+- Feed health panel (Settings → Health): failing, stale, rarely read and too active feeds, with bulk cleanup
 - Automatic rules by title, content, author, URL or AI score: mark as read, save, highlight or notify (ntfy, Discord, Slack, Telegram, webhook)
 - Configurable article retention
 
@@ -444,6 +448,8 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Soporte RSS, Atom y RDF
 - Actualización en segundo plano con ETag/Last-Modified y backoff en errores
 - Importación y exportación OPML
+- Guardar cualquier enlace para leer después (texto extraído en modo lectura): botón en Guardados, bookmarklet y el menú Compartir del móvil
+- Panel de salud de los feeds (Ajustes → Salud): con errores, parados, poco leídos y demasiado activos, con limpieza en lote
 - Reglas automáticas por título, contenido, autor, URL o nota de la IA: marcar como leído, guardar, destacar o notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retención configurable de artículos
 

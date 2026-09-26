@@ -595,7 +595,8 @@
       "cleanup": "Retención",
       "admin": "Admin",
       "rules": "Reglas",
-      "apps": "Apps"
+      "apps": "Apps",
+      "health": "Salud"
     },
     "cleanup": {
       "title": "Retención de noticias",
@@ -864,6 +865,51 @@
     "errors": {
       "nameRequired": "Ponle un nombre a la contraseña (hasta 60 caracteres).",
       "tooMany": "Límite de {max} contraseñas de aplicación. Revoca alguna antes."
-    }
+    },
+    "bookmarklet": "Guardar desde el navegador",
+    "bookmarkletHint": "Arrastra el botón de abajo a la barra de marcadores. En cualquier página, haz clic para guardarla en openRSS. En el móvil, con la app instalada, usa el menú Compartir → openRSS.",
+    "bookmarkletButton": "Guardar en openRSS"
+  },
+  "links": {
+    "title": "Guardar enlace",
+    "description": "Pega la dirección de cualquier página: openRSS extrae el texto y lo guarda en Guardados para leer después.",
+    "urlLabel": "Dirección de la página",
+    "save": "Guardar",
+    "reading": "Leyendo la página…",
+    "saved": "Enlace guardado",
+    "alreadyHad": "Ya tenías este artículo; ahora está en Guardados.",
+    "invalidUrl": "Introduce una dirección http(s) válida.",
+    "feedTitle": "Enlaces guardados",
+    "close": "Cerrar"
+  },
+  "health": {
+    "title": "Salud de los feeds",
+    "description": "Encuentra feeds con errores, parados, que no lees o que publican demasiado, y limpia tus suscripciones.",
+    "filter": "Filtrar por estado",
+    "never": "nunca",
+    "status": {
+      "all": "Todos",
+      "error": "Con error",
+      "stale": "Parados",
+      "lowRead": "Poco leídos",
+      "noisy": "Demasiado activos",
+      "ok": "Saludables"
+    },
+    "lastArticle": "último artículo {when}",
+    "volume": "{count, plural, one {# artículo} other {# artículos}} en 30 días",
+    "readRatio": "{pct}% leídos",
+    "noRecent": "nada reciente",
+    "unread": "{count, plural, one {# sin leer} other {# sin leer}}",
+    "lastFetched": "revisado {when}",
+    "errorDetail": "{count, plural, one {# fallo seguido} other {# fallos seguidos}}: {error}",
+    "refresh": "Actualizar",
+    "refreshed": "{count, plural, =0 {Ningún artículo nuevo} one {# artículo nuevo} other {# artículos nuevos}}",
+    "unsubscribe": "Cancelar suscripción",
+    "unsubscribeConfirm": "¿Cancelar la suscripción a “{title}”?",
+    "unsubscribeAll": "Cancelar {count, plural, one {# suscripción} other {# suscripciones}}",
+    "unsubscribeAllConfirm": "¿Cancelar la suscripción a los {count} feeds en “{filter}”?",
+    "unsubscribed": "{count, plural, one {Suscripción cancelada} other {# suscripciones canceladas}}",
+    "empty": "Aún no estás suscrito a ningún feed.",
+    "emptyFilter": "Ningún feed en este estado."
   }
 }

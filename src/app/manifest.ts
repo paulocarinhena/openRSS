@@ -19,6 +19,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Menu "Compartilhar" do celular: manda o link para /save.
+    share_target: { action: "/save", method: "GET", params: { title: "title", text: "text", url: "url" } },
     shortcuts: [
       { name: t("today"), url: "/", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: t("saved"), url: "/saved", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
