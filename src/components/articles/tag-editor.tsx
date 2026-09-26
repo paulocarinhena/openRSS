@@ -15,6 +15,7 @@ export function TagEditor({ articleId, initial, onSavedChange }: { articleId: st
   const [tags, setTags] = useState(initial);
   const [options, setOptions] = useState<Tag[] | null>(null);
   const [value, setValue] = useState("");
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
   function add(name: string) {
@@ -60,9 +61,10 @@ export function TagEditor({ articleId, initial, onSavedChange }: { articleId: st
         placeholder={t("add")}
         value={value}
         disabled={pending}
-        loading={options === null}
-        onOpenChange={(open) => {
-          if (open && options === null) void listTagsAction().then((list) => setOptions(list));
+        loading={open && options === null}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (next && options === null) void listTagsAction().then((list) => setOptions(list));
         }}
         onValueChange={add}
         options={(options ?? [])

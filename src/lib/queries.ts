@@ -168,7 +168,8 @@ export async function listArticles(
     if (extra.length === 0) return items;
     const rows = await db.article.findMany({ where: { id: { in: extra.map((m) => m.id) } }, select: articleSelect(userId) });
     const byId = new Map(rows.map((r) => [r.id, toListItem(r)]));
-    return [...items, ...extra.flatMap((m) => (byId.has(m.id) ? [{ ...byId.get(m.id)!, matchedBySubject: true }] : []))];
+    // Reagrupa: um resultado por assunto pode ser outra fonte de um fato já listado.
+    return group([...items, ...extra.flatMap((m) => (byId.has(m.id) ? [{ ...byId.get(m.id)!, matchedBySubject: true }] : []))]);
   };
 
   if (scope.kind === "today") {
