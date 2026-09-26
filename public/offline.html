@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1b3f63">
+<title>openRSS · offline</title>
+<style>
+  :root { --bg: #f7fafe; --fg: #0f172a; --muted: #64748b; --border: #dbe3ee; --surface: #ffffff; --primary: #1b3f63; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0a0a0a; --fg: #ededed; --muted: #a1a1aa; --border: #27272a; --surface: #141414; --primary: #ffffff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 40rem; margin: 0 auto; padding: 3rem 1rem; }
+  header { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.5rem; }
+  header img { width: 32px; height: 32px; border-radius: 8px; }
+  h1 { font-size: 1.25rem; margin: 0; }
+  p { color: var(--muted); margin: .25rem 0 1.5rem; }
+  ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+  li + li { border-top: 1px solid var(--border); }
+  a { display: block; padding: .75rem 1rem; color: inherit; text-decoration: none; }
+  a:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+  small { display: block; color: var(--muted); font-size: .8rem; }
+  button { margin-top: 1.5rem; padding: .5rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <header><img src="/icons/icon-192.png" alt=""><h1 id="title">Você está offline</h1></header>
+  <p id="lead">Estes artigos foram guardados para ler sem conexão:</p>
+  <ul id="list" hidden></ul>
+  <p id="empty" hidden>Nenhum artigo guardado ainda. Artigos salvos e lidos recentemente ficam disponíveis offline depois que você usa o app com conexão.</p>
+  <button id="retry" type="button">Tentar de novo</button>
+</main>
+<script>
+  // Textos no idioma do navegador (pt, en, es); o app ainda não carregou as traduções.
+  const i18n = {
+    en: { title: "You are offline", lead: "These articles were saved to read without a connection:", empty: "No articles saved yet. Saved and recently read articles become available offline after you use the app while connected.", retry: "Try again", saved: "Saved" },
+    es: { title: "Estás sin conexión", lead: "Estos artículos se guardaron para leer sin conexión:", empty: "Aún no hay artículos guardados. Los guardados y leídos recientemente quedan disponibles sin conexión después de usar la app con conexión.", retry: "Reintentar", saved: "Guardado" },
+    pt: { title: "Você está offline", lead: "Estes artigos foram guardados para ler sem conexão:", empty: "Nenhum artigo guardado ainda. Artigos salvos e lidos recentemente ficam disponíveis offline depois que você usa o app com conexão.", retry: "Tentar de novo", saved: "Salvo" },
+  };
+  const lang = (navigator.language || "pt").slice(0, 2);
+  const t = i18n[lang] || i18n.pt;
+  document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
+  for (const id of ["title", "lead", "empty", "retry"]) document.getElementById(id).textContent = t[id];
+  document.getElementById("retry").addEventListener("click", () => location.reload());
+
+  fetch("/__offline/index.json")
+    .then((r) => r.json())
+    .catch(() => [])
+    .then((articles) => {
+      const list = document.getElementById("list");
+      if (!articles.length) {
+        document.getElementById("lead").hidden = true;
+        document.getElementById("empty").hidden = false;
+        return;
+      }
+      for (const a of articles) {
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = "/article/" + encodeURIComponent(a.id);
+        link.textContent = a.title;
+        const meta = document.createElement("small");
+        meta.textContent = a.feed + (a.saved ? " · " + t.saved : "");
+        link.appendChild(meta);
+        li.appendChild(link);
+        list.appendChild(li);
+      }
+      list.hidden = false;
+    });
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ process.env.APP_SECRET = "test-only-random-secret-value";
 let currentUser = { id: "", role: "user" };
 
 vi.mock("@/lib/session", () => ({
+  getApiUser: async () => (currentUser.id ? currentUser : null),
   requireUser: async () => currentUser,
   requireAdmin: async () => {
     if (currentUser.role !== "admin") throw new Error("not admin");
@@ -39,6 +40,7 @@ const { saveTtsProviderAction } = await import("@/app/actions/tts");
 const { unsubscribeAction, updateSubscriptionAction } = await import("@/app/actions/feeds");
 const { applyRuleToExistingAction, deleteRuleAction, previewRuleAction, saveRuleAction } = await import("@/app/actions/rules");
 const { applyRulesToArticles } = await import("@/lib/rules/apply");
+const { GET: offlineArticles } = await import("@/app/api/offline/articles/route");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -294,5 +296,30 @@ describe("rules", () => {
     await deleteRuleAction(id);
     expect(await db.rule.count({ where: { id } })).toBe(1);
     expect((await saveRuleAction({ ...draft, id, name: "hijack", actions: ["save"] })).ok).toBe(false);
+  });
+});
+
+describe("offline articles API", () => {
+  it("lists the user's saved and recently read articles once each", async () => {
+    const feed = await createFeed("https://offline.example/feed", [{ guid: "saved" }, { guid: "read" }, { guid: "both" }, { guid: "other" }]);
+    await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+    const [saved, read, both, other] = feed.articles;
+    const now = new Date();
+    await db.userArticle.createMany({
+      data: [
+        { userId: "alice", articleId: saved.id, isSaved: true, savedAt: now },
+        { userId: "alice", articleId: read.id, isRead: true, readAt: now },
+        { userId: "alice", articleId: both.id, isSaved: true, savedAt: now, isRead: true, readAt: now },
+        { userId: "bob", articleId: other.id, isSaved: true, savedAt: now },
+      ],
+    });
+
+    const res = await offlineArticles(new Request("http://localhost/api/offline/articles"));
+    const { articles } = (await res.json()) as { articles: { id: string; saved: boolean }[] };
+    expect(articles.map((a) => a.id).sort()).toEqual([saved.id, read.id, both.id].sort());
+    expect(articles.find((a) => a.id === both.id)?.saved).toBe(true);
+
+    currentUser = { id: "", role: "user" };
+    expect((await offlineArticles(new Request("http://localhost/api/offline/articles"))).status).toBe(401);
   });
 });

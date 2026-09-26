@@ -44,6 +44,7 @@ import { useTranslations } from "next-intl";
 import { Dialog } from "radix-ui";
 import type { SidebarData } from "@/lib/queries";
 import { signOut } from "@/lib/auth-client";
+import { postToServiceWorker } from "@/components/service-worker";
 import { cn } from "@/lib/utils";
 import { createFolderAction, refreshAllFeedsAction, renameFolderAction, updateSubscriptionAction } from "@/app/actions/feeds";
 import { AddFeedDialog } from "@/components/add-feed-dialog";
@@ -405,6 +406,8 @@ function SidebarContent({ sidebar, user, onClose }: { sidebar: SidebarData; user
           aria-label={t("signOut")}
           title={t("signOut")}
           onClick={async () => {
+            // Páginas e artigos guardados para offline são deste usuário: saem junto com a sessão.
+            postToServiceWorker({ type: "clear" });
             await signOut();
             router.replace("/login");
             router.refresh();

@@ -38,6 +38,7 @@ COPY --from=builder --chown=node:node /app/src/lib/env.ts ./src/lib/env.ts
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/prisma ./prisma
 COPY --from=builder --chown=node:node /app/.next ./.next
+COPY --from=builder --chown=node:node /app/public ./public
 
 USER node
 VOLUME ["/data"]
