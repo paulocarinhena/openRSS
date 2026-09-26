@@ -22,5 +22,13 @@ export default async function AppsSettingsPage() {
     }),
     publicOrigin(),
   ]);
-  return <AppsSettings tokens={tokens} email={user.email} greaderUrl={`${origin}/api/greader`} feverUrl={`${origin}/api/fever`} />;
+  return (
+    <AppsSettings
+      tokens={tokens}
+      email={user.email}
+      greaderUrl={`${origin}/api/greader`}
+      feverUrl={`${origin}/api/fever`}
+      saveUrl={`${origin}/save`}
+    />
+  );
 }

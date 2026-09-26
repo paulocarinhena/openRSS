@@ -43,7 +43,10 @@ const { applyRulesToArticles } = await import("@/lib/rules/apply");
 const { GET: offlineArticles } = await import("@/app/api/offline/articles/route");
 const { assignStories } = await import("@/lib/feeds/stories");
 const { setRead } = await import("@/app/actions/articles");
-const { listArticles } = await import("@/lib/queries");
+const { getArticle, listArticles } = await import("@/lib/queries");
+const { saveLinkAction } = await import("@/app/actions/links");
+const { refreshDueFeeds } = await import("@/lib/feeds/refresh");
+const { getFeedHealth } = await import("@/lib/feeds/health");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -363,5 +366,76 @@ describe("story grouping", () => {
     await db.userSettings.update({ where: { userId: "alice" }, data: { groupStories: false } });
     const flat = await listArticles("alice", { kind: "all" }, { unreadOnly: false });
     expect(flat.items.filter((i) => i.storyId === storyId)).toHaveLength(2);
+  });
+});
+
+describe("save any link", () => {
+  it("extracts a page into Saved, reuses articles the user already has and keeps it out of refreshes", async () => {
+    const html = `<!doctype html><html><head><title>Guia completo | Blog</title>
+      <meta property="og:image" content="/capa.png"><meta name="author" content="Ana"></head>
+      <body><article><h1>Guia completo</h1>${"<p>Um parágrafo longo o bastante para o modo leitura considerar este texto o conteúdo principal da página. </p>".repeat(8)}</article></body></html>`;
+    const server = createServer((_req, res) => {
+      res.setHeader("content-type", "text/html; charset=utf-8");
+      res.end(html);
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    process.env.ALLOW_PRIVATE_FEEDS = "true";
+    try {
+      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/guia#comentarios`;
+      const res = await saveLinkAction(url);
+      expect(res).toMatchObject({ ok: true, existed: false });
+      const id = res.ok ? res.articleId : "";
+      const article = await getArticle("alice", id);
+      expect(article).toMatchObject({ title: expect.stringMatching(/^Guia completo/), state: { isSaved: true } });
+      expect(article?.imageUrl).toMatch(/\/capa\.png$/);
+      expect(article?.contentHtml).toContain("modo leitura");
+
+      // Salvar de novo não duplica.
+      expect(await saveLinkAction(url)).toMatchObject({ ok: true, existed: true, articleId: id });
+      const saved = await listArticles("alice", { kind: "saved" });
+      expect(saved.items.map((i) => i.id)).toContain(id);
+
+      // O feed virtual não tem assinatura: o agendador não tenta baixá-lo.
+      const virtual = await db.feed.findFirstOrThrow({ where: { url: "urn:openrss:saved-links:alice" } });
+      await db.feed.update({ where: { id: virtual.id }, data: { nextFetchAt: new Date(0) } });
+      await refreshDueFeeds();
+      expect((await db.feed.findUniqueOrThrow({ where: { id: virtual.id } })).errorCount).toBe(0);
+    } finally {
+      delete process.env.ALLOW_PRIVATE_FEEDS;
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  it("marks an article from a subscribed feed as saved instead of downloading it again", async () => {
+    const feed = await createFeed("https://known.example/feed", [{ guid: "k" }]);
+    await db.article.update({ where: { id: feed.articles[0].id }, data: { url: "https://known.example/post" } });
+    await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+    expect(await saveLinkAction("https://known.example/post")).toMatchObject({ ok: true, existed: true, articleId: feed.articles[0].id });
+    expect((await saveLinkAction("ftp://x")).ok).toBe(false);
+  });
+});
+
+describe("feed health", () => {
+  it("flags failing, stale, rarely read and noisy feeds", async () => {
+    const day = 86400000;
+    const now = new Date();
+    const healthy = await createFeed("https://healthy.example/feed", [{ guid: "h", publishedAt: new Date(now.getTime() - day) }]);
+    const stale = await createFeed("https://stale.example/feed", [{ guid: "s", publishedAt: new Date(now.getTime() - 90 * day) }]);
+    const failing = await createFeed("https://failing.example/feed", []);
+    await db.feed.update({ where: { id: failing.id }, data: { errorCount: 4, lastError: "HTTP 500" } });
+    const ignored = await createFeed(
+      "https://ignored.example/feed",
+      Array.from({ length: 12 }, (_, i) => ({ guid: `i${i}`, publishedAt: new Date(now.getTime() - (i + 1) * 3600_000) })),
+    );
+    await db.subscription.createMany({ data: [healthy, stale, failing, ignored].map((f) => ({ userId: "alice", feedId: f.id })) });
+    await db.userArticle.create({ data: { userId: "alice", articleId: healthy.articles[0].id, isRead: true } });
+
+    const report = new Map((await getFeedHealth("alice", now)).map((f) => [f.feedId, f]));
+    expect(report.get(healthy.id)).toMatchObject({ status: ["ok"], articles30d: 1, read30d: 1, unread: 0 });
+    expect(report.get(stale.id)?.status).toEqual(["stale"]);
+    expect(report.get(failing.id)?.status).toEqual(["error", "stale"]);
+    expect(report.get(ignored.id)).toMatchObject({ status: ["lowRead"], articles30d: 12, unread: 12 });
+    // Mais graves primeiro.
+    expect((await getFeedHealth("alice", now))[0].feedId).toBe(failing.id);
   });
 });

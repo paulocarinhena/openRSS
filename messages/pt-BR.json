@@ -595,7 +595,8 @@
       "cleanup": "Retenção",
       "admin": "Admin",
       "rules": "Regras",
-      "apps": "Apps"
+      "apps": "Apps",
+      "health": "Saúde"
     },
     "cleanup": {
       "title": "Retenção de notícias",
@@ -864,6 +865,51 @@
     "errors": {
       "nameRequired": "Dê um nome à senha (até 60 caracteres).",
       "tooMany": "Limite de {max} senhas de aplicativo. Revogue alguma antes."
-    }
+    },
+    "bookmarklet": "Salvar do navegador",
+    "bookmarkletHint": "Arraste o botão abaixo para a barra de favoritos. Em qualquer página, clique nele para salvá-la no openRSS. No celular, com o app instalado, use o menu Compartilhar → openRSS.",
+    "bookmarkletButton": "Salvar no openRSS"
+  },
+  "links": {
+    "title": "Salvar link",
+    "description": "Cole o endereço de qualquer página: o openRSS extrai o texto e guarda em Salvos para ler depois.",
+    "urlLabel": "Endereço da página",
+    "save": "Salvar",
+    "reading": "Lendo a página…",
+    "saved": "Link salvo",
+    "alreadyHad": "Esse artigo já estava com você; agora está em Salvos.",
+    "invalidUrl": "Informe um endereço http(s) válido.",
+    "feedTitle": "Links salvos",
+    "close": "Fechar"
+  },
+  "health": {
+    "title": "Saúde dos feeds",
+    "description": "Encontre feeds com erro, parados, que você não lê ou que publicam demais, e limpe as assinaturas.",
+    "filter": "Filtrar por situação",
+    "never": "nunca",
+    "status": {
+      "all": "Todos",
+      "error": "Com erro",
+      "stale": "Parados",
+      "lowRead": "Pouco lidos",
+      "noisy": "Ativos demais",
+      "ok": "Saudáveis"
+    },
+    "lastArticle": "último artigo {when}",
+    "volume": "{count, plural, one {# artigo} other {# artigos}} em 30 dias",
+    "readRatio": "{pct}% lidos",
+    "noRecent": "nada recente",
+    "unread": "{count, plural, one {# não lido} other {# não lidos}}",
+    "lastFetched": "verificado {when}",
+    "errorDetail": "{count, plural, one {# falha seguida} other {# falhas seguidas}}: {error}",
+    "refresh": "Atualizar",
+    "refreshed": "{count, plural, =0 {Nenhum artigo novo} one {# artigo novo} other {# artigos novos}}",
+    "unsubscribe": "Cancelar assinatura",
+    "unsubscribeConfirm": "Cancelar a assinatura de “{title}”?",
+    "unsubscribeAll": "Cancelar {count, plural, one {# assinatura} other {# assinaturas}}",
+    "unsubscribeAllConfirm": "Cancelar a assinatura dos {count} feeds em “{filter}”?",
+    "unsubscribed": "{count, plural, one {Assinatura cancelada} other {# assinaturas canceladas}}",
+    "empty": "Você ainda não assina nenhum feed.",
+    "emptyFilter": "Nenhum feed nesta situação."
   }
 }

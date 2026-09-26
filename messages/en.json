@@ -595,7 +595,8 @@
       "cleanup": "Retention",
       "admin": "Admin",
       "rules": "Rules",
-      "apps": "Apps"
+      "apps": "Apps",
+      "health": "Health"
     },
     "cleanup": {
       "title": "Article retention",
@@ -864,6 +865,51 @@
     "errors": {
       "nameRequired": "Give the password a name (up to 60 characters).",
       "tooMany": "Limit of {max} app passwords. Revoke one first."
-    }
+    },
+    "bookmarklet": "Save from the browser",
+    "bookmarkletHint": "Drag the button below to your bookmarks bar. On any page, click it to save that page to openRSS. On your phone, with the app installed, use the Share menu → openRSS.",
+    "bookmarkletButton": "Save to openRSS"
+  },
+  "links": {
+    "title": "Save link",
+    "description": "Paste the address of any page: openRSS extracts the text and keeps it in Saved to read later.",
+    "urlLabel": "Page address",
+    "save": "Save",
+    "reading": "Reading the page…",
+    "saved": "Link saved",
+    "alreadyHad": "You already had this article; it is now in Saved.",
+    "invalidUrl": "Enter a valid http(s) address.",
+    "feedTitle": "Saved links",
+    "close": "Close"
+  },
+  "health": {
+    "title": "Feed health",
+    "description": "Find feeds that fail, stopped publishing, you never read or that post too much, and clean up your subscriptions.",
+    "filter": "Filter by status",
+    "never": "never",
+    "status": {
+      "all": "All",
+      "error": "Failing",
+      "stale": "Stale",
+      "lowRead": "Rarely read",
+      "noisy": "Too active",
+      "ok": "Healthy"
+    },
+    "lastArticle": "last article {when}",
+    "volume": "{count, plural, one {# article} other {# articles}} in 30 days",
+    "readRatio": "{pct}% read",
+    "noRecent": "nothing recent",
+    "unread": "{count, plural, one {# unread} other {# unread}}",
+    "lastFetched": "checked {when}",
+    "errorDetail": "{count, plural, one {# failure in a row} other {# failures in a row}}: {error}",
+    "refresh": "Refresh",
+    "refreshed": "{count, plural, =0 {No new articles} one {# new article} other {# new articles}}",
+    "unsubscribe": "Unsubscribe",
+    "unsubscribeConfirm": "Unsubscribe from “{title}”?",
+    "unsubscribeAll": "Unsubscribe {count, plural, one {# feed} other {# feeds}}",
+    "unsubscribeAllConfirm": "Unsubscribe from the {count} feeds in “{filter}”?",
+    "unsubscribed": "{count, plural, one {Unsubscribed} other {# subscriptions removed}}",
+    "empty": "You are not subscribed to any feed yet.",
+    "emptyFilter": "No feeds with this status."
   }
 }
