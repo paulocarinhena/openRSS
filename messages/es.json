@@ -62,8 +62,17 @@
       "INVALID_EMAIL": "Email inválido.",
       "PASSWORD_TOO_SHORT": "La contraseña debe tener al menos 8 caracteres.",
       "PASSWORD_TOO_LONG": "La contraseña es demasiado larga.",
-      "USER_NOT_FOUND": "Usuario no encontrado."
-    }
+      "USER_NOT_FOUND": "Usuario no encontrado.",
+      "ssoFailed": "No se pudo entrar con SSO ({code}).",
+      "account_not_linked": "Ya existe una cuenta con este correo. Entra con tu contraseña y conecta el SSO en Ajustes → General.",
+      "signup_disabled": "El registro por SSO está desactivado. Pide a un administrador que cree tu cuenta.",
+      "unable_to_create_user": "No se pudo crear la cuenta por SSO (¿registro cerrado?).",
+      "email_not_verified": "El proveedor indicó que tu correo no está verificado.",
+      "access_denied": "Acceso denegado por el proveedor de inicio de sesión.",
+      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo."
+    },
+    "ssoButton": "Entrar con {name}",
+    "or": "o"
   },
   "setup": {
     "title": "Configuración inicial",
@@ -240,7 +249,8 @@
       "cancel": "Cancelar",
       "configureTts": "Configura un proveedor de audio en Configuración → IA",
       "loadingFull": "Cargando el artículo completo…",
-      "noContent": "Este elemento no tiene contenido en el feed."
+      "noContent": "Este elemento no tiene contenido en el feed.",
+      "createRule": "Crear regla a partir de este artículo"
     },
     "audio": {
       "title": "Audio de la noticia",
@@ -293,7 +303,9 @@
       "noOriginalLink": "El artículo no tiene enlace original.",
       "extractFailed": "No se pudo extraer el contenido.",
       "fetchFailed": "Error al obtener el artículo."
-    }
+    },
+    "highlighted": "Destacado por una regla",
+    "moreSources": "{count, plural, one {+# fuente} other {+# fuentes}}"
   },
   "feeds": {
     "add": {
@@ -581,7 +593,9 @@
       "feeds": "Feeds",
       "ai": "IA",
       "cleanup": "Retención",
-      "admin": "Admin"
+      "admin": "Admin",
+      "rules": "Reglas",
+      "apps": "Apps"
     },
     "cleanup": {
       "title": "Retención de noticias",
@@ -618,7 +632,13 @@
         "search": "buscar",
         "closeReader": "cerrar lector"
       },
-      "save": "Guardar"
+      "save": "Guardar",
+      "groupStories": "Agrupar noticias del mismo hecho",
+      "groupStoriesHint": "Muestra un único elemento cuando feeds distintos publican la misma noticia; leer una marca las demás como leídas.",
+      "sso": "Inicio de sesión único (SSO)",
+      "ssoLinked": "Cuenta conectada a {name}.",
+      "ssoNotLinked": "Conecta tu cuenta a {name} para entrar sin contraseña.",
+      "ssoConnect": "Conectar {name}"
     },
     "errors": {
       "invalidData": "Datos inválidos.",
@@ -663,7 +683,8 @@
       "createUserFailed": "No se pudo crear el usuario.",
       "ownRole": "No puedes cambiar tu propio rol.",
       "ownDelete": "No puedes eliminarte a ti mismo."
-    }
+    },
+    "passwordLoginDisabled": "El inicio de sesión con contraseña está desactivado (OIDC_DISABLE_PASSWORD_LOGIN): las cuentas se crean por SSO en el primer acceso."
   },
   "digest": {
     "eyebrow": "Digest diario",
@@ -696,6 +717,153 @@
     "ttsAdminsOnly": "Solo los administradores pueden crear proveedores globales.",
     "ttsSourceUnavailable": "El proveedor de IA seleccionado no está disponible para TTS.",
     "noPermission": "Sin permiso.",
-    "noTextToNarrate": "El artículo no tiene texto para narrar."
+    "noTextToNarrate": "El artículo no tiene texto para narrar.",
+    "webhookInvalid": "URL de webhook inválida para este formato."
+  },
+  "rules": {
+    "title": "Reglas automáticas",
+    "description": "Se aplican a cada artículo nuevo: marcar como leído, guardar, destacar o notificar.",
+    "add": "Nueva regla",
+    "aiNotReady": "Las reglas con la nota de la IA solo funcionan con un proveedor de IA y la priorización activa (Ajustes → IA, con tus intereses completados).",
+    "empty": "Aún no hay reglas. Crea una para filtrar lo que llega a tus feeds.",
+    "enabled": "Regla activa",
+    "missingTarget": "(eliminado)",
+    "conditionCount": "{count, plural, one {# condición} other {# condiciones}}",
+    "hits": "{count, plural, =0 {Aún no se activó} one {Se activó # vez} other {Se activó # veces}}",
+    "lastHit": "última {when}",
+    "applyExisting": "Aplicar a los existentes",
+    "applyExistingHint": "Aplica la regla a los artículos que ya tienes (sin notificar).",
+    "applyExistingConfirm": "¿Aplicar la regla “{name}” a todos los artículos existentes en el alcance? No se puede deshacer automáticamente.",
+    "appliedExisting": "{count, plural, =0 {Ningún artículo coincidió} one {Regla aplicada a # artículo} other {Regla aplicada a # artículos}}",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar la regla “{name}”?",
+    "deleted": "Regla eliminada",
+    "name": "Nombre",
+    "namePlaceholder": "Ej.: Ocultar publicidad",
+    "scope": "Aplicar en",
+    "feed": "Feed",
+    "folder": "Carpeta",
+    "choose": "Elige…",
+    "scopes": {
+      "all": "Todos los feeds",
+      "feed": "Un feed",
+      "folder": "Una carpeta"
+    },
+    "conditions": "Condiciones",
+    "match": "Combinar condiciones",
+    "matchAll": "Todas las condiciones",
+    "matchAny": "Cualquier condición",
+    "field": "Campo",
+    "operator": "Operador",
+    "value": "Valor",
+    "removeCondition": "Quitar condición",
+    "addCondition": "Añadir condición",
+    "scoreHint": "Las reglas con la nota de la IA se ejecutan después de que la IA clasifica los artículos nuevos.",
+    "fields": {
+      "title": "Título",
+      "content": "Contenido",
+      "author": "Autor",
+      "url": "URL",
+      "feed": "Nombre del feed",
+      "score": "Nota de la IA"
+    },
+    "ops": {
+      "contains": "contiene",
+      "notContains": "no contiene",
+      "equals": "es igual a",
+      "regex": "coincide con regex",
+      "gte": "mayor o igual a",
+      "lte": "menor o igual a"
+    },
+    "actionsLabel": "Acciones",
+    "actions": {
+      "markRead": "Marcar como leído",
+      "save": "Guardar",
+      "highlight": "Destacar",
+      "notify": "Notificar"
+    },
+    "actionHints": {
+      "markRead": "Lo quita de no leídos (lo silencia).",
+      "save": "Lo guarda en Guardados para leer después.",
+      "highlight": "Muestra una bandera en la lista.",
+      "notify": "Envía a ntfy, Discord, Slack, Telegram o un webhook."
+    },
+    "webhookFormat": "Servicio",
+    "webhookUrl": "URL del webhook",
+    "webhookKeep": "Actual: {current}. Déjalo vacío para mantenerlo.",
+    "formats": {
+      "json": "Webhook (JSON)",
+      "ntfy": "ntfy",
+      "discord": "Discord",
+      "slack": "Slack / Mattermost",
+      "telegram": "Telegram"
+    },
+    "formatHints": {
+      "json": "Recibe un POST con los datos del artículo en JSON.",
+      "ntfy": "URL del tema, ej.: https://ntfy.sh/mi-tema.",
+      "discord": "Webhook del canal (Ajustes del canal → Integraciones).",
+      "slack": "Incoming webhook de Slack o Mattermost.",
+      "telegram": "URL del bot con chat_id en la query."
+    },
+    "formatPlaceholders": {
+      "json": "https://ejemplo.com/webhook",
+      "ntfy": "https://ntfy.sh/mi-tema",
+      "discord": "https://discord.com/api/webhooks/…",
+      "slack": "https://hooks.slack.com/services/…",
+      "telegram": "https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>"
+    },
+    "sendTest": "Enviar prueba",
+    "webhookSent": "Notificación de prueba enviada",
+    "previewResult": "{count, plural, =0 {Ninguno de los {total} artículos de los últimos 7 días se vería afectado.} one {# artículo de {total} de los últimos 7 días se vería afectado.} other {# artículos de {total} de los últimos 7 días se verían afectados.}}",
+    "preview": "Probar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saved": "Regla guardada",
+    "testRuleName": "Prueba de openRSS",
+    "testArticleTitle": "Si recibiste esto, las notificaciones funcionan.",
+    "errors": {
+      "invalidData": "Datos inválidos.",
+      "nameRequired": "Ponle un nombre a la regla.",
+      "nameTooLong": "Nombre demasiado largo.",
+      "valueRequired": "Completa el valor de todas las condiciones.",
+      "valueTooLong": "Valor demasiado largo (máx. 200 caracteres).",
+      "invalidOperator": "Operador inválido para este campo.",
+      "invalidScore": "La nota debe ser un número entero de 0 a 100.",
+      "invalidRegex": "Regex inválida o riesgosa (evita grupos repetidos como (a+)+).",
+      "conditionRequired": "Añade al menos una condición.",
+      "tooManyConditions": "Máximo 10 condiciones.",
+      "actionRequired": "Elige al menos una acción.",
+      "scopeNotFound": "Elige uno de tus feeds o carpetas.",
+      "webhookRequired": "Indica la URL del webhook para notificar.",
+      "webhookInvalid": "URL de webhook inválida.",
+      "ruleNotFound": "Regla no encontrada."
+    }
+  },
+  "apps": {
+    "title": "Apps de lectura",
+    "description": "Usa openRSS en apps nativas (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) mediante las APIs Google Reader o Fever. Crea una contraseña de aplicación para cada app: la contraseña de tu cuenta nunca se usa.",
+    "greaderUrl": "URL de la API Google Reader",
+    "feverUrl": "URL de la API Fever",
+    "username": "Usuario (correo)",
+    "clientsHint": "En la app, elige “FreshRSS”, “Google Reader” o “Fever” e introduce la URL, tu correo y una contraseña de aplicación.",
+    "passwords": "Contraseñas de aplicación",
+    "newPasswordName": "Nombre de la app o dispositivo",
+    "namePlaceholder": "Ej.: Reeder en el iPhone",
+    "create": "Crear contraseña",
+    "createdOnce": "Contraseña de “{name}” creada. Cópiala ahora: no se volverá a mostrar.",
+    "password": "Contraseña de aplicación",
+    "copy": "Copiar",
+    "empty": "Aún no hay contraseñas de aplicación.",
+    "createdAt": "creada {when}",
+    "lastUsed": "último uso {when}",
+    "neverUsed": "nunca usada",
+    "revoke": "Revocar",
+    "revokeConfirm": "¿Revocar la contraseña “{name}”? Las apps que la usan dejarán de sincronizar.",
+    "revoked": "Contraseña revocada",
+    "errors": {
+      "nameRequired": "Ponle un nombre a la contraseña (hasta 60 caracteres).",
+      "tooMany": "Límite de {max} contraseñas de aplicación. Revoca alguna antes."
+    }
   }
 }

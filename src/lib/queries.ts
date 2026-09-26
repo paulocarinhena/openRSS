@@ -127,8 +127,9 @@ const articleSelect = (userId: string) =>
     contentHtml: true,
     imageUrl: true,
     publishedAt: true,
+    storyId: true,
     feed: { select: { id: true, title: true, iconUrl: true } },
-    states: { where: { userId }, select: { isRead: true, isSaved: true, priorityScore: true, priorityReason: true } },
+    states: { where: { userId }, select: { isRead: true, isSaved: true, isHighlighted: true, priorityScore: true, priorityReason: true } },
   }) satisfies Prisma.ArticleSelect;
 
 export async function listArticles(
@@ -145,13 +146,15 @@ export async function listArticles(
     ],
   };
   const page = Math.max(0, opts.page ?? 0);
+  const { groupStories } = await getUserSettings(userId);
+  const group = (items: ArticleListItem[]) => (groupStories ? groupByStory(items) : items);
 
   if (scope.kind === "today") {
     // Ordena por prioridade da IA (quando houver) e depois por data.
     const rows = await db.article.findMany({ where, select: articleSelect(userId), orderBy: { publishedAt: "desc" } });
-    const sorted = rows
-      .map(toListItem)
-      .sort((a, b) => (b.priorityScore ?? -1) - (a.priorityScore ?? -1) || +b.publishedAt - +a.publishedAt);
+    const sorted = group(
+      rows.map(toListItem).sort((a, b) => (b.priorityScore ?? -1) - (a.priorityScore ?? -1) || +b.publishedAt - +a.publishedAt),
+    );
     return { items: sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), hasMore: sorted.length > (page + 1) * PAGE_SIZE };
   }
 
@@ -162,8 +165,31 @@ export async function listArticles(
     skip: page * PAGE_SIZE,
     take: PAGE_SIZE + 1,
   });
-  return { items: rows.slice(0, PAGE_SIZE).map(toListItem), hasMore: rows.length > PAGE_SIZE };
+  return { items: group(rows.slice(0, PAGE_SIZE).map(toListItem)), hasMore: rows.length > PAGE_SIZE };
 }
+
+/**
+ * Junta artigos do mesmo fato (storyId) no primeiro que aparece na lista; os outros viram
+ * "outras fontes" dele. Como a lista é paginada, o agrupamento vale dentro de cada página.
+ */
+export function groupByStory<T extends { id: string; storyId: string | null; title: string; isRead: boolean; feed: { title: string }; related: RelatedSource[] }>(
+  items: T[],
+): T[] {
+  const lead = new Map<string, T>();
+  const out: T[] = [];
+  for (const item of items) {
+    const leader = item.storyId ? lead.get(item.storyId) : undefined;
+    if (leader) {
+      leader.related.push({ id: item.id, title: item.title, feedTitle: item.feed.title, isRead: item.isRead });
+      continue;
+    }
+    if (item.storyId) lead.set(item.storyId, item);
+    out.push(item);
+  }
+  return out;
+}
+
+export type RelatedSource = { id: string; title: string; feedTitle: string; isRead: boolean };
 
 function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof articleSelect> }>) {
   const s = a.states[0];
@@ -182,8 +208,12 @@ function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof arti
     feed: a.feed,
     isRead: s?.isRead ?? false,
     isSaved: s?.isSaved ?? false,
+    isHighlighted: s?.isHighlighted ?? false,
     priorityScore: s?.priorityScore ?? null,
     priorityReason: s?.priorityReason ?? null,
+    storyId: a.storyId,
+    /** Outras fontes do mesmo fato, preenchido por groupByStory. */
+    related: [] as RelatedSource[],
   };
 }
 

@@ -3,17 +3,48 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { KeyRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { signIn, signUp } from "@/lib/auth-client";
+import { OIDC_PROVIDER_ID } from "@/lib/oidc";
 import { Button } from "@/components/ui/button";
 import { Card, Field, Input } from "@/components/ui/input";
 
-export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firstUser?: boolean }) {
+/** Só caminhos internos: evita redirecionamento aberto via ?next=. */
+function safeNext(next: string | null) {
+  if (!next?.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
+  const url = new URL(next, window.location.origin);
+  return url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : "/";
+}
+
+export type SsoInfo = { name: string; passwordLoginDisabled: boolean } | null;
+
+export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "register"; firstUser?: boolean; sso?: SsoInfo }) {
   const t = useTranslations("auth");
   const router = useRouter();
   const params = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  // Erros do retorno do SSO chegam como ?error=<código>.
+  const ssoError = params.get("error");
+  const [error, setError] = useState<string | null>(() => {
+    if (!ssoError) return null;
+    const key = `errors.${ssoError}` as Parameters<typeof t>[0];
+    return t.has(key) ? t(key) : t("errors.ssoFailed", { code: ssoError });
+  });
   const [pending, setPending] = useState(false);
+
+  async function onSso() {
+    setError(null);
+    setPending(true);
+    const callbackURL = safeNext(params.get("next"));
+    const { error } = await signIn
+      .social({ provider: OIDC_PROVIDER_ID, callbackURL, errorCallbackURL: "/login", newUserCallbackURL: callbackURL })
+      .catch(() => ({ error: { message: t("errors.network") } }));
+    // Sem erro, o navegador já está indo para o provedor.
+    if (error) {
+      setError(error.message ?? t("errors.generic"));
+      setPending(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,13 +72,7 @@ export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firs
     } finally {
       setPending(false);
     }
-    const next = params.get("next");
-    let destination = "/";
-    if (next?.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")) {
-      const url = new URL(next, window.location.origin);
-      if (url.origin === window.location.origin) destination = `${url.pathname}${url.search}${url.hash}`;
-    }
-    router.replace(destination);
+    router.replace(safeNext(params.get("next")));
     router.refresh();
   }
 
@@ -57,29 +82,43 @@ export function AuthForm({ mode, firstUser }: { mode: "login" | "register"; firs
         <h1 className="text-base font-semibold tracking-tight">{mode === "login" ? t("login") : t("register")}</h1>
         {firstUser && <p className="mt-1 text-xs text-muted-foreground">{t("firstUser")}</p>}
       </div>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        {mode === "register" && (
-          <Field label={t("name")}>
-            <Input name="name" required autoComplete="name" />
-          </Field>
-        )}
-        <Field label={t("email")}>
-          <Input name="email" type="email" required autoComplete="email" />
-        </Field>
-        <Field label={t("password")}>
-          <Input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-          />
-        </Field>
-        {error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>}
-        <Button type="submit" variant="primary" size="lg" disabled={pending}>
-          {pending ? t("wait") : mode === "login" ? t("login") : t("register")}
+      {sso && (
+        <Button type="button" size="lg" onClick={onSso} disabled={pending}>
+          <KeyRound /> {t("ssoButton", { name: sso.name })}
         </Button>
-      </form>
+      )}
+      {sso && !sso.passwordLoginDisabled && (
+        <div className="flex items-center gap-3 text-[0.6875rem] text-muted-foreground" aria-hidden>
+          <span className="h-px flex-1 bg-border" /> {t("or")} <span className="h-px flex-1 bg-border" />
+        </div>
+      )}
+      {sso?.passwordLoginDisabled ? (
+        error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          {mode === "register" && (
+            <Field label={t("name")}>
+              <Input name="name" required autoComplete="name" />
+            </Field>
+          )}
+          <Field label={t("email")}>
+            <Input name="email" type="email" required autoComplete="email" />
+          </Field>
+          <Field label={t("password")}>
+            <Input
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+            />
+          </Field>
+          {error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>}
+          <Button type="submit" variant="primary" size="lg" disabled={pending}>
+            {pending ? t("wait") : mode === "login" ? t("login") : t("register")}
+          </Button>
+        </form>
+      )}
     </Card>
   );
 }

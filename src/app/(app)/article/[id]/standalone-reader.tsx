@@ -19,6 +19,7 @@ export function StandaloneReader({ article: initial, aiEnabled, ttsEnabled }: { 
     priorityScore: null,
     priorityReason: null,
     classifiedAt: null,
+    isHighlighted: false,
   };
 
   return (

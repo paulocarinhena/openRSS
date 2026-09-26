@@ -42,6 +42,9 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Visão Hoje (priorizada por IA), Todos, Salvos, pastas e feeds individuais
 - Visualizações em cartões, grade ou só títulos
 - Modo artigo completo (Readability) e busca instantânea
+- Notícias do mesmo fato publicadas por feeds diferentes aparecem agrupadas ("+N fontes"); ler uma marca as outras como lidas
+- Apps nativos via API Google Reader e Fever (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) com senhas de aplicativo em Configurações → Apps
+- Instalável como app (PWA) no celular e no desktop, com leitura offline dos artigos salvos e lidos recentemente
 - Atalhos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar lido), `s` (salvar), `Shift+A` (marcar todos), `/` (buscar)
 
 **Feeds**
@@ -49,10 +52,11 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Suporte a RSS, Atom e RDF
 - Atualização em segundo plano com ETag/Last-Modified e backoff em erros
 - Importação e exportação OPML
+- Regras automáticas por título, conteúdo, autor, URL ou nota da IA: marcar como lido, salvar, destacar ou notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retenção configurável de artigos
 
 **Usuários**
-- Autenticação por email e senha (Better Auth)
+- Autenticação por email e senha (Better Auth) e login único via OIDC (Authentik, Authelia, Keycloak…), com vinculação de contas existentes em Configurações → Geral
 - O primeiro cadastro vira administrador
 - Cadastro aberto ou fechado; admin pode criar usuários
 
@@ -182,6 +186,14 @@ Todas são opcionais. Variáveis de ambiente têm precedência sobre `config.jso
 | `DATABASE_URL` | — | Defina para pular o assistente (`file:...` ou `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificações de regras para IPs privados/localhost (ex.: ntfy na rede local) |
+| `OIDC_ISSUER` | — | Emissor OIDC para login único (ex.: `https://auth.exemplo.com/realms/casa`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternativa ao `OIDC_ISSUER`: URL completa do `.well-known/openid-configuration` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Credenciais do cliente no provedor (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Nome no botão "Entrar com …" |
+| `OIDC_SCOPES` | `openid email profile` | Escopos pedidos |
+| `OIDC_AUTO_REGISTER` | `true` | Cria conta para quem o provedor autenticar; com `false`, vale o "cadastro aberto" da instância |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Só SSO: esconde e desativa o login por senha |
 | `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno |
 
 #### Solução de problemas
@@ -226,6 +238,9 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - Today view (AI-prioritized), All, Saved, folders, and individual feeds
 - Card, grid, or title-only layouts
 - Full article mode (Readability) and instant search
+- Stories about the same event from different feeds are grouped ("+N sources"); reading one marks the others as read
+- Native apps through the Google Reader and Fever APIs (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) with app passwords in Settings → Apps
+- Installable as an app (PWA) on phone and desktop, with offline reading of saved and recently read articles
 - Keyboard shortcuts: `j`/`k` (navigate), `o` (open), `m` (mark read), `s` (save), `Shift+A` (mark all), `/` (search)
 
 **Feeds**
@@ -233,10 +248,11 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - RSS, Atom, and RDF support
 - Background refresh with ETag/Last-Modified and error backoff
 - OPML import and export
+- Automatic rules by title, content, author, URL or AI score: mark as read, save, highlight or notify (ntfy, Discord, Slack, Telegram, webhook)
 - Configurable article retention
 
 **Users**
-- Email and password authentication (Better Auth)
+- Email and password authentication (Better Auth) and single sign-on via OIDC (Authentik, Authelia, Keycloak…), with linking of existing accounts in Settings → General
 - The first signup becomes administrator
 - Open or closed registration; admin can create users
 
@@ -366,6 +382,14 @@ All optional. Environment variables override `config.json`.
 | `DATABASE_URL` | — | Set to skip wizard (`file:...` or `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferred | `sqlite` or `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Allow feeds on private/localhost IPs (e.g. RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Allow rule notifications to private/localhost IPs (e.g. ntfy on your LAN) |
+| `OIDC_ISSUER` | — | OIDC issuer for single sign-on (e.g. `https://auth.example.com/realms/home`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternative to `OIDC_ISSUER`: full `.well-known/openid-configuration` URL |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Client credentials at the provider (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Name on the "Sign in with …" button |
+| `OIDC_SCOPES` | `openid email profile` | Requested scopes |
+| `OIDC_AUTO_REGISTER` | `true` | Create an account for anyone the provider authenticates; with `false`, the instance's open-registration setting applies |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | SSO only: hides and disables password sign-in |
 | `DISABLE_SCHEDULER` | `false` | Disable internal scheduler |
 
 #### Troubleshooting
@@ -410,6 +434,9 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Vista Hoy (priorizada por IA), Todos, Guardados, carpetas y feeds individuales
 - Vistas en tarjetas, cuadrícula o solo títulos
 - Modo artículo completo (Readability) y búsqueda instantánea
+- Las noticias del mismo hecho publicadas por feeds distintos aparecen agrupadas ("+N fuentes"); leer una marca las demás como leídas
+- Apps nativas mediante las APIs Google Reader y Fever (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) con contraseñas de aplicación en Ajustes → Apps
+- Instalable como app (PWA) en el móvil y el escritorio, con lectura sin conexión de los artículos guardados y leídos recientemente
 - Atajos de teclado: `j`/`k` (navegar), `o` (abrir), `m` (marcar leído), `s` (guardar), `Shift+A` (marcar todos), `/` (buscar)
 
 **Feeds**
@@ -417,10 +444,11 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Soporte RSS, Atom y RDF
 - Actualización en segundo plano con ETag/Last-Modified y backoff en errores
 - Importación y exportación OPML
+- Reglas automáticas por título, contenido, autor, URL o nota de la IA: marcar como leído, guardar, destacar o notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retención configurable de artículos
 
 **Usuarios**
-- Autenticación por email y contraseña (Better Auth)
+- Autenticación por email y contraseña (Better Auth) e inicio de sesión único vía OIDC (Authentik, Authelia, Keycloak…), con vinculación de cuentas existentes en Ajustes → General
 - El primer registro se convierte en administrador
 - Registro abierto o cerrado; el admin puede crear usuarios
 
@@ -550,6 +578,14 @@ Todas opcionales. Las variables de entorno tienen precedencia sobre `config.json
 | `DATABASE_URL` | — | Definir para omitir asistente (`file:...` o `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferido | `sqlite` o `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds en IPs privadas/localhost (ej.: RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificaciones de reglas a IPs privadas/localhost (ej.: ntfy en la red local) |
+| `OIDC_ISSUER` | — | Emisor OIDC para inicio de sesión único (ej.: `https://auth.ejemplo.com/realms/casa`). Callback: `<BETTER_AUTH_URL>/api/auth/callback/oidc` |
+| `OIDC_DISCOVERY_URL` | — | Alternativa a `OIDC_ISSUER`: URL completa de `.well-known/openid-configuration` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — | Credenciales del cliente en el proveedor (Authentik, Authelia, Keycloak…) |
+| `OIDC_PROVIDER_NAME` | `SSO` | Nombre en el botón "Entrar con …" |
+| `OIDC_SCOPES` | `openid email profile` | Scopes solicitados |
+| `OIDC_AUTO_REGISTER` | `true` | Crea cuenta para quien el proveedor autentique; con `false`, se aplica el "registro abierto" de la instancia |
+| `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Solo SSO: oculta y desactiva el inicio de sesión con contraseña |
 | `DISABLE_SCHEDULER` | `false` | Desactiva el planificador interno |
 
 #### Solución de problemas

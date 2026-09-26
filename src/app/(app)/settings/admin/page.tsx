@@ -1,6 +1,7 @@
 import { db, getDbProvider } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { requireAdmin } from "@/lib/session";
+import { publicOidcInfo } from "@/lib/oidc";
 import { AdminPanel } from "./admin-panel";
 
 export default async function AdminPage() {
@@ -19,6 +20,7 @@ export default async function AdminPage() {
       currentUserId={admin.id}
       settings={{ allowRegistration: settings.allowRegistration, refreshIntervalMinutes: settings.refreshIntervalMinutes }}
       users={users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, subscriptions: u._count.subscriptions }))}
+      passwordLoginDisabled={publicOidcInfo()?.passwordLoginDisabled ?? false}
       stats={{ feeds: stats[0], articles: stats[1], failingFeeds: stats[2], database: getDbProvider() === "postgresql" ? "PostgreSQL" : "SQLite" }}
     />
   );

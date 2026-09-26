@@ -1,8 +1,13 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { markStorySiblingsRead } from "@/lib/article-state";
 import { getArticle } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { StandaloneReader } from "./standalone-reader";
+
+/** Enviado por public/sw.js ao guardar artigos para ler offline. */
+const OFFLINE_SYNC_HEADER = "x-openrss-offline-sync";
 
 export default async function ArticlePage({ params }: PageProps<"/article/[id]">) {
   const { id } = await params;
@@ -10,12 +15,15 @@ export default async function ArticlePage({ params }: PageProps<"/article/[id]">
   const article = await getArticle(user.id, id);
   if (!article) notFound();
 
-  if (!article.state?.isRead) {
+  // O service worker baixa artigos para leitura offline: isso não conta como leitura.
+  const offlineSync = (await headers()).get(OFFLINE_SYNC_HEADER) === "1";
+  if (!article.state?.isRead && !offlineSync) {
     await db.userArticle.upsert({
       where: { userId_articleId: { userId: user.id, articleId: id } },
       create: { userId: user.id, articleId: id, isRead: true, readAt: new Date() },
       update: { isRead: true, readAt: new Date() },
     });
+    await markStorySiblingsRead(user.id, id);
   }
   const [providers, ttsProviders] = await Promise.all([
     db.aiProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),

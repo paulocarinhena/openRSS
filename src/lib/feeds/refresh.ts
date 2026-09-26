@@ -5,6 +5,7 @@ import { withLock } from "@/lib/jobs/lock";
 import { LocalizedError, serializeError } from "@/lib/localized-error";
 import { safeFetch } from "./net";
 import { parseFeed, type ParsedFeed } from "./parse";
+import { assignStories } from "./stories";
 
 const MAX_BACKOFF_MIN = 24 * 60;
 
@@ -22,12 +23,15 @@ export async function ingestItems(feedId: string, items: ParsedFeed["items"]): P
   const created: string[] = [];
   for (const item of unique) {
     try {
-      const article = await db.article.create({ data: { feedId, ...item }, select: { id: true } });
+      // O ref dá ao artigo um id numérico crescente, usado pelas APIs Fever e Google Reader.
+      const article = await db.article.create({ data: { feedId, ...item, ref: { create: {} } }, select: { id: true } });
       created.push(article.id);
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
     }
   }
+  // Agrupar é acessório: uma falha aqui não pode perder os artigos já gravados.
+  await assignStories(created).catch((err) => console.error("[stories]", err));
   return created;
 }
 

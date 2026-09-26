@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { getSession } from "@/lib/session";
+import { publicOidcInfo } from "@/lib/oidc";
 import { Card } from "@/components/ui/input";
 import { AuthForm, AuthSwitch } from "../auth-form";
 
@@ -16,6 +17,7 @@ export default async function RegisterPage() {
   if (await getSession()) redirect("/");
   const [users, settings, t] = await Promise.all([db.user.count(), getAppSettings(), getTranslations("auth")]);
   const firstUser = users === 0;
+  const sso = publicOidcInfo();
 
   if (!firstUser && !settings.allowRegistration) {
     return (
@@ -32,7 +34,7 @@ export default async function RegisterPage() {
   return (
     <>
       <Suspense>
-        <AuthForm mode="register" firstUser={firstUser} />
+        <AuthForm mode="register" firstUser={firstUser} sso={sso} />
       </Suspense>
       {!firstUser && <AuthSwitch href="/login" label={t("haveAccount")} />}
     </>

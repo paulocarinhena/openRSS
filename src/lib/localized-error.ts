@@ -22,7 +22,8 @@ export type ServerErrorKey =
   | "ttsAdminsOnly"
   | "ttsSourceUnavailable"
   | "noPermission"
-  | "noTextToNarrate";
+  | "noTextToNarrate"
+  | "webhookInvalid";
 
 type Params = Record<string, string | number>;
 

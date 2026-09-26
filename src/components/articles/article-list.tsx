@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Circle, CircleCheck, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { Bookmark, ChevronDown, Circle, CircleCheck, ExternalLink, Flag, Layers, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem } from "@/lib/queries";
@@ -48,6 +48,46 @@ function UnreadDot({ className }: { className?: string }) {
 function SavedIcon({ className }: { className?: string }) {
   const t = useTranslations("articles");
   return <Bookmark className={className} aria-label={t("saved")} />;
+}
+
+/** Marcador das regras com a ação "destacar". */
+function HighlightMark({ item }: { item: ArticleListItem }) {
+  const t = useTranslations("articles");
+  if (!item.isHighlighted) return null;
+  return <Flag className="ml-1 inline size-3 shrink-0 -translate-y-px fill-current align-baseline text-warning" aria-label={t("highlighted")} />;
+}
+
+/** "+N fontes": outras versões do mesmo fato, agrupadas na lista (groupByStory). */
+function RelatedSources({ item, onOpen, className }: { item: ArticleListItem; onOpen: (id: string) => void; className?: string }) {
+  const t = useTranslations("articles");
+  const [open, setOpen] = useState(false);
+  if (item.related.length === 0) return null;
+  return (
+    <div className={cn("px-4 pb-4 sm:px-5", className)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[0.6875rem] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <Layers className="size-3" />
+        {t("moreSources", { count: item.related.length })}
+        <ChevronDown className={cn("size-3 transition-transform duration-200", open && "rotate-180")} />
+      </button>
+      {open && (
+        <ul className="mt-2 flex flex-col gap-1 border-l border-border pl-3">
+          {item.related.map((r) => (
+            <li key={r.id}>
+              <button type="button" onClick={() => onOpen(r.id)} className="flex w-full min-w-0 cursor-pointer items-baseline gap-1.5 text-left text-xs hover:underline">
+                <span className={cn("truncate", r.isRead ? "text-muted-foreground" : "font-medium text-foreground")}>{r.title}</span>
+                <span className="shrink-0 text-muted-foreground">· {r.feedTitle}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function PriorityBadge({ item, threshold = 70 }: { item: ArticleListItem; threshold?: number }) {
@@ -198,6 +238,7 @@ function ArticleCards({ items, loadingId, showFeed, onOpen, onToggleRead, onTogg
                     )}
                   >
                     {a.title}
+                    <HighlightMark item={a} />
                   </h3>
 
                   {(a.excerpt ?? a.snippet) && (
@@ -207,6 +248,8 @@ function ArticleCards({ items, loadingId, showFeed, onOpen, onToggleRead, onTogg
                   <PriorityBadge item={a} threshold={50} />
                 </div>
               </button>
+              {/* Alinha com a coluna do texto quando há imagem à esquerda (sm:w-60 + padding). */}
+              <RelatedSources item={a} onOpen={onOpen} className={cn(hasMedia && "sm:pl-[16.25rem]")} />
 
               <CardActions article={a} onToggleRead={onToggleRead} onToggleSaved={onToggleSaved} />
             </article>
@@ -265,6 +308,7 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
                     )}
                   >
                     {a.title}
+                    <HighlightMark item={a} />
                   </h3>
 
                   {(a.excerpt ?? a.snippet) && (
@@ -274,6 +318,7 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
                   <PriorityBadge item={a} threshold={50} />
                 </div>
               </button>
+              <RelatedSources item={a} onOpen={onOpen} className="px-4 pb-4" />
 
               <CardActions article={a} onToggleRead={onToggleRead} onToggleSaved={onToggleSaved} className="top-2 right-2" />
             </article>
@@ -363,6 +408,7 @@ function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggl
                           )}
                         >
                           {a.title}
+                          <HighlightMark item={a} />
                         </span>
                         {a.priorityScore !== null && a.priorityScore >= 70 && (
                           <span
@@ -393,6 +439,7 @@ function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggl
                     <CardActions article={a} onToggleRead={onToggleRead} onToggleSaved={onToggleSaved} pinWhenSaved={false} className="static" />
                   </div>
                 </article>
+                <RelatedSources item={a} onOpen={onOpen} className="pl-9" />
               </li>
             ))}
           </ul>
@@ -448,6 +495,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
                   )}
                 >
                   {a.title}
+                  <HighlightMark item={a} />
                 </p>
                 {!titlesOnly && a.snippet && <p className="line-clamp-2 text-xs text-muted-foreground">{a.snippet}</p>}
                 {!titlesOnly && <PriorityBadge item={a} />}
@@ -459,6 +507,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
               )}
               {titlesOnly && <div className="hidden w-40 shrink-0 sm:block">{meta}</div>}
             </button>
+            <RelatedSources item={a} onOpen={onOpen} className="px-4 pt-0 pb-3" />
           </li>
         );
       })}

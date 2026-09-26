@@ -16,8 +16,11 @@ export function AdminPanel({
   settings: initial,
   users,
   stats,
+  passwordLoginDisabled = false,
 }: {
   currentUserId: string;
+  /** Com OIDC_DISABLE_PASSWORD_LOGIN não há como criar contas com senha. */
+  passwordLoginDisabled?: boolean;
   settings: { allowRegistration: boolean; refreshIntervalMinutes: number };
   users: User[];
   stats: { feeds: number; articles: number; failingFeeds: number; database: string };
@@ -129,44 +132,48 @@ export function AdminPanel({
           ))}
         </Card>
 
-        <Card>
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              start(async () => {
-                const res = await createUserAction(newUser);
-                if (res.ok) {
-                  toast.success(t("userCreated"));
-                  setNewUser({ name: "", email: "", password: "", role: "user" });
-                } else toast.error(res.error);
-              });
-            }}
-          >
-            <Field label={t("name")}>
-              <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required />
-            </Field>
-            <Field label={t("email")}>
-              <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
-            </Field>
-            <Field label={t("initialPassword")}>
-              <Input type="password" minLength={8} value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
-            </Field>
-            <Field label={t("role")}>
-              <Combobox
-                aria-label={t("role")}
-                value={newUser.role}
-                options={roleOptions}
-                onValueChange={(role) => setNewUser({ ...newUser, role: role as "user" | "admin" })}
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={pending}>
-                <UserPlus /> {t("createUser")}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        {passwordLoginDisabled ? (
+          <Card className="text-xs text-muted-foreground">{t("passwordLoginDisabled")}</Card>
+        ) : (
+          <Card>
+            <form
+              className="grid gap-4 sm:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                start(async () => {
+                  const res = await createUserAction(newUser);
+                  if (res.ok) {
+                    toast.success(t("userCreated"));
+                    setNewUser({ name: "", email: "", password: "", role: "user" });
+                  } else toast.error(res.error);
+                });
+              }}
+            >
+              <Field label={t("name")}>
+                <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required />
+              </Field>
+              <Field label={t("email")}>
+                <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
+              </Field>
+              <Field label={t("initialPassword")}>
+                <Input type="password" minLength={8} value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+              </Field>
+              <Field label={t("role")}>
+                <Combobox
+                  aria-label={t("role")}
+                  value={newUser.role}
+                  options={roleOptions}
+                  onValueChange={(role) => setNewUser({ ...newUser, role: role as "user" | "admin" })}
+                />
+              </Field>
+              <div className="sm:col-span-2">
+                <Button type="submit" disabled={pending}>
+                  <UserPlus /> {t("createUser")}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
       </section>
     </div>
   );

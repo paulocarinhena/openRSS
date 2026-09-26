@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { stripHtml, truncate } from "@/lib/utils";
+import { applyRulesToArticles } from "@/lib/rules/apply";
 import { resolveModel } from "./providers";
 import { errorMessage, languageName, languageInstruction } from "./content";
 
@@ -39,6 +40,7 @@ export async function classifyForUser(userId: string, articleIds: string[]) {
 
   const { model } = await resolveModel(userId);
   let count = 0;
+  const scored: string[] = [];
 
   for (let i = 0; i < articles.length; i += BATCH) {
     const batch = articles.slice(i, i + BATCH);
@@ -70,11 +72,14 @@ ${settings.interests}`,
           ),
       );
       count += output?.items.length ?? 0;
+      scored.push(...(output?.items ?? []).filter((it) => valid.has(it.id)).map((it) => it.id));
     } catch (err) {
       console.error(`[ai:classify] user=${userId}`, errorMessage(err));
       break;
     }
   }
+  // Regras que dependem da nota da IA só podem rodar agora.
+  await applyRulesToArticles(scored, "classified", userId).catch((err) => console.error(`[rules] user=${userId}`, errorMessage(err)));
   return count;
 }
 

@@ -9,6 +9,7 @@ import { discoverFeeds } from "@/lib/feeds/discover";
 import { parseOpml } from "@/lib/feeds/opml";
 import { refreshFeed, refreshFeedsNow, subscribe } from "@/lib/feeds/refresh";
 import { classifyNewArticles } from "@/lib/ai/classify";
+import { applyRulesToArticles } from "@/lib/rules/apply";
 import { actionErrorMessage } from "@/lib/action-errors";
 import { localizeError } from "@/lib/localized-error";
 
@@ -96,6 +97,8 @@ export async function refreshFeedAction(feedId: string): Promise<Result<{ added:
   if (!sub) return { ok: false, error: (await errors())("feedNotFound") };
   const { newArticleIds, error } = await refreshFeed(feedId);
   if (error) return { ok: false, error: localizeError(error, await getLocale()) };
+  // Regras de texto antes de responder (a lista já volta filtrada); a IA segue em segundo plano.
+  await applyRulesToArticles(newArticleIds, "ingest").catch(() => {});
   void classifyNewArticles(newArticleIds).catch(() => {});
   revalidatePath("/", "layout");
   return { ok: true, added: newArticleIds.length };
@@ -105,6 +108,8 @@ export async function refreshAllFeedsAction(): Promise<Result<{ added: number }>
   const user = await requireUser();
   const subs = await db.subscription.findMany({ where: { userId: user.id }, select: { feedId: true }, distinct: ["feedId"] });
   const newArticleIds = await refreshFeedsNow(subs.map((s) => s.feedId));
+  // Regras de texto antes de responder (a lista já volta filtrada); a IA segue em segundo plano.
+  await applyRulesToArticles(newArticleIds, "ingest").catch(() => {});
   void classifyNewArticles(newArticleIds).catch(() => {});
   revalidatePath("/", "layout");
   return { ok: true, added: newArticleIds.length };

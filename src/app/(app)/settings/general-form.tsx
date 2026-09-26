@@ -9,8 +9,10 @@ import { isLocale, localeLabels, locales, type Locale } from "@/i18n/config";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { Card, Field, Input } from "@/components/ui/input";
-import { LayoutGrid, List, Rows3 } from "lucide-react";
+import { Card, Field, Input, Label, Switch } from "@/components/ui/input";
+import { KeyRound, LayoutGrid, List, Rows3 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { OIDC_PROVIDER_ID } from "@/lib/oidc";
 
 const SHORTCUTS = [
   ["j / k", "nextPrev"],
@@ -29,6 +31,8 @@ export function GeneralForm(props: {
   uiLanguage: string;
   timezone: string;
   listView: string;
+  groupStories: boolean;
+  sso: { name: string; linked: boolean } | null;
   timezones: string[];
 }) {
   const t = useTranslations("settings.general");
@@ -40,6 +44,7 @@ export function GeneralForm(props: {
   const [uiLanguage, setUiLanguage] = useState<Locale>(isLocale(props.uiLanguage) ? props.uiLanguage : "pt-BR");
   const [timezone, setTimezone] = useState(props.timezone);
   const [listView, setListView] = useState(props.listView);
+  const [groupStories, setGroupStories] = useState(props.groupStories);
   const [pending, start] = useTransition();
 
   function save(e: React.FormEvent) {
@@ -47,7 +52,7 @@ export function GeneralForm(props: {
     start(async () => {
       const [a, b] = await Promise.all([
         updateProfileAction(name),
-        updateSettingsAction({ language, uiLanguage, timezone, listView: listView as "cards" | "grid" | "titles" }),
+        updateSettingsAction({ language, uiLanguage, timezone, listView: listView as "cards" | "grid" | "titles", groupStories }),
       ]);
       const err = (!a.ok && a.error) || (!b.ok && b.error);
       if (err) {
@@ -106,6 +111,13 @@ export function GeneralForm(props: {
             ]}
           />
         </Field>
+        <div className="flex items-center justify-between gap-3 sm:col-span-2">
+          <Label htmlFor="group-stories" className="flex flex-col gap-0.5">
+            {t("groupStories")}
+            <span className="font-normal text-muted-foreground">{t("groupStoriesHint")}</span>
+          </Label>
+          <Switch id="group-stories" checked={groupStories} onCheckedChange={setGroupStories} />
+        </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-foreground">{t("theme")}</span>
           <div className="flex h-9 items-center gap-2 text-sm text-muted-foreground">
@@ -113,6 +125,27 @@ export function GeneralForm(props: {
           </div>
         </div>
       </Card>
+      {props.sso && (
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="eyebrow mb-1">{t("sso")}</p>
+            <p className="text-xs text-muted-foreground">
+              {props.sso.linked ? t("ssoLinked", { name: props.sso.name }) : t("ssoNotLinked", { name: props.sso.name })}
+            </p>
+          </div>
+          {!props.sso.linked && (
+            <Button
+              type="button"
+              onClick={async () => {
+                const { error } = await authClient.linkSocial({ provider: OIDC_PROVIDER_ID, callbackURL: "/settings", errorCallbackURL: "/settings" });
+                if (error) toast.error(error.message ?? t("ssoConnect", { name: props.sso!.name }));
+              }}
+            >
+              <KeyRound /> {t("ssoConnect", { name: props.sso.name })}
+            </Button>
+          )}
+        </Card>
+      )}
       <Card className="text-xs text-muted-foreground">
         <p className="eyebrow mb-2">{t("shortcuts")}</p>
         <ul className="grid gap-1 sm:grid-cols-2">
