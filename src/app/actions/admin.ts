@@ -1,12 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/session";
 import { actionErrorMessage } from "@/lib/action-errors";
+import { emailLayout, escapeHtml, sendMail } from "@/lib/mail";
+import { staticTranslator } from "@/i18n/static";
 
 const appSchema = z.object({
   allowRegistration: z.boolean(),
@@ -76,4 +78,22 @@ export async function deleteUserAction(userId: string) {
   await db.user.delete({ where: { id: userId } });
   revalidatePath("/settings/admin");
   return { ok: true as const };
+}
+
+/** Envia um e-mail de teste para o próprio admin, para conferir a configuração SMTP. */
+export async function sendTestEmailAction() {
+  const admin = await requireAdmin();
+  const t = await getTranslations("admin.mail");
+  const m = staticTranslator(await getLocale(), "mail.test");
+  try {
+    await sendMail({
+      to: admin.email,
+      subject: m("subject"),
+      text: m("body"),
+      html: emailLayout({ title: m("subject"), bodyHtml: `<p>${escapeHtml(m("body"))}</p>` }),
+    });
+    return { ok: true as const, message: t("sent", { email: admin.email }) };
+  } catch (err) {
+    return { ok: false as const, error: t("failed", { reason: err instanceof Error ? err.message : String(err) }) };
+  }
 }

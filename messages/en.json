@@ -72,7 +72,24 @@
       "state_mismatch": "The sign-in session expired. Try again."
     },
     "ssoButton": "Sign in with {name}",
-    "or": "or"
+    "or": "or",
+    "forgotPassword": "Forgot my password",
+    "reset": {
+      "forgotTitle": "Reset password",
+      "forgotDescription": "Enter your account email. We will send a link to create a new password.",
+      "sent": "If an account exists for that email, the link arrives in a few minutes. Check your spam folder too.",
+      "email": "Email",
+      "send": "Send link",
+      "wait": "Please wait…",
+      "newTitle": "New password",
+      "newPassword": "New password",
+      "confirm": "Confirm the new password",
+      "save": "Save new password",
+      "mismatch": "The passwords do not match.",
+      "invalidLink": "Invalid or expired link. Request a new one under “Forgot my password”.",
+      "failed": "Could not change the password.",
+      "done": "Password changed. Sign in with the new password."
+    }
   },
   "setup": {
     "title": "Initial setup",
@@ -521,7 +538,9 @@
       "digestHour": "Digest time",
       "savePrefs": "Save preferences",
       "classifyRecent": "Classify recent unread",
-      "classified": "{count, plural, =1 {1 article classified} other {# articles classified}}"
+      "classified": "{count, plural, =1 {1 article classified} other {# articles classified}}",
+      "digestEmail": "Also send by email",
+      "digestEmailHint": "The daily digest is sent to your account email."
     },
     "ttsForm": {
       "saved": "Audio provider saved",
@@ -699,7 +718,15 @@
       "ownRole": "You cannot change your own role.",
       "ownDelete": "You cannot delete yourself."
     },
-    "passwordLoginDisabled": "Password sign-in is disabled (OIDC_DISABLE_PASSWORD_LOGIN): accounts are created through SSO on first sign-in."
+    "passwordLoginDisabled": "Password sign-in is disabled (OIDC_DISABLE_PASSWORD_LOGIN): accounts are created through SSO on first sign-in.",
+    "mail": {
+      "title": "Email (SMTP)",
+      "configured": "Configured: {host}. Used for password resets and the digest.",
+      "notConfigured": "Not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD and SMTP_FROM to enable password resets and the email digest.",
+      "sendTest": "Send test email",
+      "sent": "Test email sent to {email}.",
+      "failed": "Sending failed: {reason}"
+    }
   },
   "digest": {
     "eyebrow": "Daily digest",
@@ -960,6 +987,23 @@
       "providerInvalid": "Choose a global OpenAI, OpenRouter or compatible provider.",
       "emptyVector": "The provider returned an empty vector.",
       "testFailed": "The model test failed: {reason}"
+    }
+  },
+  "mail": {
+    "reset": {
+      "subject": "Reset your openRSS password",
+      "intro": "Hi {name}! We received a request to reset your password. The link is valid for 1 hour.",
+      "button": "Create a new password",
+      "ignore": "If this wasn't you, ignore this email: your password stays the same."
+    },
+    "digest": {
+      "subject": "Your openRSS digest · {day}",
+      "open": "Open in openRSS",
+      "footer": "You get this email because you enabled the email digest in Settings → AI."
+    },
+    "test": {
+      "subject": "openRSS email test",
+      "body": "If you received this message, openRSS email delivery is working."
     }
   }
 }

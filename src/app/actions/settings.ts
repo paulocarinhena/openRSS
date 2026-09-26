@@ -20,6 +20,7 @@ const schema = z.object({
   classifyEnabled: z.boolean().optional(),
   digestEnabled: z.boolean().optional(),
   digestHour: z.number().int().min(0).max(23).optional(),
+  digestEmail: z.boolean().optional(),
   timezone: z.string().refine((tz) => Intl.supportedValuesOf("timeZone").includes(tz) || tz === "UTC", "invalidTimezone").optional(),
   listView: z.enum(["cards", "grid", "titles"]).optional(),
   groupStories: z.boolean().optional(),

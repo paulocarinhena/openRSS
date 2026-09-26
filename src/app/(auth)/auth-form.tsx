@@ -82,6 +82,11 @@ export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "reg
         <h1 className="text-base font-semibold tracking-tight">{mode === "login" ? t("login") : t("register")}</h1>
         {firstUser && <p className="mt-1 text-xs text-muted-foreground">{t("firstUser")}</p>}
       </div>
+      {params.get("reset") === "1" && !error && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {t("reset.done")}
+        </p>
+      )}
       {sso && (
         <Button type="button" size="lg" onClick={onSso} disabled={pending}>
           <KeyRound /> {t("ssoButton", { name: sso.name })}

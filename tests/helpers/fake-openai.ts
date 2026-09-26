@@ -28,6 +28,18 @@ export async function startFakeOpenAI(opts: {
         return;
       }
       const text = opts.answer?.(body) ?? "ok";
+      if (!body.stream) {
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({
+          id: "c1",
+          object: "chat.completion",
+          created: 0,
+          model: body.model,
+          choices: [{ index: 0, message: { role: "assistant", content: text }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        }));
+        return;
+      }
       const chunk = (delta: object, finish: string | null) =>
         `data: ${JSON.stringify({ id: "c1", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
       res.setHeader("content-type", "text/event-stream");

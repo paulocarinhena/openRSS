@@ -1,10 +1,10 @@
 "use client";
 
-import { ShieldCheck, Trash2, User as UserIcon, UserPlus } from "lucide-react";
+import { Mail, ShieldCheck, Trash2, User as UserIcon, UserPlus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { createUserAction, deleteUserAction, setUserRoleAction, updateAppSettingsAction } from "@/app/actions/admin";
+import { createUserAction, deleteUserAction, sendTestEmailAction, setUserRoleAction, updateAppSettingsAction } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Card, Field, Input, Switch } from "@/components/ui/input";
@@ -17,10 +17,13 @@ export function AdminPanel({
   users,
   stats,
   passwordLoginDisabled = false,
+  smtpHost = null,
 }: {
   currentUserId: string;
   /** Com OIDC_DISABLE_PASSWORD_LOGIN não há como criar contas com senha. */
   passwordLoginDisabled?: boolean;
+  /** Host SMTP configurado (SMTP_*), ou null. */
+  smtpHost?: string | null;
   settings: { allowRegistration: boolean; refreshIntervalMinutes: number };
   users: User[];
   stats: { feeds: number; articles: number; failingFeeds: number; database: string };
@@ -174,6 +177,27 @@ export function AdminPanel({
             </form>
           </Card>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="eyebrow">{t("mail.title")}</h2>
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">{smtpHost ? t("mail.configured", { host: smtpHost }) : t("mail.notConfigured")}</p>
+          {smtpHost && (
+            <Button
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  const res = await sendTestEmailAction();
+                  if (res.ok) toast.success(res.message);
+                  else toast.error(res.error);
+                })
+              }
+            >
+              <Mail /> {t("mail.sendTest")}
+            </Button>
+          )}
+        </Card>
       </section>
     </div>
   );

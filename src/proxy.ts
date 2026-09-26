@@ -3,7 +3,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import { isSetupRequired } from "@/lib/env";
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, defaultLocale, isLocale, pickLocale } from "@/i18n/config";
 
-const PUBLIC_PATHS = ["/login", "/register", "/setup"];
+const PUBLIC_PATHS = ["/login", "/register", "/setup", "/forgot-password", "/reset-password"];
 
 // Checagem otimista (só presença do cookie). A validação real da sessão
 // acontece em cada página / server action via requireUser().

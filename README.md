@@ -80,7 +80,7 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Resumir artigos em streaming, com cache
 - Perguntas sobre o artigo direto no leitor
 - Busca semântica (por assunto) nas listas e no chat, com embeddings de um provedor global (OpenAI, OpenRouter ou compatível, como Ollama)
-- Digest diário dos não lidos, agrupado por tema (automático ou sob demanda)
+- Digest diário dos não lidos, agrupado por tema (automático ou sob demanda), também por e-mail
 - Chat com seus feeds — a IA busca e lê artigos via ferramentas
 - Priorização de artigos novos (nota 0–100 com base nos seus interesses)
 - Provedores globais (admin) e pessoais (cada usuário)
@@ -199,6 +199,9 @@ Todas são opcionais. Variáveis de ambiente têm precedência sobre `config.jso
 | `OIDC_SCOPES` | `openid email profile` | Escopos pedidos |
 | `OIDC_AUTO_REGISTER` | `true` | Cria conta para quem o provedor autenticar; com `false`, vale o "cadastro aberto" da instância |
 | `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Só SSO: esconde e desativa o login por senha |
+| `SMTP_HOST` / `SMTP_PORT` | — / `587` | Servidor de e-mail para redefinir senha e enviar o digest (porta 465 = TLS direto) |
+| `SMTP_USER` / `SMTP_PASSWORD` | — | Credenciais do SMTP (opcionais) |
+| `SMTP_FROM` | `SMTP_USER` | Remetente, ex.: `openRSS <noreply@exemplo.com>` |
 | `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno |
 
 #### Solução de problemas
@@ -281,7 +284,7 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - Summarize articles with streaming and cache
 - Questions about the article right in the reader
 - Semantic (topic) search in lists and chat, using embeddings from a global provider (OpenAI, OpenRouter or compatible, like Ollama)
-- Daily digest of unread articles, grouped by topic (automatic or on demand)
+- Daily digest of unread articles, grouped by topic (automatic or on demand), also by email
 - Chat with your feeds — AI searches and reads articles via tools
 - Prioritization of new articles (0–100 score based on your interests)
 - Global providers (admin) and personal providers (each user)
@@ -400,6 +403,9 @@ All optional. Environment variables override `config.json`.
 | `OIDC_SCOPES` | `openid email profile` | Requested scopes |
 | `OIDC_AUTO_REGISTER` | `true` | Create an account for anyone the provider authenticates; with `false`, the instance's open-registration setting applies |
 | `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | SSO only: hides and disables password sign-in |
+| `SMTP_HOST` / `SMTP_PORT` | — / `587` | Mail server for password resets and the email digest (port 465 = implicit TLS) |
+| `SMTP_USER` / `SMTP_PASSWORD` | — | SMTP credentials (optional) |
+| `SMTP_FROM` | `SMTP_USER` | Sender, e.g. `openRSS <noreply@example.com>` |
 | `DISABLE_SCHEDULER` | `false` | Disable internal scheduler |
 
 #### Troubleshooting
@@ -482,7 +488,7 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Resumir artículos en streaming, con caché
 - Preguntas sobre el artículo directamente en el lector
 - Búsqueda semántica (por tema) en las listas y en el chat, con embeddings de un proveedor global (OpenAI, OpenRouter o compatible, como Ollama)
-- Digest diario de no leídos, agrupado por tema (automático o bajo demanda)
+- Digest diario de no leídos, agrupado por tema (automático o bajo demanda), también por correo
 - Chat con tus feeds — la IA busca y lee artículos mediante herramientas
 - Priorización de artículos nuevos (puntuación 0–100 según tus intereses)
 - Proveedores globales (admin) y personales (cada usuario)
@@ -601,6 +607,9 @@ Todas opcionales. Las variables de entorno tienen precedencia sobre `config.json
 | `OIDC_SCOPES` | `openid email profile` | Scopes solicitados |
 | `OIDC_AUTO_REGISTER` | `true` | Crea cuenta para quien el proveedor autentique; con `false`, se aplica el "registro abierto" de la instancia |
 | `OIDC_DISABLE_PASSWORD_LOGIN` | `false` | Solo SSO: oculta y desactiva el inicio de sesión con contraseña |
+| `SMTP_HOST` / `SMTP_PORT` | — / `587` | Servidor de correo para restablecer contraseñas y enviar el digest (puerto 465 = TLS directo) |
+| `SMTP_USER` / `SMTP_PASSWORD` | — | Credenciales SMTP (opcionales) |
+| `SMTP_FROM` | `SMTP_USER` | Remitente, ej.: `openRSS <noreply@ejemplo.com>` |
 | `DISABLE_SCHEDULER` | `false` | Desactiva el planificador interno |
 
 #### Solución de problemas

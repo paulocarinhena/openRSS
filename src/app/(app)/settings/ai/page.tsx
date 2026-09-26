@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { PROVIDER_META } from "@/lib/ai/providers";
 import { EMBEDDING_PROVIDER_TYPES, embeddingStatus } from "@/lib/ai/embeddings";
 import { SemanticSearchSettings } from "./semantic-search-settings";
+import { isMailConfigured } from "@/lib/mail";
 import { AiSettings, type ProviderRow, type TtsProviderRow } from "./ai-settings";
 
 export default async function AiSettingsPage() {
@@ -65,7 +66,9 @@ export default async function AiSettingsPage() {
           classifyEnabled: settings.classifyEnabled,
           digestEnabled: settings.digestEnabled,
           digestHour: settings.digestHour,
+          digestEmail: settings.digestEmail,
         }}
+        mailConfigured={isMailConfigured()}
       />
       {isAdmin && (
         <SemanticSearchSettings

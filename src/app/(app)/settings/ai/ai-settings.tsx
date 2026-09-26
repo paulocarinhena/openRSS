@@ -58,6 +58,7 @@ type Settings = {
   classifyEnabled: boolean;
   digestEnabled: boolean;
   digestHour: number;
+  digestEmail: boolean;
 };
 
 export function AiSettings({
@@ -67,6 +68,7 @@ export function AiSettings({
   isAdmin,
   settings,
   systemDefaultModel,
+  mailConfigured = false,
 }: {
   providers: ProviderRow[];
   ttsProviders: TtsProviderRow[];
@@ -74,6 +76,8 @@ export function AiSettings({
   isAdmin: boolean;
   settings: Settings;
   systemDefaultModel: string;
+  /** Com SMTP configurado, o digest também pode ir por e-mail. */
+  mailConfigured?: boolean;
 }) {
   const t = useTranslations("ai.settings");
   const [editing, setEditing] = useState<Partial<ProviderRow> | null>(null);
@@ -99,6 +103,7 @@ export function AiSettings({
         classifyEnabled: prefs.classifyEnabled,
         digestEnabled: prefs.digestEnabled,
         digestHour: prefs.digestHour,
+        digestEmail: prefs.digestEmail,
       });
       if (res.ok) toast.success(t("prefsSaved"));
       else toast.error(res.error);
@@ -373,6 +378,16 @@ export function AiSettings({
                 options={Array.from({ length: 24 }, (_, h) => ({ value: String(h), label: `${String(h).padStart(2, "0")}:00` }))}
               />
             </Field>
+          )}
+
+          {prefs.digestEnabled && mailConfigured && (
+            <label className="flex items-center justify-between gap-3 sm:col-span-2">
+              <span>
+                <span className="block font-medium">{t("digestEmail")}</span>
+                <span className="text-xs text-muted-foreground">{t("digestEmailHint")}</span>
+              </span>
+              <Switch checked={prefs.digestEmail} onCheckedChange={(v) => setPrefs({ ...prefs, digestEmail: v })} />
+            </label>
           )}
         </Card>
         <div className="flex flex-wrap gap-2">

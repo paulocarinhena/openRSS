@@ -11,6 +11,7 @@ import { lazyObject } from "@/lib/lazy";
 import { localeFromRequest } from "@/i18n/config";
 import { staticTranslator } from "@/i18n/static";
 import { OIDC_PROVIDER_ID, readOidcConfig } from "@/lib/oidc";
+import { buttonHtml, emailLayout, escapeHtml, isMailConfigured, sendMail } from "@/lib/mail";
 
 /** Erro de cadastro com código estável (o formulário traduz pelo código) e mensagem no idioma do request. */
 function registrationError(code: "REGISTRATION_DISABLED" | "ADMIN_BOOTSTRAP_IN_PROGRESS", request: Request | undefined) {
@@ -33,6 +34,21 @@ export const auth = lazyObject(() => {
       enabled: !oidc?.passwordLoginDisabled,
       minPasswordLength: 8,
       autoSignIn: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      // Só existe com SMTP configurado; a resposta ao pedido é a mesma exista ou não o e-mail.
+      sendResetPassword: async ({ user, url }, request) => {
+        if (!isMailConfigured()) return;
+        const t = staticTranslator(request ? localeFromRequest(request) : "pt-BR", "mail.reset");
+        await sendMail({
+          to: user.email,
+          subject: t("subject"),
+          text: `${t("intro", { name: user.name })}\n\n${url}\n\n${t("ignore")}`,
+          html: emailLayout({
+            title: t("subject"),
+            bodyHtml: `<p>${escapeHtml(t("intro", { name: user.name }))}</p>${buttonHtml(t("button"), url)}<p style="color:#64748b;font-size:13px">${escapeHtml(t("ignore"))}</p>`,
+          }),
+        });
+      },
     },
     user: {
       additionalFields: {

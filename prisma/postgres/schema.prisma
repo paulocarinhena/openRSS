@@ -248,6 +248,7 @@ model UserSettings {
   classifyEnabled   Boolean  @default(false)
   digestEnabled     Boolean  @default(false)
   digestHour        Int      @default(7)
+  digestEmail       Boolean  @default(false) // também envia o digest diário por e-mail (se houver SMTP)
   timezone          String   @default("America/Sao_Paulo")
   listView          String   @default("cards") // "titles" | "cards" | "magazine"
   groupStories      Boolean  @default(true) // agrupa na lista artigos de fontes diferentes sobre o mesmo fato
