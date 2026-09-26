@@ -47,6 +47,8 @@ const { getArticle, listArticles } = await import("@/lib/queries");
 const { saveLinkAction } = await import("@/app/actions/links");
 const { refreshDueFeeds } = await import("@/lib/feeds/refresh");
 const { getFeedHealth } = await import("@/lib/feeds/health");
+const { POST: askArticle } = await import("@/app/api/ai/ask/route");
+const { startFakeOpenAI } = await import("./helpers/fake-openai");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -437,5 +439,39 @@ describe("feed health", () => {
     expect(report.get(ignored.id)).toMatchObject({ status: ["lowRead"], articles30d: 12, unread: 12 });
     // Mais graves primeiro.
     expect((await getFeedHealth("alice", now))[0].feedId).toBe(failing.id);
+  });
+});
+
+describe("article Q&A", () => {
+  it("answers from the article text and refuses articles the user cannot read", async () => {
+    const fake = await startFakeOpenAI({
+      answer: (body) => {
+        const system = JSON.stringify(body.messages[0]);
+        return system.includes("Texto secreto do artigo") ? "Resposta baseada no artigo." : "SEM CONTEXTO";
+      },
+    });
+    try {
+      await db.aiProvider.create({ data: { userId: null, type: "openai_compatible", name: "fake", baseUrl: fake.baseUrl, defaultModel: "m" } });
+      const feed = await createFeed("https://qa.example/feed", [{ guid: "q" }]);
+      const article = feed.articles[0];
+      await db.article.update({ where: { id: article.id }, data: { contentHtml: "<p>Texto secreto do artigo.</p>" } });
+      await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+
+      const request = (articleId: string) =>
+        new Request("http://localhost/api/ai/ask", {
+          method: "POST",
+          body: JSON.stringify({ articleId, question: "Do que trata?", history: [{ role: "user", content: "oi" }, { role: "assistant", content: "olá" }] }),
+        });
+      const res = await askArticle(request(article.id));
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("Resposta baseada no artigo.");
+      const sent = fake.requests.at(-1)!.body.messages as { role: string }[];
+      expect(sent.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+
+      const other = await createFeed("https://qa-other.example/feed", [{ guid: "x" }]);
+      expect((await askArticle(request(other.articles[0].id))).status).toBe(404);
+    } finally {
+      await fake.close();
+    }
   });
 });

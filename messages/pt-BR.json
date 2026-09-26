@@ -305,7 +305,20 @@
       "fetchFailed": "Falha ao buscar o artigo."
     },
     "highlighted": "Destacado por uma regra",
-    "moreSources": "{count, plural, one {+# fonte} other {+# fontes}}"
+    "moreSources": "{count, plural, one {+# fonte} other {+# fontes}}",
+    "qa": {
+      "title": "Perguntas sobre este artigo",
+      "placeholder": "Pergunte algo sobre o artigo…",
+      "send": "Enviar",
+      "close": "Fechar",
+      "openChat": "Continuar no chat",
+      "failed": "Não foi possível responder agora.",
+      "suggestions": {
+        "keyPoints": "Quais são os pontos principais?",
+        "context": "Qual é o contexto disso?",
+        "explainTerms": "Explique os termos técnicos"
+      }
+    }
   },
   "feeds": {
     "add": {

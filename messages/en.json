@@ -305,7 +305,20 @@
       "fetchFailed": "Failed to fetch the article."
     },
     "highlighted": "Highlighted by a rule",
-    "moreSources": "{count, plural, one {+# source} other {+# sources}}"
+    "moreSources": "{count, plural, one {+# source} other {+# sources}}",
+    "qa": {
+      "title": "Questions about this article",
+      "placeholder": "Ask something about the article…",
+      "send": "Send",
+      "close": "Close",
+      "openChat": "Continue in chat",
+      "failed": "Could not answer right now.",
+      "suggestions": {
+        "keyPoints": "What are the key points?",
+        "context": "What is the context here?",
+        "explainTerms": "Explain the technical terms"
+      }
+    }
   },
   "feeds": {
     "add": {
