@@ -105,7 +105,7 @@ curl -sf http://localhost:8285/api/health
 Depois:
 
 1. Abra http://localhost:8285/setup
-2. Escolha SQLite e conclua o assistente
+2. Informe o token de instalação exibido no log (`docker compose logs openrss`), escolha SQLite e conclua o assistente
 3. Crie a conta de administrador em http://localhost:8285/register
 4. Faça login em http://localhost:8285/login
 
@@ -289,7 +289,7 @@ curl -sf http://localhost:8285/api/health
 Then:
 
 1. Open http://localhost:8285/setup
-2. Choose SQLite and complete the wizard
+2. Enter the setup token printed in the log (`docker compose logs openrss`), choose SQLite and complete the wizard
 3. Create the admin account at http://localhost:8285/register
 4. Log in at http://localhost:8285/login
 
@@ -473,7 +473,7 @@ curl -sf http://localhost:8285/api/health
 Después:
 
 1. Abre http://localhost:8285/setup
-2. Elige SQLite y completa el asistente
+2. Introduce el token de instalación que aparece en el log (`docker compose logs openrss`), elige SQLite y completa el asistente
 3. Crea la cuenta de administrador en http://localhost:8285/register
 4. Inicia sesión en http://localhost:8285/login
 

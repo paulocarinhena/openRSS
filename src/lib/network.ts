@@ -2,6 +2,7 @@ import "server-only";
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
 import { Agent, fetch as undiciFetch } from "undici";
+import { LocalizedError } from "@/lib/localized-error";
 
 const blockedAddresses = new BlockList();
 
@@ -27,7 +28,11 @@ for (const [address, prefix] of [
 for (const [address, prefix] of [
   ["::", 128],
   ["::1", 128],
+  // NAT64 e 6to4 embutem um IPv4 arbitrário (inclusive privado) no endereço IPv6.
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
   ["100::", 64],
+  ["2002::", 16],
   ["2001:db8::", 32],
   ["fc00::", 7],
   ["fe80::", 10],
@@ -45,19 +50,19 @@ export function isPrivateAddress(address: string) {
 export async function resolveNetworkTarget(input: string | URL, allowPrivateNetwork = false) {
   const url = new URL(input);
   if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) {
-    throw new Error("Somente URLs http(s) sem credenciais são permitidas.");
+    throw new LocalizedError("invalidUrl");
   }
 
   const hostname = url.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase();
   if (!allowPrivateNetwork && (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".internal"))) {
-    throw new Error("O destino aponta para uma rede privada não autorizada.");
+    throw new LocalizedError("privateNetwork");
   }
 
   const addresses = isIP(hostname)
     ? [{ address: hostname, family: isIP(hostname) as 4 | 6 }]
     : await lookup(hostname, { all: true, verbatim: true });
   if (addresses.length === 0 || (!allowPrivateNetwork && addresses.some(({ address }) => isPrivateAddress(address)))) {
-    throw new Error("O destino aponta para uma rede privada não autorizada.");
+    throw new LocalizedError("privateNetwork");
   }
 
   return { url, address: addresses[0].address, family: addresses[0].family as 4 | 6 };

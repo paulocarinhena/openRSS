@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
 import { getUserSettings } from "@/lib/app-settings";
 import { resolveModel } from "@/lib/ai/providers";
+import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { articleHtml, errorMessage, languageInstruction, languageName } from "@/lib/ai/content";
 
 const body = z.object({ articleId: z.string(), force: z.boolean().optional() });
@@ -56,10 +57,12 @@ ${languageInstruction(settings.language)}`,
     maxOutputTokens: 6000,
     onFinish: async ({ text }) => {
       if (!text.trim()) return;
+      // A saída do modelo pode ter sido induzida pelo artigo: o cache guarda só HTML saneado.
+      const content = sanitizeArticleHtml(text, article.url);
       await db.articleSummary.upsert({
         where: { articleId_providerId_userId_model_language_kind: cacheKey },
-        create: { ...cacheKey, content: text },
-        update: { content: text, createdAt: new Date() },
+        create: { ...cacheKey, content },
+        update: { content, createdAt: new Date() },
       });
     },
     onError: ({ error }) => console.error("[ai:translate]", errorMessage(error)),

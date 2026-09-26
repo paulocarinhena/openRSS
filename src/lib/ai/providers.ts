@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getAppSettings, getUserSettings } from "@/lib/app-settings";
 import { createPinnedWebFetch, pinnedFetch, resolveNetworkTarget } from "@/lib/network";
+import { LocalizedError, serializeError } from "@/lib/localized-error";
 import { AiError, AiNotConfiguredError } from "./errors";
 
 export { AiNotConfiguredError };
@@ -86,8 +87,8 @@ export async function assertSafeModelListingUrl(baseUrl: string, allowPrivateNet
   try {
     return (await resolveNetworkTarget(baseUrl, allowPrivateNetwork)).url;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new AiError(message.includes("rede privada") ? "privateNetworkBaseUrl" : "invalidListingBaseUrl");
+    const isPrivate = error instanceof LocalizedError && error.key === "privateNetwork";
+    throw new AiError(isPrivate ? "privateNetworkBaseUrl" : "invalidListingBaseUrl");
   }
 }
 
@@ -114,7 +115,7 @@ export async function listModelsFor(
       options.allowPrivateNetwork,
     );
   } catch (err) {
-    throw new AiError("connectFailed", { base, reason: err instanceof Error ? err.message : String(err) });
+    throw new AiError("connectFailed", { base, reason: serializeError(err) });
   }
   let json: {
     data?: { id: string; name?: string; display_name?: string }[];

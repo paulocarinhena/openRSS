@@ -101,7 +101,8 @@ export async function parseFeed(xml: string, feedUrl: string): Promise<ParsedFee
       firstImage(contentHtml);
 
     return {
-      guid: item.guid ?? item.id ?? link ?? createHash("sha1").update(`${item.title}|${date}`).digest("hex"),
+      // Sem guid/id/link: o conteúdo entra no hash para itens sem título nem data não colidirem entre si.
+      guid: item.guid ?? item.id ?? link ?? createHash("sha1").update(`${item.title}|${date}|${rawHtml || item.contentSnippet || ""}`).digest("hex"),
       url: link,
       title: (item.title && stripHtml(item.title)) || truncate(text, 80) || "(sem título)",
       author: item.creator ?? (item as { author?: string }).author ?? null,

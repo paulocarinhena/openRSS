@@ -17,7 +17,7 @@ npm ci
 npm run dev
 ```
 
-Sem `DATABASE_URL` no `.env`, o app abre o assistente de instalação em `/setup`. As migrations são aplicadas pelo próprio app na inicialização.
+Sem `DATABASE_URL` no `.env`, o app abre o assistente de instalação em `/setup`, que pede o token de instalação exibido no terminal ao iniciar (`openRSS: token de instalação: ...`). As migrations são aplicadas pelo próprio app na inicialização.
 
 Para pular o assistente:
 

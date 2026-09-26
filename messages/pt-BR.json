@@ -106,8 +106,11 @@
       "pgBadCredentials": "Usuário ou senha inválidos.",
       "pgNoCreateDb": "O usuário não tem permissão para criar bancos (CREATEDB).",
       "pgConnectFailed": "Falha ao conectar ao PostgreSQL.",
-      "databaseMissing": "O banco \"{database}\" não existe."
-    }
+      "databaseMissing": "O banco \"{database}\" não existe.",
+      "invalidToken": "Token de instalação inválido. Copie-o do log do servidor."
+    },
+    "token": "Token de instalação",
+    "tokenHint": "Exibido no log do servidor ao iniciar (docker compose logs openrss)."
   },
   "shell": {
     "resizeSidebar": "Redimensionar barra lateral",
@@ -350,7 +353,8 @@
       "folderExists": "Já existe uma pasta com esse nome.",
       "opmlRequired": "Selecione um arquivo OPML.",
       "fileTooLarge": "Arquivo muito grande.",
-      "opmlEmpty": "Nenhum feed encontrado no OPML."
+      "opmlEmpty": "Nenhum feed encontrado no OPML.",
+      "opmlTooMany": "O OPML tem feeds demais (máximo {max})."
     }
   },
   "chat": {
@@ -550,7 +554,8 @@
       "modelRequired": "Informe um modelo para testar.",
       "invalidProviderType": "Tipo de provedor inválido.",
       "apiKeyRequiredForModels": "Informe a API key para carregar os modelos.",
-      "baseUrlRequiredForModels": "Informe a Base URL para carregar os modelos."
+      "baseUrlRequiredForModels": "Informe a Base URL para carregar os modelos.",
+      "foreignProviderDefault": "Só provedores globais ou seus próprios podem virar padrão do sistema."
     },
     "errors": {
       "notConfigured": "Nenhum provedor de IA configurado. Configure em Configurações → IA.",
@@ -670,5 +675,27 @@
     "generating": "Gerando…",
     "generateNow": "Gerar agora",
     "empty": "Nenhum artigo novo nas últimas 24 horas."
+  },
+  "serverErrors": {
+    "invalidUrl": "Somente URLs http(s) sem credenciais são permitidas.",
+    "privateNetwork": "O destino aponta para uma rede privada não autorizada.",
+    "responseTooLarge": "A resposta excede o tamanho máximo permitido.",
+    "tooManyRedirects": "Redirecionamentos demais.",
+    "httpStatus": "HTTP {status}",
+    "connectFailed": "Falha na conexão: {reason}",
+    "feedRefreshing": "Este feed já está sendo atualizado.",
+    "ttsNotConfigured": "Nenhum provedor de áudio configurado. Configure em Configurações → IA.",
+    "ttsTimeout": "O provedor de áudio demorou mais de dois minutos para responder. Tente novamente.",
+    "ttsUnauthorized": "API key de áudio inválida ou sem permissão.",
+    "ttsFailed": "Falha ao gerar áudio (HTTP {status}){detail}",
+    "ttsInvalidWav": "O provedor retornou um segmento WAV inválido.",
+    "ttsEmptyWav": "O segmento WAV não contém dados de áudio.",
+    "ttsEmptyAudio": "O provedor retornou um áudio vazio.",
+    "ttsProviderNotFound": "Provedor de áudio não encontrado.",
+    "ttsInvalidFields": "Revise os campos do provedor de áudio.",
+    "ttsAdminsOnly": "Apenas administradores podem criar provedores globais.",
+    "ttsSourceUnavailable": "O provedor de IA selecionado não está disponível para TTS.",
+    "noPermission": "Sem permissão.",
+    "noTextToNarrate": "A notícia não possui texto para narrar."
   }
 }

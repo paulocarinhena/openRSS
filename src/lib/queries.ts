@@ -1,6 +1,8 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
+import { getLocale } from "next-intl/server";
 import { db, icontains } from "@/lib/db";
+import { localizeError } from "@/lib/localized-error";
 import { getUserSettings } from "@/lib/app-settings";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { stripHtml, truncate } from "@/lib/utils";
@@ -15,7 +17,8 @@ export type ArticleScope =
 export const PAGE_SIZE = 40;
 
 export async function getSidebarData(userId: string) {
-  const [folders, subscriptions, savedCount] = await Promise.all([
+  const [locale, folders, subscriptions, savedCount] = await Promise.all([
+    getLocale(),
     db.folder.findMany({ where: { userId }, orderBy: [{ position: "asc" }, { name: "asc" }] }),
     db.subscription.findMany({
       where: { userId },
@@ -47,7 +50,7 @@ export async function getSidebarData(userId: string) {
       siteUrl: s.feed.siteUrl,
       url: s.feed.url,
       hasError: s.feed.errorCount >= 3,
-      lastError: s.feed.lastError,
+      lastError: s.feed.lastError ? localizeError(s.feed.lastError, locale) : null,
       unread: unreadByFeed.get(s.feedId) ?? 0,
     }))
     .sort((a, b) => a.title.localeCompare(b.title));

@@ -1,4 +1,4 @@
-import { resolveRuntimeConfig } from "@/lib/env";
+import { resolveRuntimeConfig, setupToken } from "@/lib/env";
 
 export async function registerNodeRuntime() {
   let database: ReturnType<typeof resolveRuntimeConfig>["database"];
@@ -12,6 +12,7 @@ export async function registerNodeRuntime() {
 
   if (!database) {
     console.log("openRSS: configuração inicial pendente — acesse /setup no navegador.");
+    console.log(`openRSS: token de instalação: ${setupToken()}`);
     return;
   }
 

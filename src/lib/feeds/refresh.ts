@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { withLock } from "@/lib/jobs/lock";
+import { LocalizedError, serializeError } from "@/lib/localized-error";
 import { safeFetch } from "./net";
 import { parseFeed, type ParsedFeed } from "./parse";
 
@@ -10,6 +11,9 @@ const MAX_BACKOFF_MIN = 24 * 60;
 function isUniqueConflict(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
+
+/** `error` vem de `serializeError`: traduza com `localizeError` antes de exibir. */
+type RefreshResult = { newArticleIds: string[]; error?: string };
 
 /** Insere artigos novos (dedupe por feedId+guid) e retorna os ids criados. */
 export async function ingestItems(feedId: string, items: ParsedFeed["items"]): Promise<string[]> {
@@ -27,7 +31,7 @@ export async function ingestItems(feedId: string, items: ParsedFeed["items"]): P
   return created;
 }
 
-async function refreshFeedUnlocked(feedId: string): Promise<{ newArticleIds: string[]; error?: string }> {
+async function refreshFeedUnlocked(feedId: string): Promise<RefreshResult> {
   const feed = await db.feed.findUnique({ where: { id: feedId } });
   if (!feed) return { newArticleIds: [] };
   const { refreshIntervalMinutes } = await getAppSettings();
@@ -68,7 +72,7 @@ async function refreshFeedUnlocked(feedId: string): Promise<{ newArticleIds: str
     });
     return { newArticleIds };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = serializeError(err);
     const errorCount = feed.errorCount + 1;
     const backoff = Math.min(refreshIntervalMinutes * 2 ** errorCount, MAX_BACKOFF_MIN);
     await db.feed.update({
@@ -84,9 +88,9 @@ async function refreshFeedUnlocked(feedId: string): Promise<{ newArticleIds: str
   }
 }
 
-export async function refreshFeed(feedId: string): Promise<{ newArticleIds: string[]; error?: string }> {
+export async function refreshFeed(feedId: string): Promise<RefreshResult> {
   const result = await withLock(`feed:${feedId}`, 2 * 60_000, () => refreshFeedUnlocked(feedId));
-  return result ?? { newArticleIds: [], error: "Este feed já está sendo atualizado." };
+  return result ?? { newArticleIds: [], error: serializeError(new LocalizedError("feedRefreshing")) };
 }
 
 /** Atualiza uma lista de feeds com concorrência limitada. */
@@ -158,7 +162,10 @@ export async function subscribe(
   return subscription;
 }
 
-/** Remove artigos antigos que não foram salvos por nenhum usuário. */
+/**
+ * Remove artigos antigos que não foram salvos por nenhum usuário e feeds sem assinantes.
+ * Feeds com artigos salvos ficam: apagar o feed apagaria os salvos em cascata.
+ */
 export async function applyRetention() {
   const { retentionDays } = await getAppSettings();
   const cutoff = new Date(Date.now() - retentionDays * 86400000);
@@ -170,6 +177,8 @@ export async function applyRetention() {
         WHERE saved."articleId" = "article"."id" AND saved."isSaved" = true
       )
   `;
-  await db.feed.deleteMany({ where: { subscriptions: { none: {} } } });
+  await db.feed.deleteMany({
+    where: { subscriptions: { none: {} }, articles: { none: { states: { some: { isSaved: true } } } } },
+  });
   return count;
 }

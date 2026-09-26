@@ -1,6 +1,7 @@
 import { stripHtml, truncate } from "@/lib/utils";
 import { defaultLocale } from "@/i18n/config";
 import { staticTranslator } from "@/i18n/static";
+import { LocalizedError, localizeError } from "@/lib/localized-error";
 import { AiError } from "./errors";
 
 type ArticleContentSource = { contentHtml?: string | null; fullContentHtml?: string | null; snippet?: string | null };
@@ -42,7 +43,12 @@ export const languageInstruction = (code: string) => {
 /** Mensagem legível para o usuário no idioma da interface (padrão pt-BR para logs). */
 export function errorMessage(err: unknown, locale: string = defaultLocale): string {
   const t = staticTranslator(locale, "ai.errors");
-  if (err instanceof AiError) return t(err.key, err.params);
+  if (err instanceof AiError) {
+    // Parâmetros podem carregar um erro serializado (ex.: motivo da falha de conexão).
+    const params = Object.fromEntries(Object.entries(err.params).map(([k, v]) => [k, typeof v === "string" ? localizeError(v, locale) : v]));
+    return t(err.key, params);
+  }
+  if (err instanceof LocalizedError) return localizeError(err, locale);
   if (err instanceof Error) {
     const withData = err as Error & { responseBody?: string; statusCode?: number };
     if (withData.statusCode === 401) return t("apiKeyInvalid");

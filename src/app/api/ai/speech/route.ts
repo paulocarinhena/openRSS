@@ -4,12 +4,14 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getApiUser } from "@/lib/session";
 import { articleText, errorMessage } from "@/lib/ai/content";
+import { localizeError, LocalizedError } from "@/lib/localized-error";
 import { mergeAudioParts, requestSpeech, resolveTtsProvider, ttsMimeType } from "@/lib/ai/tts";
 
 const body = z.object({
   articleId: z.string(),
   source: z.enum(["article", "summary"]).default("article"),
-  text: z.string().trim().min(1).optional(),
+  // Texto do resumo exibido no cliente; o limite impede narrar (e guardar) textos arbitrariamente grandes.
+  text: z.string().trim().min(1).max(20_000).optional(),
   force: z.boolean().optional(),
 }).refine((value) => value.source !== "summary" || Boolean(value.text), { path: ["text"] });
 
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
           .replace(/^\s*[-+]\s+/gm, "")
       : articleText(article, 28000);
     const normalizedText = speechText.trim();
-    if (!normalizedText) return Response.json({ error: "A notícia não possui texto para narrar." }, { status: 400 });
+    if (!normalizedText) return Response.json({ error: localizeError(new LocalizedError("noTextToNarrate"), await getLocale()) }, { status: 400 });
     const contentHash = createHash("sha256").update(normalizedText).digest("hex");
     const cacheKey = {
       articleId: article.id,
@@ -65,11 +67,15 @@ export async function POST(request: Request) {
     const generationSignal = AbortSignal.any([request.signal, AbortSignal.timeout(120_000)]);
     const parts = [await requestSpeech(provider, normalizedText, generationSignal)];
     const content = mergeAudioParts(parts, provider.responseFormat);
-    await db.articleAudio.upsert({
-      where: { articleId_providerId_userId_model_voice_format_kind_contentHash: cacheKey },
-      create: { ...cacheKey, content },
-      update: { content, createdAt: new Date() },
-    });
+    await db.$transaction([
+      // Um único áudio por variante: um texto novo (ex.: resumo regenerado) substitui o anterior em vez de acumular.
+      db.articleAudio.deleteMany({ where: { ...cacheKey, contentHash: { not: contentHash } } }),
+      db.articleAudio.upsert({
+        where: { articleId_providerId_userId_model_voice_format_kind_contentHash: cacheKey },
+        create: { ...cacheKey, content },
+        update: { content, createdAt: new Date() },
+      }),
+    ]);
     const audio = new Blob([content], { type: ttsMimeType(provider.responseFormat) });
     return new Response(audio, {
       headers: {

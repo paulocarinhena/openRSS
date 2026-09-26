@@ -19,7 +19,8 @@ export function sanitizeArticleHtml(html: string, baseUrl?: string | null): stri
     ],
     allowedAttributes: {
       a: ["href", "title", "target", "rel"],
-      img: ["src", "srcset", "alt", "title", "width", "height"],
+      // loading/referrerpolicy são adicionados pelo transformTags; sem estar aqui, o filtro de atributos os removeria.
+      img: ["src", "srcset", "alt", "title", "width", "height", "loading", "referrerpolicy"],
       source: ["src", "srcset", "type", "media"],
       video: ["src", "poster", "controls", "width", "height"],
       audio: ["src", "controls"],

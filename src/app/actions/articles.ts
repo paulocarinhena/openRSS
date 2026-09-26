@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { extractFullContent } from "@/lib/feeds/extract";
 import { findPreviewImage } from "@/lib/feeds/preview-image";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
+import { localizeError } from "@/lib/localized-error";
 import { nextUnreadFeedId, orderedSidebarFeeds } from "@/lib/feeds/next-unread";
 import { articleScopeWhere, getArticle, getSidebarData, listArticles, type ArticleScope } from "@/lib/queries";
 
@@ -76,15 +77,24 @@ export async function markAllRead(scope: ArticleScope) {
     const now = new Date();
     for (let i = 0; i < ids.length; i += 500) {
       const chunk = ids.slice(i, i + 500);
-      await db.$transaction(
-        chunk.map((articleId) =>
-          db.userArticle.upsert({
-            where: { userId_articleId: { userId: user.id, articleId } },
-            create: { userId: user.id, articleId, isRead: true, readAt: now },
-            update: { isRead: true, readAt: now },
-          }),
-        ),
-      );
+      await db.$transaction(async (tx) => {
+        // Atualiza os estados existentes de uma vez e cria só os que faltam (em vez de um upsert por artigo).
+        await tx.userArticle.updateMany({
+          where: { userId: user.id, articleId: { in: chunk } },
+          data: { isRead: true, readAt: now },
+        });
+        const existing = await tx.userArticle.findMany({
+          where: { userId: user.id, articleId: { in: chunk } },
+          select: { articleId: true },
+        });
+        const known = new Set(existing.map((row) => row.articleId));
+        const missing = chunk.filter((articleId) => !known.has(articleId));
+        if (missing.length > 0) {
+          await tx.userArticle.createMany({
+            data: missing.map((articleId) => ({ userId: user.id, articleId, isRead: true, readAt: now })),
+          });
+        }
+      });
     }
     revalidatePath("/", "layout");
   }
@@ -113,7 +123,7 @@ export async function loadFullContent(articleId: string): Promise<{ html?: strin
     await db.article.update({ where: { id: articleId }, data: { fullContentHtml: html } });
     return { html };
   } catch (err) {
-    return { error: err instanceof Error ? err.message : t("fetchFailed") };
+    return { error: err instanceof Error ? localizeError(err, await getLocale()) : t("fetchFailed") };
   }
 }
 

@@ -4,10 +4,13 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { getUserSettings } from "@/lib/app-settings";
 import { pinnedFetch } from "@/lib/network";
+import { LocalizedError } from "@/lib/localized-error";
 
 export const TTS_FORMATS = ["mp3", "opus", "aac", "flac", "wav", "pcm"] as const;
 export const TTS_VOICES = ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"] as const;
 const SPEECH_TIMEOUT_MS = 120_000;
+/** Teto do áudio aceito do provedor (≈ 2 h de mp3); evita esgotar a memória com respostas enormes. */
+export const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 
 export async function resolveTtsProvider(userId: string) {
   const settings = await getUserSettings(userId);
@@ -22,7 +25,7 @@ export async function resolveTtsProvider(userId: string) {
         db.ttsProvider.findFirst({ where: { enabled: true, userId: null }, orderBy: { createdAt: "asc" } }),
       ]);
   const provider = selected ?? personal ?? global;
-  if (!provider) throw new Error("Nenhum provedor de áudio configurado. Configure em Configurações → IA.");
+  if (!provider) throw new LocalizedError("ttsNotConfigured");
   return provider;
 }
 
@@ -45,7 +48,7 @@ export async function requestSpeech(provider: TtsProvider, input: string, signal
     );
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      throw new Error("O provedor de áudio demorou mais de dois minutos para responder. Tente novamente.");
+      throw new LocalizedError("ttsTimeout");
     }
     throw error;
   }
@@ -53,14 +56,38 @@ export async function requestSpeech(provider: TtsProvider, input: string, signal
     const response = connection.response;
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 500);
-      throw new Error(response.status === 401 || response.status === 403
-        ? "API key de áudio inválida ou sem permissão."
-        : `Falha ao gerar áudio (HTTP ${response.status})${detail ? `: ${detail}` : ""}`);
+      throw response.status === 401 || response.status === 403
+        ? new LocalizedError("ttsUnauthorized")
+        : new LocalizedError("ttsFailed", { status: response.status, detail: detail ? `: ${detail}` : "" });
     }
-    return new Uint8Array(await response.arrayBuffer());
+    return await readLimited(response.body?.getReader(), MAX_AUDIO_BYTES);
   } finally {
     await connection.close();
   }
+}
+
+/** Lê o corpo inteiro, abortando se passar de `maxBytes`. */
+async function readLimited(reader: ReadableStreamDefaultReader<Uint8Array> | undefined, maxBytes: number): Promise<Uint8Array> {
+  if (!reader) return new Uint8Array(0);
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel();
+      throw new LocalizedError("responseTooLarge");
+    }
+    chunks.push(value);
+  }
+  const output = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
 }
 
 /** Junta segmentos de áudio; WAV precisa de um único cabeçalho e tamanhos recalculados. */
@@ -83,7 +110,7 @@ export function mergeAudioParts(parts: Uint8Array[], format: string): Uint8Array
   const parsed = parts.map((part) => {
     const view = new DataView(part.buffer, part.byteOffset, part.byteLength);
     if (part.byteLength < 44 || readAscii(part, 0, 4) !== "RIFF" || readAscii(part, 8, 4) !== "WAVE") {
-      throw new Error("O provedor retornou um segmento WAV inválido.");
+      throw new LocalizedError("ttsInvalidWav");
     }
     let offset = 12;
     while (offset + 8 <= part.byteLength) {
@@ -94,7 +121,7 @@ export function mergeAudioParts(parts: Uint8Array[], format: string): Uint8Array
       }
       offset += 8 + size + (size % 2);
     }
-    throw new Error("O segmento WAV não contém dados de áudio.");
+    throw new LocalizedError("ttsEmptyWav");
   });
   const first = parsed[0];
   const totalData = parsed.reduce((sum, item) => sum + item.dataSize, 0);
