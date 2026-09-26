@@ -924,5 +924,20 @@
     "unsubscribed": "{count, plural, one {Suscripción cancelada} other {# suscripciones canceladas}}",
     "empty": "Aún no estás suscrito a ningún feed.",
     "emptyFilter": "Ningún feed en este estado."
+  },
+  "tags": {
+    "add": "Añadir etiqueta",
+    "remove": "Quitar la etiqueta {name}",
+    "filter": "Filtrar por etiqueta",
+    "all": "Todas",
+    "rename": "Renombrar etiqueta",
+    "renamePrompt": "Nuevo nombre de la etiqueta:",
+    "delete": "Borrar etiqueta",
+    "deleteConfirm": "¿Borrar la etiqueta “{name}”? Los artículos siguen guardados.",
+    "errors": {
+      "invalidName": "Usa de 1 a 40 caracteres.",
+      "notFound": "No encontrado.",
+      "exists": "Ya existe una etiqueta con ese nombre."
+    }
   }
 }

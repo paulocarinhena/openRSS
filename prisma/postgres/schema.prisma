@@ -37,6 +37,7 @@ model User {
   chatThreads   ChatThread[]
   rules         Rule[]
   apiTokens     ApiToken[]
+  tags          Tag[]
 
   @@map("user")
 }
@@ -163,6 +164,7 @@ model Article {
   summaries ArticleSummary[]
   audios    ArticleAudio[]
   ref       ArticleRef?
+  tags      ArticleTag[]
 
   @@unique([feedId, guid])
   @@index([feedId, publishedAt])
@@ -402,6 +404,31 @@ model ApiRef {
 
   @@unique([kind, refId])
   @@map("api_ref")
+}
+
+// Tags pessoais para organizar artigos (principalmente os salvos).
+model Tag {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime     @default(now())
+  articles  ArticleTag[]
+
+  @@unique([userId, name])
+  @@map("tag")
+}
+
+model ArticleTag {
+  tagId     String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([tagId, articleId])
+  @@index([articleId])
+  @@map("article_tag")
 }
 
 model JobLock {

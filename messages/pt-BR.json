@@ -924,5 +924,20 @@
     "unsubscribed": "{count, plural, one {Assinatura cancelada} other {# assinaturas canceladas}}",
     "empty": "Você ainda não assina nenhum feed.",
     "emptyFilter": "Nenhum feed nesta situação."
+  },
+  "tags": {
+    "add": "Adicionar tag",
+    "remove": "Remover a tag {name}",
+    "filter": "Filtrar por tag",
+    "all": "Todas",
+    "rename": "Renomear tag",
+    "renamePrompt": "Novo nome da tag:",
+    "delete": "Apagar tag",
+    "deleteConfirm": "Apagar a tag “{name}”? Os artigos continuam salvos.",
+    "errors": {
+      "invalidName": "Use de 1 a 40 caracteres.",
+      "notFound": "Não encontrado.",
+      "exists": "Já existe uma tag com esse nome."
+    }
   }
 }

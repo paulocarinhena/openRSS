@@ -10,7 +10,7 @@ import { stripHtml, truncate } from "@/lib/utils";
 export type ArticleScope =
   | { kind: "today" }
   | { kind: "all" }
-  | { kind: "saved" }
+  | { kind: "saved"; tag?: string }
   | { kind: "feed"; feedId: string }
   | { kind: "folder"; folderId: string };
 
@@ -102,7 +102,10 @@ export async function articleScopeWhere(userId: string, scope: ArticleScope): Pr
   const subscribed: Prisma.ArticleWhereInput = { feed: { subscriptions: { some: { userId } } } };
   switch (scope.kind) {
     case "saved":
-      return { states: { some: { userId, isSaved: true } } };
+      return {
+        states: { some: { userId, isSaved: true } },
+        ...(scope.tag ? { tags: { some: { tag: { userId, name: scope.tag } } } } : {}),
+      };
     case "feed":
       return { feedId: scope.feedId, ...subscribed };
     case "folder":
@@ -129,6 +132,7 @@ const articleSelect = (userId: string) =>
     publishedAt: true,
     storyId: true,
     feed: { select: { id: true, title: true, iconUrl: true } },
+    tags: { where: { tag: { userId } }, select: { tag: { select: { id: true, name: true } } }, orderBy: { tag: { name: "asc" } } },
     states: { where: { userId }, select: { isRead: true, isSaved: true, isHighlighted: true, priorityScore: true, priorityReason: true } },
   }) satisfies Prisma.ArticleSelect;
 
@@ -212,6 +216,7 @@ function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof arti
     priorityScore: s?.priorityScore ?? null,
     priorityReason: s?.priorityReason ?? null,
     storyId: a.storyId,
+    tags: a.tags.map((t) => t.tag),
     /** Outras fontes do mesmo fato, preenchido por groupByStory. */
     related: [] as RelatedSource[],
   };
@@ -228,10 +233,11 @@ export async function getArticle(userId: string, articleId: string) {
     include: {
       feed: { select: { id: true, title: true, iconUrl: true, siteUrl: true } },
       states: { where: { userId } },
+      tags: { where: { tag: { userId } }, select: { tag: { select: { id: true, name: true } } }, orderBy: { tag: { name: "asc" } } },
     },
   });
   if (!article) return null;
-  const { states, ...rest } = article;
+  const { states, tags, ...rest } = article;
   return {
     ...rest,
     // Reaplica o saneamento: artigos extraídos/ingeridos antes de uma correção no sanitizador
@@ -239,6 +245,7 @@ export async function getArticle(userId: string, articleId: string) {
     contentHtml: rest.contentHtml ? sanitizeArticleHtml(rest.contentHtml, rest.url) : rest.contentHtml,
     fullContentHtml: rest.fullContentHtml ? sanitizeArticleHtml(rest.fullContentHtml, rest.url) : rest.fullContentHtml,
     state: states.at(0) ?? null,
+    tags: tags.map((t) => t.tag),
   };
 }
 
@@ -256,7 +263,7 @@ export async function scopeTitle(
     case "all":
       return labels.all;
     case "saved":
-      return labels.saved;
+      return scope.tag ? `${labels.saved} · ${scope.tag}` : labels.saved;
     case "feed": {
       const sub = await db.subscription.findFirst({ where: { userId, feedId: scope.feedId }, include: { feed: true } });
       return sub ? (sub.customTitle ?? sub.feed.title) : null;

@@ -32,7 +32,7 @@ export async function startFakeOpenAI(opts: {
         `data: ${JSON.stringify({ id: "c1", object: "chat.completion.chunk", created: 0, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
       res.setHeader("content-type", "text/event-stream");
       res.write(chunk({ role: "assistant", content: "" }, null));
-      for (const part of text.match(/.{1,8}/gs) ?? []) res.write(chunk({ content: part }, null));
+      for (let i = 0; i < text.length; i += 8) res.write(chunk({ content: text.slice(i, i + 8) }, null));
       res.write(chunk({}, "stop"));
       res.end("data: [DONE]\n\n");
     });

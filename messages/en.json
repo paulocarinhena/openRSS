@@ -924,5 +924,20 @@
     "unsubscribed": "{count, plural, one {Unsubscribed} other {# subscriptions removed}}",
     "empty": "You are not subscribed to any feed yet.",
     "emptyFilter": "No feeds with this status."
+  },
+  "tags": {
+    "add": "Add tag",
+    "remove": "Remove tag {name}",
+    "filter": "Filter by tag",
+    "all": "All",
+    "rename": "Rename tag",
+    "renamePrompt": "New tag name:",
+    "delete": "Delete tag",
+    "deleteConfirm": "Delete the tag “{name}”? The articles stay saved.",
+    "errors": {
+      "invalidName": "Use 1 to 40 characters.",
+      "notFound": "Not found.",
+      "exists": "A tag with that name already exists."
+    }
   }
 }

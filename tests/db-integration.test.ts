@@ -49,6 +49,8 @@ const { refreshDueFeeds } = await import("@/lib/feeds/refresh");
 const { getFeedHealth } = await import("@/lib/feeds/health");
 const { POST: askArticle } = await import("@/app/api/ai/ask/route");
 const { startFakeOpenAI } = await import("./helpers/fake-openai");
+const { addTagAction, deleteTagAction, removeTagAction, renameTagAction } = await import("@/app/actions/tags");
+const { listTags } = await import("@/lib/tags");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -473,5 +475,43 @@ describe("article Q&A", () => {
     } finally {
       await fake.close();
     }
+  });
+});
+
+describe("tags", () => {
+  it("tags (and saves) articles, filters Saved by tag and keeps tags per user", async () => {
+    await db.tag.deleteMany();
+    const feed = await createFeed("https://tags.example/feed", [{ guid: "t1" }, { guid: "t2" }]);
+    await db.subscription.createMany({ data: [{ userId: "alice", feedId: feed.id }, { userId: "bob", feedId: feed.id }] });
+    const [a1, a2] = feed.articles;
+
+    const added = await addTagAction(a1.id, "  receitas ");
+    expect(added).toMatchObject({ ok: true, tag: { name: "receitas" } });
+    expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a1.id } } })).toMatchObject({ isSaved: true });
+    await addTagAction(a1.id, "receitas"); // repetir não duplica
+    await addTagAction(a2.id, "viagem");
+
+    const byTag = await listArticles("alice", { kind: "saved", tag: "receitas" });
+    expect(byTag.items.map((i) => i.id)).toEqual([a1.id]);
+    expect(byTag.items[0].tags).toEqual([{ id: expect.any(String), name: "receitas" }]);
+    expect(await listTags("alice")).toEqual([
+      { id: expect.any(String), name: "receitas", count: 1 },
+      { id: expect.any(String), name: "viagem", count: 1 },
+    ]);
+
+    // As tags da Alice não aparecem para o Bob.
+    currentUser = { id: "bob", role: "user" };
+    expect((await listArticles("bob", { kind: "all" }, { unreadOnly: false })).items.every((i) => i.tags.length === 0)).toBe(true);
+    const receitas = (await listTags("alice")).find((t) => t.name === "receitas")!;
+    await removeTagAction(a1.id, receitas.id);
+    await deleteTagAction(receitas.id);
+    expect(await db.tag.count({ where: { id: receitas.id } })).toBe(1);
+
+    currentUser = { id: "alice", role: "admin" };
+    expect(await renameTagAction(receitas.id, "viagem")).toMatchObject({ ok: false });
+    expect(await renameTagAction(receitas.id, "culinária")).toMatchObject({ ok: true });
+    await deleteTagAction(receitas.id);
+    expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a1.id } } })).toMatchObject({ isSaved: true });
+    expect((await addTagAction("inexistente", "x")).ok).toBe(false);
   });
 });

@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { FeedIcon } from "@/components/feed-icon";
 import { SummaryPanel, type SummaryMeta } from "./summary-panel";
 import { ArticleQA } from "./article-qa";
+import { TagEditor } from "./tag-editor";
 import { READER_WIDTH_ORDER, READER_WIDTHS, useReaderWidth } from "@/hooks/use-reader-width";
 
 function visibleTextLength(html: string | null): number {
@@ -386,6 +387,9 @@ export function Reader({
               <audio className="w-full" controls preload="metadata" src={audioUrl}>{t("audio.unsupported")}</audio>
             </section>
           )}
+
+          {/* Taguear salva o artigo no servidor; aqui só alinha o ícone de salvo. */}
+          <TagEditor key={`tags-${article.id}`} articleId={article.id} initial={article.tags ?? []} onSavedChange={() => !isSaved && onToggleSaved()} />
 
           {qaOpen && (
             <ArticleQA
