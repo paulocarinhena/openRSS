@@ -22,7 +22,8 @@ export async function ingestItems(feedId: string, items: ParsedFeed["items"]): P
   const created: string[] = [];
   for (const item of unique) {
     try {
-      const article = await db.article.create({ data: { feedId, ...item }, select: { id: true } });
+      // O ref dá ao artigo um id numérico crescente, usado pelas APIs Fever e Google Reader.
+      const article = await db.article.create({ data: { feedId, ...item, ref: { create: {} } }, select: { id: true } });
       created.push(article.id);
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;

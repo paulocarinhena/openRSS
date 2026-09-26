@@ -584,7 +584,8 @@
       "ai": "AI",
       "cleanup": "Retention",
       "admin": "Admin",
-      "rules": "Rules"
+      "rules": "Rules",
+      "apps": "Apps"
     },
     "cleanup": {
       "title": "Article retention",
@@ -820,6 +821,32 @@
       "webhookRequired": "Enter the webhook URL to notify.",
       "webhookInvalid": "Invalid webhook URL.",
       "ruleNotFound": "Rule not found."
+    }
+  },
+  "apps": {
+    "title": "Reading apps",
+    "description": "Use openRSS in native apps (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) through the Google Reader or Fever APIs. Create an app password for each app: your account password is never used.",
+    "greaderUrl": "Google Reader API URL",
+    "feverUrl": "Fever API URL",
+    "username": "Username (email)",
+    "clientsHint": "In the app, choose “FreshRSS”, “Google Reader” or “Fever”, then enter the URL, your email and an app password.",
+    "passwords": "App passwords",
+    "newPasswordName": "App or device name",
+    "namePlaceholder": "E.g. Reeder on iPhone",
+    "create": "Create password",
+    "createdOnce": "Password for “{name}” created. Copy it now: it won't be shown again.",
+    "password": "App password",
+    "copy": "Copy",
+    "empty": "No app passwords yet.",
+    "createdAt": "created {when}",
+    "lastUsed": "last used {when}",
+    "neverUsed": "never used",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke the password “{name}”? Apps using it will stop syncing.",
+    "revoked": "Password revoked",
+    "errors": {
+      "nameRequired": "Give the password a name (up to 60 characters).",
+      "tooMany": "Limit of {max} app passwords. Revoke one first."
     }
   }
 }

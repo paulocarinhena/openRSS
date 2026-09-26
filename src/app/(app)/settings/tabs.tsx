@@ -13,6 +13,7 @@ export function SettingsTabs({ isAdmin }: { isAdmin: boolean }) {
     { href: "/settings/feeds", label: t("feeds") },
     { href: "/settings/ai", label: t("ai") },
     { href: "/settings/rules", label: t("rules") },
+    { href: "/settings/apps", label: t("apps") },
     ...(isAdmin ? [{ href: "/settings/cleanup", label: t("cleanup") }] : []),
     ...(isAdmin ? [{ href: "/settings/admin", label: t("admin") }] : []),
   ];

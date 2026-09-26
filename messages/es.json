@@ -584,7 +584,8 @@
       "ai": "IA",
       "cleanup": "Retención",
       "admin": "Admin",
-      "rules": "Reglas"
+      "rules": "Reglas",
+      "apps": "Apps"
     },
     "cleanup": {
       "title": "Retención de noticias",
@@ -820,6 +821,32 @@
       "webhookRequired": "Indica la URL del webhook para notificar.",
       "webhookInvalid": "URL de webhook inválida.",
       "ruleNotFound": "Regla no encontrada."
+    }
+  },
+  "apps": {
+    "title": "Apps de lectura",
+    "description": "Usa openRSS en apps nativas (NetNewsWire, Reeder, ReadYou, FluentReader, Unread…) mediante las APIs Google Reader o Fever. Crea una contraseña de aplicación para cada app: la contraseña de tu cuenta nunca se usa.",
+    "greaderUrl": "URL de la API Google Reader",
+    "feverUrl": "URL de la API Fever",
+    "username": "Usuario (correo)",
+    "clientsHint": "En la app, elige “FreshRSS”, “Google Reader” o “Fever” e introduce la URL, tu correo y una contraseña de aplicación.",
+    "passwords": "Contraseñas de aplicación",
+    "newPasswordName": "Nombre de la app o dispositivo",
+    "namePlaceholder": "Ej.: Reeder en el iPhone",
+    "create": "Crear contraseña",
+    "createdOnce": "Contraseña de “{name}” creada. Cópiala ahora: no se volverá a mostrar.",
+    "password": "Contraseña de aplicación",
+    "copy": "Copiar",
+    "empty": "Aún no hay contraseñas de aplicación.",
+    "createdAt": "creada {when}",
+    "lastUsed": "último uso {when}",
+    "neverUsed": "nunca usada",
+    "revoke": "Revocar",
+    "revokeConfirm": "¿Revocar la contraseña “{name}”? Las apps que la usan dejarán de sincronizar.",
+    "revoked": "Contraseña revocada",
+    "errors": {
+      "nameRequired": "Ponle un nombre a la contraseña (hasta 60 caracteres).",
+      "tooMany": "Límite de {max} contraseñas de aplicación. Revoca alguna antes."
     }
   }
 }

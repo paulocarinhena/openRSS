@@ -30,6 +30,7 @@ model User {
   digests       Digest[]
   chatThreads   ChatThread[]
   rules         Rule[]
+  apiTokens     ApiToken[]
 
   @@map("user")
 }
@@ -154,6 +155,7 @@ model Article {
   states    UserArticle[]
   summaries ArticleSummary[]
   audios    ArticleAudio[]
+  ref       ArticleRef?
 
   @@unique([feedId, guid])
   @@index([feedId, publishedAt])
@@ -357,6 +359,40 @@ model Rule {
 
   @@index([userId])
   @@map("rule")
+}
+
+// Senha de aplicativo para clientes externos (API Google Reader e Fever). Só hashes ficam no banco.
+model ApiToken {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  secretHash   String    @unique // sha256 da senha de aplicativo (Google Reader)
+  feverKeyHash String    @unique // sha256 de md5("email:senha"), a api_key da Fever
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@map("api_token")
+}
+
+// Id inteiro e crescente de cada artigo: a API Fever e os ids curtos do Google Reader exigem números.
+model ArticleRef {
+  id        Int     @id @default(autoincrement())
+  articleId String  @unique
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("article_ref")
+}
+
+// Ids inteiros estáveis de feeds e pastas para a API Fever.
+model ApiRef {
+  id    Int    @id @default(autoincrement())
+  kind  String // "feed" | "folder"
+  refId String
+
+  @@unique([kind, refId])
+  @@map("api_ref")
 }
 
 model JobLock {
