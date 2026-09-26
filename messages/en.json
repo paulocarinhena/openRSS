@@ -240,7 +240,8 @@
       "cancel": "Cancel",
       "configureTts": "Configure an audio provider in Settings → AI",
       "loadingFull": "Loading the full article…",
-      "noContent": "This item has no content in the feed."
+      "noContent": "This item has no content in the feed.",
+      "createRule": "Create rule from this article"
     },
     "audio": {
       "title": "News audio",
@@ -293,7 +294,8 @@
       "noOriginalLink": "Article has no original link.",
       "extractFailed": "Could not extract the content.",
       "fetchFailed": "Failed to fetch the article."
-    }
+    },
+    "highlighted": "Highlighted by a rule"
   },
   "feeds": {
     "add": {
@@ -581,7 +583,8 @@
       "feeds": "Feeds",
       "ai": "AI",
       "cleanup": "Retention",
-      "admin": "Admin"
+      "admin": "Admin",
+      "rules": "Rules"
     },
     "cleanup": {
       "title": "Article retention",
@@ -696,6 +699,127 @@
     "ttsAdminsOnly": "Only administrators can create global providers.",
     "ttsSourceUnavailable": "The selected AI provider is not available for TTS.",
     "noPermission": "No permission.",
-    "noTextToNarrate": "This article has no text to narrate."
+    "noTextToNarrate": "This article has no text to narrate.",
+    "webhookInvalid": "Invalid webhook URL for this format."
+  },
+  "rules": {
+    "title": "Automatic rules",
+    "description": "Applied to every new article: mark as read, save, highlight or notify.",
+    "add": "New rule",
+    "aiNotReady": "Rules based on the AI score only work with an AI provider and prioritization enabled (Settings → AI, with your interests filled in).",
+    "empty": "No rules yet. Create one to filter what arrives in your feeds.",
+    "enabled": "Rule enabled",
+    "missingTarget": "(removed)",
+    "conditionCount": "{count, plural, one {# condition} other {# conditions}}",
+    "hits": "{count, plural, =0 {Not triggered yet} one {Triggered # time} other {Triggered # times}}",
+    "lastHit": "last {when}",
+    "applyExisting": "Apply to existing",
+    "applyExistingHint": "Applies the rule to articles you already have (without notifying).",
+    "applyExistingConfirm": "Apply the rule “{name}” to all existing articles in scope? This can't be undone automatically.",
+    "appliedExisting": "{count, plural, =0 {No article matched} one {Rule applied to # article} other {Rule applied to # articles}}",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete the rule “{name}”?",
+    "deleted": "Rule deleted",
+    "name": "Name",
+    "namePlaceholder": "E.g. Hide sponsored posts",
+    "scope": "Apply to",
+    "feed": "Feed",
+    "folder": "Folder",
+    "choose": "Choose…",
+    "scopes": {
+      "all": "All feeds",
+      "feed": "One feed",
+      "folder": "One folder"
+    },
+    "conditions": "Conditions",
+    "match": "Match conditions",
+    "matchAll": "All conditions",
+    "matchAny": "Any condition",
+    "field": "Field",
+    "operator": "Operator",
+    "value": "Value",
+    "removeCondition": "Remove condition",
+    "addCondition": "Add condition",
+    "scoreHint": "AI score rules run after the AI classifies new articles.",
+    "fields": {
+      "title": "Title",
+      "content": "Content",
+      "author": "Author",
+      "url": "URL",
+      "feed": "Feed name",
+      "score": "AI score"
+    },
+    "ops": {
+      "contains": "contains",
+      "notContains": "does not contain",
+      "equals": "equals",
+      "regex": "matches regex",
+      "gte": "at least",
+      "lte": "at most"
+    },
+    "actionsLabel": "Actions",
+    "actions": {
+      "markRead": "Mark as read",
+      "save": "Save",
+      "highlight": "Highlight",
+      "notify": "Notify"
+    },
+    "actionHints": {
+      "markRead": "Removes it from unread (mutes it).",
+      "save": "Keeps it in Saved to read later.",
+      "highlight": "Shows a flag in the list.",
+      "notify": "Sends to ntfy, Discord, Slack, Telegram or a webhook."
+    },
+    "webhookFormat": "Service",
+    "webhookUrl": "Webhook URL",
+    "webhookKeep": "Current: {current}. Leave blank to keep it.",
+    "formats": {
+      "json": "Webhook (JSON)",
+      "ntfy": "ntfy",
+      "discord": "Discord",
+      "slack": "Slack / Mattermost",
+      "telegram": "Telegram"
+    },
+    "formatHints": {
+      "json": "Receives a POST with the article data as JSON.",
+      "ntfy": "Topic URL, e.g. https://ntfy.sh/my-topic.",
+      "discord": "Channel webhook (Channel settings → Integrations).",
+      "slack": "Slack or Mattermost incoming webhook.",
+      "telegram": "Bot URL with chat_id in the query."
+    },
+    "formatPlaceholders": {
+      "json": "https://example.com/webhook",
+      "ntfy": "https://ntfy.sh/my-topic",
+      "discord": "https://discord.com/api/webhooks/…",
+      "slack": "https://hooks.slack.com/services/…",
+      "telegram": "https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>"
+    },
+    "sendTest": "Send test",
+    "webhookSent": "Test notification sent",
+    "previewResult": "{count, plural, =0 {None of the {total} articles from the last 7 days would be affected.} one {# article out of {total} from the last 7 days would be affected.} other {# articles out of {total} from the last 7 days would be affected.}}",
+    "preview": "Test",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Rule saved",
+    "testRuleName": "openRSS test",
+    "testArticleTitle": "If you received this, notifications are working.",
+    "errors": {
+      "invalidData": "Invalid data.",
+      "nameRequired": "Give the rule a name.",
+      "nameTooLong": "Name too long.",
+      "valueRequired": "Fill in the value of every condition.",
+      "valueTooLong": "Value too long (max. 200 characters).",
+      "invalidOperator": "Invalid operator for this field.",
+      "invalidScore": "The score must be a whole number from 0 to 100.",
+      "invalidRegex": "Invalid or risky regex (avoid repeated groups like (a+)+).",
+      "conditionRequired": "Add at least one condition.",
+      "tooManyConditions": "At most 10 conditions.",
+      "actionRequired": "Choose at least one action.",
+      "scopeNotFound": "Choose one of your feeds or folders.",
+      "webhookRequired": "Enter the webhook URL to notify.",
+      "webhookInvalid": "Invalid webhook URL.",
+      "ruleNotFound": "Rule not found."
+    }
   }
 }

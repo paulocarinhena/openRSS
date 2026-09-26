@@ -49,6 +49,7 @@ Feito para instâncias pequenas (até ~5 usuários simultâneos) em um único co
 - Suporte a RSS, Atom e RDF
 - Atualização em segundo plano com ETag/Last-Modified e backoff em erros
 - Importação e exportação OPML
+- Regras automáticas por título, conteúdo, autor, URL ou nota da IA: marcar como lido, salvar, destacar ou notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retenção configurável de artigos
 
 **Usuários**
@@ -182,6 +183,7 @@ Todas são opcionais. Variáveis de ambiente têm precedência sobre `config.jso
 | `DATABASE_URL` | — | Defina para pular o assistente (`file:...` ou `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferido | `sqlite` ou `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds em IPs privados/localhost (ex.: RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificações de regras para IPs privados/localhost (ex.: ntfy na rede local) |
 | `DISABLE_SCHEDULER` | `false` | Desliga o agendador interno |
 
 #### Solução de problemas
@@ -233,6 +235,7 @@ Built for small instances (up to ~5 concurrent users) in a single container with
 - RSS, Atom, and RDF support
 - Background refresh with ETag/Last-Modified and error backoff
 - OPML import and export
+- Automatic rules by title, content, author, URL or AI score: mark as read, save, highlight or notify (ntfy, Discord, Slack, Telegram, webhook)
 - Configurable article retention
 
 **Users**
@@ -366,6 +369,7 @@ All optional. Environment variables override `config.json`.
 | `DATABASE_URL` | — | Set to skip wizard (`file:...` or `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferred | `sqlite` or `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Allow feeds on private/localhost IPs (e.g. RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Allow rule notifications to private/localhost IPs (e.g. ntfy on your LAN) |
 | `DISABLE_SCHEDULER` | `false` | Disable internal scheduler |
 
 #### Troubleshooting
@@ -417,6 +421,7 @@ Diseñado para instancias pequeñas (hasta ~5 usuarios simultáneos) en un solo 
 - Soporte RSS, Atom y RDF
 - Actualización en segundo plano con ETag/Last-Modified y backoff en errores
 - Importación y exportación OPML
+- Reglas automáticas por título, contenido, autor, URL o nota de la IA: marcar como leído, guardar, destacar o notificar (ntfy, Discord, Slack, Telegram, webhook)
 - Retención configurable de artículos
 
 **Usuarios**
@@ -550,6 +555,7 @@ Todas opcionales. Las variables de entorno tienen precedencia sobre `config.json
 | `DATABASE_URL` | — | Definir para omitir asistente (`file:...` o `postgresql://...`) |
 | `DATABASE_PROVIDER` | inferido | `sqlite` o `postgresql` |
 | `ALLOW_PRIVATE_FEEDS` | `false` | Permite feeds en IPs privadas/localhost (ej.: RSS-Bridge) |
+| `ALLOW_PRIVATE_WEBHOOKS` | `false` | Permite notificaciones de reglas a IPs privadas/localhost (ej.: ntfy en la red local) |
 | `DISABLE_SCHEDULER` | `false` | Desactiva el planificador interno |
 
 #### Solución de problemas

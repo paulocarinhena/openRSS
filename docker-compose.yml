@@ -15,6 +15,7 @@ services:
       # Opcional: defina para pular o assistente (ex.: postgresql://user:pass@host:5432/openrss).
       DATABASE_URL: ${DATABASE_URL:-}
       ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
+      ALLOW_PRIVATE_WEBHOOKS: ${ALLOW_PRIVATE_WEBHOOKS:-false}
       DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
     volumes:
       - openrss-data:/data

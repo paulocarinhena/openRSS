@@ -128,7 +128,7 @@ const articleSelect = (userId: string) =>
     imageUrl: true,
     publishedAt: true,
     feed: { select: { id: true, title: true, iconUrl: true } },
-    states: { where: { userId }, select: { isRead: true, isSaved: true, priorityScore: true, priorityReason: true } },
+    states: { where: { userId }, select: { isRead: true, isSaved: true, isHighlighted: true, priorityScore: true, priorityReason: true } },
   }) satisfies Prisma.ArticleSelect;
 
 export async function listArticles(
@@ -182,6 +182,7 @@ function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof arti
     feed: a.feed,
     isRead: s?.isRead ?? false,
     isSaved: s?.isSaved ?? false,
+    isHighlighted: s?.isHighlighted ?? false,
     priorityScore: s?.priorityScore ?? null,
     priorityReason: s?.priorityReason ?? null,
   };

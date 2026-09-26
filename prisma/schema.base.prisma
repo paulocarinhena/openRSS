@@ -29,6 +29,7 @@ model User {
   settings      UserSettings?
   digests       Digest[]
   chatThreads   ChatThread[]
+  rules         Rule[]
 
   @@map("user")
 }
@@ -173,6 +174,7 @@ model UserArticle {
   priorityScore  Int?
   priorityReason String?
   classifiedAt   DateTime?
+  isHighlighted  Boolean   @default(false) // marcado por uma regra com a ação "destacar"
 
   @@id([userId, articleId])
   @@index([userId, isRead])
@@ -334,6 +336,29 @@ model AppSettings {
 }
 
 /// Lock simples para jobs em processo (evita execução duplicada em HMR / múltiplas instâncias).
+// Regra automática do usuário: condições sobre artigos novos → ações no estado dele (UserArticle).
+model Rule {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  enabled          Boolean   @default(true)
+  scope            String    @default("all") // "all" | "feed" | "folder"
+  scopeId          String? // id do feed ou da pasta
+  matchAll         Boolean   @default(true) // true = todas as condições; false = qualquer uma
+  conditions       String // JSON: [{ field, op, value }]
+  actions          String // JSON: ["markRead" | "save" | "highlight" | "notify"]
+  webhookEncrypted String? // URL do webhook (pode conter token), criptografada
+  webhookFormat    String? // "json" | "ntfy" | "discord" | "slack" | "telegram"
+  hitCount         Int       @default(0)
+  lastHitAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("rule")
+}
+
 model JobLock {
   name      String   @id
   lockedAt  DateTime

@@ -521,5 +521,6 @@ function emptyState(a: ArticleDetail): NonNullable<ArticleDetail["state"]> {
     priorityScore: null,
     priorityReason: null,
     classifiedAt: null,
+    isHighlighted: false,
   };
 }

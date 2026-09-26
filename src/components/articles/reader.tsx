@@ -13,12 +13,14 @@ import {
   FileText,
   Headphones,
   Languages,
+  ListFilter,
   Loader2,
   MessageSquare,
   MoveHorizontal,
   Sparkles,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleDetail } from "@/lib/queries";
@@ -267,6 +269,13 @@ export function Reader({
             {loadingFull ? <Loader2 className="animate-spin" /> : <FileText className={cn(showFull && "text-foreground")} />}
           </Button>
         )}
+        <Button asChild variant="ghost" size="icon-sm" title={t("reader.createRule")} aria-label={t("reader.createRule")}>
+          <Link
+            href={`/settings/rules?${new URLSearchParams({ new: "1", feedId: article.feed.id, ...(article.author ? { author: article.author } : {}) })}`}
+          >
+            <ListFilter />
+          </Link>
+        </Button>
         {article.url && (
           <Button asChild variant="ghost" size="icon-sm" title={t("reader.openOriginalShortcut")} aria-label={t("openOriginal")}>
             <a href={article.url} target="_blank" rel="noopener noreferrer">

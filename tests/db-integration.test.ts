@@ -1,4 +1,6 @@
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,6 +37,8 @@ const { markAllRead } = await import("@/app/actions/articles");
 const { saveProviderAction, setSystemDefaultAction } = await import("@/app/actions/ai");
 const { saveTtsProviderAction } = await import("@/app/actions/tts");
 const { unsubscribeAction, updateSubscriptionAction } = await import("@/app/actions/feeds");
+const { applyRuleToExistingAction, deleteRuleAction, previewRuleAction, saveRuleAction } = await import("@/app/actions/rules");
+const { applyRulesToArticles } = await import("@/lib/rules/apply");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -68,6 +72,7 @@ beforeEach(async () => {
   await db.aiProvider.deleteMany();
   await db.ttsProvider.deleteMany();
   await db.appSettings.deleteMany();
+  await db.rule.deleteMany();
   currentUser = { id: "alice", role: "admin" };
 });
 
@@ -168,5 +173,126 @@ describe("authorization", () => {
     const updated = await db.ttsProvider.findUniqueOrThrow({ where: { id: created.id } });
     expect(updated.baseUrl).toBe("https://attacker.example/v1");
     expect(updated.apiKeyEncrypted).toBeNull();
+  });
+});
+
+describe("rules", () => {
+  const state = (userId: string, articleId: string) =>
+    db.userArticle.findUnique({ where: { userId_articleId: { userId, articleId } } });
+
+  async function rule(userId: string, data: { conditions: unknown; actions: string[]; scope?: string; scopeId?: string | null; name?: string }) {
+    return db.rule.create({
+      data: {
+        userId,
+        name: data.name ?? "r",
+        scope: data.scope ?? "all",
+        scopeId: data.scopeId ?? null,
+        conditions: JSON.stringify(data.conditions),
+        actions: JSON.stringify(data.actions),
+      },
+    });
+  }
+
+  it("applies text rules only to the owner's state, in feeds they follow", async () => {
+    const feed = await createFeed("https://rules.example/feed", [{ guid: "ad" }, { guid: "news" }]);
+    await db.article.update({ where: { id: feed.articles[0].id }, data: { title: "Oferta patrocinada" } });
+    await db.subscription.createMany({ data: [{ userId: "alice", feedId: feed.id }, { userId: "bob", feedId: feed.id }] });
+    const r = await rule("alice", { conditions: [{ field: "title", op: "contains", value: "patrocinad" }], actions: ["markRead", "highlight"] });
+
+    await applyRulesToArticles(feed.articles.map((a) => a.id), "ingest");
+
+    expect(await state("alice", feed.articles[0].id)).toMatchObject({ isRead: true, isHighlighted: true });
+    expect(await state("alice", feed.articles[1].id)).toBeNull();
+    expect(await state("bob", feed.articles[0].id)).toBeNull();
+    expect((await db.rule.findUniqueOrThrow({ where: { id: r.id } })).hitCount).toBe(1);
+  });
+
+  it("respects folder scope and waits for the AI score on score rules", async () => {
+    const folder = await db.folder.create({ data: { userId: "alice", name: "Tech" } });
+    const inFolder = await createFeed("https://tech.example/feed", [{ guid: "t1" }]);
+    const outside = await createFeed("https://other.example/feed", [{ guid: "o1" }]);
+    await db.subscription.createMany({
+      data: [{ userId: "alice", feedId: inFolder.id, folderId: folder.id }, { userId: "alice", feedId: outside.id }],
+    });
+    await rule("alice", { scope: "folder", scopeId: folder.id, conditions: [{ field: "score", op: "gte", value: "90" }], actions: ["save"] });
+    const ids = [inFolder.articles[0].id, outside.articles[0].id];
+
+    await applyRulesToArticles(ids, "ingest");
+    expect(await state("alice", ids[0])).toBeNull();
+
+    await db.userArticle.createMany({ data: ids.map((articleId) => ({ userId: "alice", articleId, priorityScore: 95 })) });
+    await applyRulesToArticles(ids, "classified", "alice");
+    expect(await state("alice", ids[0])).toMatchObject({ isSaved: true });
+    expect(await state("alice", ids[1])).toMatchObject({ isSaved: false });
+  });
+
+  it("notifies a webhook with the matching article", async () => {
+    const received: unknown[] = [];
+    const server = createServer((req, res) => {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        received.push(JSON.parse(body));
+        res.end("ok");
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    process.env.ALLOW_PRIVATE_WEBHOOKS = "true";
+    try {
+      const feed = await createFeed("https://notify.example/feed", [{ guid: "hot" }]);
+      await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+      const saved = await saveRuleAction({
+        name: "Tudo",
+        scope: "all",
+        matchAll: true,
+        conditions: [{ field: "title", op: "contains", value: "hot" }],
+        actions: ["notify"],
+        webhookUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}/hook`,
+        webhookFormat: "json",
+      });
+      expect(saved.ok).toBe(true);
+      const stored = await db.rule.findFirstOrThrow({ where: { userId: "alice" } });
+      expect(stored.webhookEncrypted).not.toContain("127.0.0.1");
+
+      await applyRulesToArticles([feed.articles[0].id], "ingest");
+      expect(received).toEqual([expect.objectContaining({ event: "rule.matched", rule: "Tudo", article: expect.objectContaining({ title: "hot" }) })]);
+    } finally {
+      delete process.env.ALLOW_PRIVATE_WEBHOOKS;
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  it("rejects private webhooks unless explicitly allowed", async () => {
+    const res = await saveRuleAction({
+      name: "x",
+      scope: "all",
+      matchAll: true,
+      conditions: [{ field: "title", op: "contains", value: "x" }],
+      actions: ["notify"],
+      webhookUrl: "http://127.0.0.1:9/hook",
+      webhookFormat: "json",
+    });
+    expect(res.ok).toBe(false);
+  });
+
+  it("previews and applies to existing articles, without touching other users' rules", async () => {
+    const feed = await createFeed("https://existing.example/feed", [{ guid: "a" }, { guid: "b" }]);
+    await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+    const draft = { scope: "all" as const, matchAll: true, conditions: [{ field: "title" as const, op: "equals" as const, value: "a" }] };
+
+    const preview = await previewRuleAction(draft);
+    expect(preview).toMatchObject({ ok: true, count: 1, total: 2 });
+    expect(await db.userArticle.count()).toBe(0);
+
+    const saved = await saveRuleAction({ ...draft, name: "a", actions: ["markRead"] });
+    expect(saved.ok).toBe(true);
+    const id = saved.ok ? saved.id : "";
+    expect(await applyRuleToExistingAction(id)).toMatchObject({ ok: true, count: 1 });
+    expect(await state("alice", feed.articles[0].id)).toMatchObject({ isRead: true });
+
+    currentUser = { id: "bob", role: "user" };
+    await deleteRuleAction(id);
+    expect(await db.rule.count({ where: { id } })).toBe(1);
+    expect((await saveRuleAction({ ...draft, id, name: "hijack", actions: ["save"] })).ok).toBe(false);
   });
 });

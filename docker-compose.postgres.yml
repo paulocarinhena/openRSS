@@ -33,6 +33,7 @@ services:
       DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://openrss:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@postgres:5432/openrss
       ALLOW_PRIVATE_FEEDS: ${ALLOW_PRIVATE_FEEDS:-false}
+      ALLOW_PRIVATE_WEBHOOKS: ${ALLOW_PRIVATE_WEBHOOKS:-false}
       DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
     volumes:
       # Guarda o APP_SECRET gerado (config.json) entre atualizações.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Circle, CircleCheck, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { Bookmark, Circle, CircleCheck, ExternalLink, Flag, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ArticleListItem } from "@/lib/queries";
@@ -48,6 +48,13 @@ function UnreadDot({ className }: { className?: string }) {
 function SavedIcon({ className }: { className?: string }) {
   const t = useTranslations("articles");
   return <Bookmark className={className} aria-label={t("saved")} />;
+}
+
+/** Marcador das regras com a ação "destacar". */
+function HighlightMark({ item }: { item: ArticleListItem }) {
+  const t = useTranslations("articles");
+  if (!item.isHighlighted) return null;
+  return <Flag className="ml-1 inline size-3 shrink-0 -translate-y-px fill-current align-baseline text-warning" aria-label={t("highlighted")} />;
 }
 
 function PriorityBadge({ item, threshold = 70 }: { item: ArticleListItem; threshold?: number }) {
@@ -198,6 +205,7 @@ function ArticleCards({ items, loadingId, showFeed, onOpen, onToggleRead, onTogg
                     )}
                   >
                     {a.title}
+                    <HighlightMark item={a} />
                   </h3>
 
                   {(a.excerpt ?? a.snippet) && (
@@ -265,6 +273,7 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
                     )}
                   >
                     {a.title}
+                    <HighlightMark item={a} />
                   </h3>
 
                   {(a.excerpt ?? a.snippet) && (
@@ -363,6 +372,7 @@ function ArticleTextList({ items, loadingId, showFeed, timezone, onOpen, onToggl
                           )}
                         >
                           {a.title}
+                          <HighlightMark item={a} />
                         </span>
                         {a.priorityScore !== null && a.priorityScore >= 70 && (
                           <span
@@ -448,6 +458,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
                   )}
                 >
                   {a.title}
+                  <HighlightMark item={a} />
                 </p>
                 {!titlesOnly && a.snippet && <p className="line-clamp-2 text-xs text-muted-foreground">{a.snippet}</p>}
                 {!titlesOnly && <PriorityBadge item={a} />}

@@ -2,7 +2,7 @@ import "server-only";
 import { Cron } from "croner";
 import { tuneDatabase } from "@/lib/db";
 import { applyRetention, refreshDueFeeds } from "@/lib/feeds/refresh";
-import { classifyNewArticles } from "@/lib/ai/classify";
+import { processNewArticles } from "@/lib/feeds/pipeline";
 import { runScheduledDigests } from "@/lib/ai/digest";
 import { withLock } from "./lock";
 
@@ -20,7 +20,7 @@ export async function startScheduler() {
         const created = await refreshDueFeeds();
         if (created.length) {
           console.log(`[jobs:refresh] ${created.length} artigos novos`);
-          await classifyNewArticles(created).catch(log("classify"));
+          await processNewArticles(created).catch(log("process"));
         }
       }).catch(log("refresh"));
     }),
