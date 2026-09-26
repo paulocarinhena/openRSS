@@ -69,7 +69,8 @@
       "unable_to_create_user": "Não foi possível criar a conta pelo SSO (cadastro fechado?).",
       "email_not_verified": "O provedor informou que seu e-mail não está verificado.",
       "access_denied": "Acesso negado pelo provedor de login.",
-      "state_mismatch": "A sessão de login expirou. Tente de novo."
+      "state_mismatch": "A sessão de login expirou. Tente de novo.",
+      "tooManyRequests": "Muitas tentativas. Aguarde um minuto e tente de novo."
     },
     "ssoButton": "Entrar com {name}",
     "or": "ou",
@@ -951,7 +952,13 @@
     "unsubscribeAllConfirm": "Cancelar a assinatura dos {count} feeds em “{filter}”?",
     "unsubscribed": "{count, plural, one {Assinatura cancelada} other {# assinaturas canceladas}}",
     "empty": "Você ainda não assina nenhum feed.",
-    "emptyFilter": "Nenhum feed nesta situação."
+    "emptyFilter": "Nenhum feed nesta situação.",
+    "badge": {
+      "error": "Com erro",
+      "stale": "Parado",
+      "lowRead": "Pouco lido",
+      "noisy": "Ativo demais"
+    }
   },
   "tags": {
     "add": "Adicionar tag",

@@ -56,7 +56,7 @@ export function TagEditor({ articleId, initial, onSavedChange }: { articleId: st
         size="sm"
         allowCustom
         searchable
-        className="w-auto min-w-28"
+        className="h-6 w-auto min-w-0 gap-1 rounded-full border-dashed bg-transparent px-2.5 text-xs text-muted-foreground shadow-none hover:text-foreground dark:bg-transparent"
         aria-label={t("add")}
         placeholder={t("add")}
         value={value}

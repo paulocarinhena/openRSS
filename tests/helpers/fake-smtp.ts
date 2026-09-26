@@ -29,9 +29,16 @@ export async function startFakeSmtp() {
         buffer = buffer.slice(line + 2);
         const verb = command.slice(0, 4).toUpperCase();
         if (verb === "EHLO" || verb === "HELO") socket.write("250-fake-smtp\r\n250 8BITMIME\r\n");
-        else if (verb === "MAIL") (current.from = command), socket.write("250 OK\r\n");
-        else if (verb === "RCPT") current.to.push(command), socket.write("250 OK\r\n");
-        else if (verb === "DATA") (inData = true), socket.write("354 go ahead\r\n");
+        else if (verb === "MAIL") {
+          current.from = command;
+          socket.write("250 OK\r\n");
+        } else if (verb === "RCPT") {
+          current.to.push(command);
+          socket.write("250 OK\r\n");
+        } else if (verb === "DATA") {
+          inData = true;
+          socket.write("354 go ahead\r\n");
+        }
         else if (verb === "QUIT") socket.end("221 bye\r\n");
         else socket.write("250 OK\r\n");
       }

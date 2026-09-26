@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { setEmbeddingConfigAction } from "@/app/actions/embeddings";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Card, Field, Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type Provider = { id: string; name: string; type: string };
 
@@ -51,7 +52,10 @@ export function SemanticSearchSettings({
       <Card className="flex flex-col gap-4">
         <p className="text-xs text-muted-foreground">{t("description")}</p>
         {providers.length === 0 ? (
-          <p className="text-xs text-warning">{t("noProviders")}</p>
+          <p className="flex items-start gap-2 rounded-input border border-border px-3 py-2 text-xs text-muted-foreground">
+            <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
+            {t("noProviders")}
+          </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("provider")}>
@@ -74,7 +78,7 @@ export function SemanticSearchSettings({
         )}
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="primary" disabled={pending || !providerId || !model.trim()} onClick={() => save(true)}>
-            {pending ? <Loader2 className="animate-spin" /> : <Search />} {current.providerId ? t("update") : t("enable")}
+            {pending && <Loader2 className="animate-spin" />} {current.providerId ? t("update") : t("enable")}
           </Button>
           {current.providerId && (
             <Button variant="ghost" disabled={pending} onClick={() => save(false)}>
@@ -82,7 +86,13 @@ export function SemanticSearchSettings({
             </Button>
           )}
           {status && (
-            <span className="text-xs text-muted-foreground">{t("status", { indexed: status.indexed, total: status.total })}</span>
+            <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span
+                aria-hidden
+                className={cn("size-1.5 rounded-full", status.indexed >= status.total ? "bg-success" : "animate-pulse bg-ai")}
+              />
+              {t("status", { indexed: status.indexed, total: status.total })}
+            </span>
           )}
         </div>
       </Card>

@@ -136,6 +136,10 @@ function PreviewImage({ item, className }: { item: ArticleListItem; className: s
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
+      // O erro pode acontecer antes da hidratação (imagem já no HTML do servidor) e o onError não dispara.
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth === 0) setFailed(true);
+      }}
       className={className}
     />
   );
@@ -490,7 +494,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
         );
 
         return (
-          <li key={a.id}>
+          <li key={a.id} className={cn(selected && "bg-accent")}>
             <button
               type="button"
               onClick={() => onOpen(a.id)}
@@ -525,7 +529,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
               )}
               {titlesOnly && <div className="hidden w-40 shrink-0 sm:block">{meta}</div>}
             </button>
-            <RelatedSources item={a} onOpen={onOpen} className="px-4 pt-0 pb-3" />
+            <RelatedSources item={a} onOpen={onOpen} className={cn("-mt-1 pt-0 pb-3 sm:px-4", !titlesOnly && "pl-[2.125rem] sm:pl-[2.125rem]")} />
           </li>
         );
       })}

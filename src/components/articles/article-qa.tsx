@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MessageSquare, Send, X } from "lucide-react";
+import { Loader2, MessageSquare, MessagesSquare, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Markdown } from "@/components/markdown";
@@ -78,9 +78,10 @@ export function ArticleQA({
     <section className="flex flex-col gap-3 rounded-card border border-ai/25 bg-ai/[0.03] p-4" aria-label={t("title")}>
       <header className="flex items-center gap-2">
         <MessageSquare className="size-4 text-ai" />
-        <h2 className="flex-1 text-sm font-medium">{t("title")}</h2>
-        <Button variant="ghost" size="sm" onClick={onOpenChat} disabled={chatPending}>
-          {chatPending && <Loader2 className="animate-spin" />} {t("openChat")}
+        <h2 className="min-w-0 flex-1 truncate text-sm font-medium">{t("title")}</h2>
+        <Button variant="ghost" size="sm" onClick={onOpenChat} disabled={chatPending} title={t("openChat")} aria-label={t("openChat")}>
+          {chatPending ? <Loader2 className="animate-spin" /> : <MessagesSquare />}
+          <span className="max-sm:hidden">{t("openChat")}</span>
         </Button>
         <Button
           variant="ghost"

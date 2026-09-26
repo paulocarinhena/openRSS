@@ -69,7 +69,8 @@
       "unable_to_create_user": "Could not create the account through SSO (registration closed?).",
       "email_not_verified": "The provider reported that your email is not verified.",
       "access_denied": "Access denied by the sign-in provider.",
-      "state_mismatch": "The sign-in session expired. Try again."
+      "state_mismatch": "The sign-in session expired. Try again.",
+      "tooManyRequests": "Too many attempts. Wait a minute and try again."
     },
     "ssoButton": "Sign in with {name}",
     "or": "or",
@@ -951,7 +952,13 @@
     "unsubscribeAllConfirm": "Unsubscribe from the {count} feeds in “{filter}”?",
     "unsubscribed": "{count, plural, one {Unsubscribed} other {# subscriptions removed}}",
     "empty": "You are not subscribed to any feed yet.",
-    "emptyFilter": "No feeds with this status."
+    "emptyFilter": "No feeds with this status.",
+    "badge": {
+      "error": "Failing",
+      "stale": "Stale",
+      "lowRead": "Rarely read",
+      "noisy": "Too noisy"
+    }
   },
   "tags": {
     "add": "Add tag",

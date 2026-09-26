@@ -22,9 +22,8 @@ export default async function LoginPage() {
   return (
     <>
       <Suspense>
-        <AuthForm mode="login" sso={sso} />
+        <AuthForm mode="login" sso={sso} canResetPassword={isMailConfigured()} />
       </Suspense>
-      {isMailConfigured() && !sso?.passwordLoginDisabled && <AuthSwitch href="/forgot-password" label={t("forgotPassword")} />}
       {settings.allowRegistration && !sso?.passwordLoginDisabled && <AuthSwitch href="/register" label={t("noAccount")} />}
     </>
   );

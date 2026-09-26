@@ -22,6 +22,13 @@ const BADGE: Record<FeedStatus, string> = {
   ok: "border-border text-muted-foreground",
 };
 
+const DOT: Record<Exclude<FeedStatus, "ok">, string> = {
+  error: "bg-destructive",
+  stale: "bg-warning",
+  lowRead: "bg-muted-foreground",
+  noisy: "bg-ai",
+};
+
 export function FeedHealthPanel({ feeds }: { feeds: FeedHealth[] }) {
   const t = useTranslations("health");
   const locale = useLocale();
@@ -76,12 +83,15 @@ export function FeedHealthPanel({ feeds }: { feeds: FeedHealth[] }) {
             onClick={() => setFilter(filter === s ? "all" : s)}
             aria-pressed={filter === s}
             className={cn(
-              "flex cursor-pointer flex-col gap-1 rounded-card border bg-surface p-4 text-left shadow-card transition-colors",
-              filter === s ? "border-primary" : "border-border hover:bg-accent",
+              "flex cursor-pointer flex-col gap-1 rounded-card border bg-surface p-4 text-left shadow-card transition-colors duration-200",
+              filter === s ? "border-primary ring-3 ring-primary/15" : "border-border hover:border-ring/40 dark:hover:border-white/25",
             )}
           >
-            <span className="font-mono text-2xl font-semibold">{count(s)}</span>
-            <span className="text-xs text-muted-foreground">{t(`status.${s}`)}</span>
+            <span className="eyebrow flex items-center gap-1.5">
+              <span aria-hidden className={cn("size-1.5 rounded-full", count(s) ? DOT[s] : "bg-border")} />
+              {t(`status.${s}`)}
+            </span>
+            <span className={cn("font-mono text-lg", !count(s) && "text-muted-foreground")}>{count(s)}</span>
           </button>
         ))}
       </div>
@@ -117,11 +127,13 @@ export function FeedHealthPanel({ feeds }: { feeds: FeedHealth[] }) {
                 <Link href={`/feed/${f.feedId}`} className="truncate font-medium hover:underline">
                   {f.title}
                 </Link>
-                {f.status.map((s) => (
-                  <span key={s} className={cn("rounded-full border px-1.5 text-[0.625rem] font-medium", BADGE[s])}>
-                    {t(`status.${s}`)}
-                  </span>
-                ))}
+                {f.status
+                  .filter((s) => s !== "ok")
+                  .map((s) => (
+                    <span key={s} className={cn("rounded-full border px-1.5 text-[0.625rem] font-medium", BADGE[s])}>
+                      {t(`badge.${s}`)}
+                    </span>
+                  ))}
               </p>
               <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">{f.url}</p>
               <p className="mt-1 text-[0.6875rem] text-muted-foreground">
@@ -133,7 +145,7 @@ export function FeedHealthPanel({ feeds }: { feeds: FeedHealth[] }) {
                 <p className="mt-1 text-[0.6875rem] text-destructive">{t("errorDetail", { count: f.errorCount, error: f.lastError })}</p>
               )}
             </div>
-            <div className="flex shrink-0 gap-1">
+            <div className="-ml-2 flex shrink-0 gap-1 sm:ml-0">
               <Button variant="ghost" size="sm" disabled={busy === f.feedId} onClick={() => refresh(f)}>
                 {busy === f.feedId ? <Loader2 className="animate-spin" /> : <RefreshCw />} {t("refresh")}
               </Button>

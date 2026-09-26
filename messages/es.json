@@ -69,7 +69,8 @@
       "unable_to_create_user": "No se pudo crear la cuenta por SSO (¿registro cerrado?).",
       "email_not_verified": "El proveedor indicó que tu correo no está verificado.",
       "access_denied": "Acceso denegado por el proveedor de inicio de sesión.",
-      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo."
+      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo.",
+      "tooManyRequests": "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
     },
     "ssoButton": "Entrar con {name}",
     "or": "o",
@@ -951,7 +952,13 @@
     "unsubscribeAllConfirm": "¿Cancelar la suscripción a los {count} feeds en “{filter}”?",
     "unsubscribed": "{count, plural, one {Suscripción cancelada} other {# suscripciones canceladas}}",
     "empty": "Aún no estás suscrito a ningún feed.",
-    "emptyFilter": "Ningún feed en este estado."
+    "emptyFilter": "Ningún feed en este estado.",
+    "badge": {
+      "error": "Con error",
+      "stale": "Detenido",
+      "lowRead": "Poco leído",
+      "noisy": "Demasiado activo"
+    }
   },
   "tags": {
     "add": "Añadir etiqueta",
