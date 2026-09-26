@@ -7,6 +7,8 @@ import { staticTranslator } from "@/i18n/static";
 import { resolveModel } from "./providers";
 import { errorMessage, languageInstruction } from "./content";
 import { AiError } from "./errors";
+import { isMailConfigured } from "@/lib/mail";
+import { sendDigestEmail } from "./digest-mail";
 
 const MAX_ARTICLES = 80;
 
@@ -89,7 +91,15 @@ export async function runScheduledDigests(now = new Date()) {
     const exists = await db.digest.findFirst({ where: { userId: s.userId, day: dayInTimezone(now, s.timezone) } });
     if (exists) continue;
     try {
-      await generateDigest(s.userId, now);
+      const digest = await generateDigest(s.userId, now);
+      if (s.digestEmail && isMailConfigured()) {
+        const user = await db.user.findUnique({ where: { id: s.userId }, select: { email: true } });
+        if (user) {
+          await sendDigestEmail(user.email, s.uiLanguage, digest).catch((err) =>
+            console.error(`[ai:digest:mail] user=${s.userId}`, err instanceof Error ? err.message : err),
+          );
+        }
+      }
     } catch (err) {
       console.error(`[ai:digest] user=${s.userId}`, errorMessage(err));
     }

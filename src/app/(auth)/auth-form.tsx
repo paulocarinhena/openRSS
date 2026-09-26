@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import { signIn, signUp } from "@/lib/auth-client";
 import { OIDC_PROVIDER_ID } from "@/lib/oidc";
 import { Button } from "@/components/ui/button";
-import { Card, Field, Input } from "@/components/ui/input";
+import { Card, Field, Input, Label } from "@/components/ui/input";
 
 /** Só caminhos internos: evita redirecionamento aberto via ?next=. */
 function safeNext(next: string | null) {
@@ -19,7 +19,18 @@ function safeNext(next: string | null) {
 
 export type SsoInfo = { name: string; passwordLoginDisabled: boolean } | null;
 
-export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "register"; firstUser?: boolean; sso?: SsoInfo }) {
+export function AuthForm({
+  mode,
+  firstUser,
+  sso = null,
+  canResetPassword = false,
+}: {
+  mode: "login" | "register";
+  firstUser?: boolean;
+  sso?: SsoInfo;
+  /** Mostra "Esqueci minha senha" ao lado do campo (só com e-mail configurado). */
+  canResetPassword?: boolean;
+}) {
   const t = useTranslations("auth");
   const router = useRouter();
   const params = useSearchParams();
@@ -62,7 +73,7 @@ export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "reg
 
       if (error) {
         // Códigos conhecidos (do better-auth ou nossos) são traduzidos; o resto usa a mensagem do servidor.
-        const code = (error.code ? `errors.${error.code}` : "") as Parameters<typeof t>[0];
+        const code = (error.status === 429 ? "errors.tooManyRequests" : error.code ? `errors.${error.code}` : "") as Parameters<typeof t>[0];
         setError(code && t.has(code) ? t(code) : (error.message ?? t("errors.generic")));
         return;
       }
@@ -82,6 +93,11 @@ export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "reg
         <h1 className="text-base font-semibold tracking-tight">{mode === "login" ? t("login") : t("register")}</h1>
         {firstUser && <p className="mt-1 text-xs text-muted-foreground">{t("firstUser")}</p>}
       </div>
+      {params.get("reset") === "1" && !error && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {t("reset.done")}
+        </p>
+      )}
       {sso && (
         <Button type="button" size="lg" onClick={onSso} disabled={pending}>
           <KeyRound /> {t("ssoButton", { name: sso.name })}
@@ -104,15 +120,24 @@ export function AuthForm({ mode, firstUser, sso = null }: { mode: "login" | "reg
           <Field label={t("email")}>
             <Input name="email" type="email" required autoComplete="email" />
           </Field>
-          <Field label={t("password")}>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <Label htmlFor="auth-password">{t("password")}</Label>
+              {mode === "login" && canResetPassword && (
+                <Link href="/forgot-password" className="text-[0.6875rem] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  {t("forgotPassword")}
+                </Link>
+              )}
+            </div>
             <Input
+              id="auth-password"
               name="password"
               type="password"
               required
               minLength={8}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
-          </Field>
+          </div>
           {error && <p role="alert" aria-live="assertive" className="text-xs text-destructive">{error}</p>}
           <Button type="submit" variant="primary" size="lg" disabled={pending}>
             {pending ? t("wait") : mode === "login" ? t("login") : t("register")}

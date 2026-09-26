@@ -90,6 +90,21 @@ function RelatedSources({ item, onOpen, className }: { item: ArticleListItem; on
   );
 }
 
+function TagChips({ item }: { item: ArticleListItem }) {
+  const t = useTranslations("articles");
+  if (item.tags.length === 0 && !item.matchedBySubject) return null;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {item.matchedBySubject && <span className="rounded-full border border-ai/40 px-1.5 text-[0.625rem] text-ai">{t("bySubject")}</span>}
+      {item.tags.map((tag) => (
+        <span key={tag.id} className="rounded-full bg-secondary px-1.5 text-[0.625rem] text-muted-foreground">
+          #{tag.name}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function PriorityBadge({ item, threshold = 70 }: { item: ArticleListItem; threshold?: number }) {
   if (item.priorityScore === null || item.priorityScore < threshold) return null;
   return (
@@ -121,6 +136,10 @@ function PreviewImage({ item, className }: { item: ArticleListItem; className: s
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
+      // O erro pode acontecer antes da hidratação (imagem já no HTML do servidor) e o onError não dispara.
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth === 0) setFailed(true);
+      }}
       className={className}
     />
   );
@@ -246,6 +265,7 @@ function ArticleCards({ items, loadingId, showFeed, onOpen, onToggleRead, onTogg
                   )}
 
                   <PriorityBadge item={a} threshold={50} />
+                  <TagChips item={a} />
                 </div>
               </button>
               {/* Alinha com a coluna do texto quando há imagem à esquerda (sm:w-60 + padding). */}
@@ -316,6 +336,7 @@ function ArticleGrid({ items, loadingId, showFeed, onOpen, onToggleRead, onToggl
                   )}
 
                   <PriorityBadge item={a} threshold={50} />
+                  <TagChips item={a} />
                 </div>
               </button>
               <RelatedSources item={a} onOpen={onOpen} className="px-4 pb-4" />
@@ -473,7 +494,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
         );
 
         return (
-          <li key={a.id}>
+          <li key={a.id} className={cn(selected && "bg-accent")}>
             <button
               type="button"
               onClick={() => onOpen(a.id)}
@@ -499,6 +520,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
                 </p>
                 {!titlesOnly && a.snippet && <p className="line-clamp-2 text-xs text-muted-foreground">{a.snippet}</p>}
                 {!titlesOnly && <PriorityBadge item={a} />}
+                {!titlesOnly && <TagChips item={a} />}
               </div>
               {!titlesOnly && a.imageUrl && (
                 <span className="relative hidden size-16 shrink-0 overflow-hidden rounded-md bg-muted sm:block">
@@ -507,7 +529,7 @@ function ArticleRows({ items, view, selectedId, loadingId, showFeed, onOpen }: P
               )}
               {titlesOnly && <div className="hidden w-40 shrink-0 sm:block">{meta}</div>}
             </button>
-            <RelatedSources item={a} onOpen={onOpen} className="px-4 pt-0 pb-3" />
+            <RelatedSources item={a} onOpen={onOpen} className={cn("-mt-1 pt-0 pb-3 sm:px-4", !titlesOnly && "pl-[2.125rem] sm:pl-[2.125rem]")} />
           </li>
         );
       })}

@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/session";
 import { ArticleWorkspace } from "./article-workspace";
 import { normalizeListView } from "@/lib/list-view";
 import { localizeError } from "@/lib/localized-error";
+import { listTags } from "@/lib/tags";
 
 type Search = { unread?: string; q?: string; a?: string };
 
@@ -29,6 +30,7 @@ export async function ArticleView({ scope, searchParams }: { scope: ArticleScope
     db.ttsProvider.count({ where: { enabled: true, OR: [{ userId: user.id }, { userId: null }] } }),
     scope.kind === "feed" ? db.feed.findUnique({ where: { id: scope.feedId }, select: { lastError: true, errorCount: true, siteUrl: true } }) : null,
   ]);
+  const tags = scope.kind === "saved" ? await listTags(user.id) : null;
 
   return (
     <ArticleWorkspace
@@ -43,6 +45,7 @@ export async function ArticleView({ scope, searchParams }: { scope: ArticleScope
       timezone={settings.timezone}
       aiEnabled={providers > 0}
       ttsEnabled={ttsProviders > 0}
+      tagFilter={tags ? { tags, active: scope.kind === "saved" ? scope.tag : undefined } : null}
       feedError={feed && feed.errorCount > 0 && feed.lastError ? localizeError(feed.lastError, await getLocale()) : null}
     />
   );

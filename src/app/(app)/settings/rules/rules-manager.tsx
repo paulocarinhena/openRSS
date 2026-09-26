@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, FlaskConical, History, Loader2, Pencil, Plus, Send, Trash2, X } from "lucide-react";
+import { Flag, FlaskConical, History, Loader2, Pencil, Plus, Send, Trash2, TriangleAlert, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -98,18 +98,19 @@ export function RulesManager({
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0 flex-1 basis-60">
             <h2 className="eyebrow">{t("title")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">{t("description")}</p>
           </div>
-          <Button size="sm" onClick={() => setEditing(newDraft())}>
+          <Button size="sm" className="shrink-0" onClick={() => setEditing(newDraft())}>
             <Plus /> {t("add")}
           </Button>
         </div>
 
         {usesScore && !aiReady && (
-          <p role="status" className="rounded-input border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning">
+          <p role="status" className="flex items-start gap-2 rounded-input border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+            <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
             {t("aiNotReady")}
           </p>
         )}
@@ -128,8 +129,9 @@ export function RulesManager({
         <Card className="divide-y divide-border p-0">
           {rules.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">{t("empty")}</p>}
           {rules.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center gap-2 px-4 py-3">
+            <div key={r.id} className="flex items-start gap-3 px-4 py-3">
               <Switch
+                className="mt-0.5"
                 checked={r.enabled}
                 aria-label={t("enabled")}
                 onCheckedChange={(enabled) => start(async () => void (await setRuleEnabledAction(r.id, enabled)))}
@@ -137,18 +139,28 @@ export function RulesManager({
               <div className="min-w-0 flex-1">
                 <p className={cn("font-medium", !r.enabled && "text-muted-foreground")}>{r.name}</p>
                 <p className="truncate text-[0.6875rem] text-muted-foreground">
-                  {scopeLabel(r)} · {t("conditionCount", { count: r.conditions.length })} → {r.actions.map((a) => t(`actions.${a}`)).join(", ")}
+                  {scopeLabel(r)} · {t("conditionCount", { count: r.conditions.length })}
                 </p>
-                <p className="text-[0.6875rem] text-muted-foreground">
+                <ul className="mt-1.5 flex flex-wrap gap-1" aria-label={t("actionsLabel")}>
+                  {r.actions.map((a) => (
+                    <li key={a} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-px text-[0.6875rem] text-muted-foreground">
+                      {a === "highlight" && <Flag className="size-2.5 fill-current text-warning" aria-hidden />}
+                      {t(`actions.${a}`)}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5 text-[0.6875rem] text-muted-foreground">
                   {t("hits", { count: r.hitCount })}
                   {r.lastHitAt && ` · ${t("lastHit", { when: relativeTime(new Date(r.lastHitAt), locale) })}`}
                 </p>
               </div>
+              <div className="flex shrink-0 items-center">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon-sm"
                 disabled={busyId === r.id}
-                title={t("applyExistingHint")}
+                title={`${t("applyExisting")} — ${t("applyExistingHint")}`}
+                aria-label={t("applyExisting")}
                 onClick={() => {
                   if (!window.confirm(t("applyExistingConfirm", { name: r.name }))) return;
                   setBusyId(r.id);
@@ -160,12 +172,13 @@ export function RulesManager({
                   });
                 }}
               >
-                {busyId === r.id ? <Loader2 className="animate-spin" /> : <History />} {t("applyExisting")}
+                {busyId === r.id ? <Loader2 className="animate-spin" /> : <History />}
               </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
                 aria-label={t("edit")}
+                title={t("edit")}
                 onClick={() => setEditing({ ...r, webhookUrl: "" })}
               >
                 <Pencil />
@@ -174,6 +187,7 @@ export function RulesManager({
                 variant="ghost"
                 size="icon-sm"
                 aria-label={t("delete")}
+                title={t("delete")}
                 onClick={() => {
                   if (!window.confirm(t("deleteConfirm", { name: r.name }))) return;
                   start(async () => {
@@ -184,6 +198,7 @@ export function RulesManager({
               >
                 <Trash2 />
               </Button>
+              </div>
             </div>
           ))}
         </Card>
@@ -305,7 +320,10 @@ function RuleEditor({
             />
           </div>
           {draft.conditions.map((c, i) => (
-            <div key={i} className="grid grid-cols-[minmax(0,8rem)_minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-2">
+            <div
+              key={i}
+              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(0,8rem)_minmax(0,9rem)_minmax(0,1fr)_auto] max-sm:rounded-input max-sm:border max-sm:border-border max-sm:p-2"
+            >
               <Combobox
                 size="sm"
                 searchable={false}
@@ -324,7 +342,7 @@ function RuleEditor({
               />
               <Input
                 aria-label={t("value")}
-                className="h-7 text-xs"
+                className="h-7 text-xs max-sm:order-last max-sm:col-span-3"
                 value={c.value}
                 type={c.field === "score" ? "number" : "text"}
                 min={c.field === "score" ? 0 : undefined}

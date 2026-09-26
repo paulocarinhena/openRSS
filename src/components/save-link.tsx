@@ -24,7 +24,9 @@ export function SaveLinkForm({ initialUrl = "", autoFocus = true, onSaved }: { i
       if (!res.ok) return setError(res.error);
       toast.success(res.existed ? t("alreadyHad") : t("saved"));
       onSaved?.();
-      // Navegação completa: a lista de Salvos já aberta só lê os itens ao montar.
+      // Navegação completa de propósito: a lista de Salvos já aberta só lê os itens ao montar,
+      // então router.push para a mesma rota não mostraria o artigo recém-salvo.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(`/saved?a=${encodeURIComponent(res.articleId)}`);
     });
   }

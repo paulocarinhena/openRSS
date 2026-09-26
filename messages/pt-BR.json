@@ -69,10 +69,28 @@
       "unable_to_create_user": "Não foi possível criar a conta pelo SSO (cadastro fechado?).",
       "email_not_verified": "O provedor informou que seu e-mail não está verificado.",
       "access_denied": "Acesso negado pelo provedor de login.",
-      "state_mismatch": "A sessão de login expirou. Tente de novo."
+      "state_mismatch": "A sessão de login expirou. Tente de novo.",
+      "tooManyRequests": "Muitas tentativas. Aguarde um minuto e tente de novo."
     },
     "ssoButton": "Entrar com {name}",
-    "or": "ou"
+    "or": "ou",
+    "forgotPassword": "Esqueci minha senha",
+    "reset": {
+      "forgotTitle": "Redefinir senha",
+      "forgotDescription": "Informe o e-mail da sua conta. Enviaremos um link para criar uma nova senha.",
+      "sent": "Se existir uma conta com esse e-mail, o link chega em alguns minutos. Confira também o spam.",
+      "email": "Email",
+      "send": "Enviar link",
+      "wait": "Aguarde…",
+      "newTitle": "Nova senha",
+      "newPassword": "Nova senha",
+      "confirm": "Confirme a nova senha",
+      "save": "Salvar nova senha",
+      "mismatch": "As senhas não conferem.",
+      "invalidLink": "Link inválido ou expirado. Peça um novo em “Esqueci minha senha”.",
+      "failed": "Não foi possível trocar a senha.",
+      "done": "Senha alterada. Entre com a nova senha."
+    }
   },
   "setup": {
     "title": "Configuração inicial",
@@ -305,7 +323,21 @@
       "fetchFailed": "Falha ao buscar o artigo."
     },
     "highlighted": "Destacado por uma regra",
-    "moreSources": "{count, plural, one {+# fonte} other {+# fontes}}"
+    "moreSources": "{count, plural, one {+# fonte} other {+# fontes}}",
+    "qa": {
+      "title": "Perguntas sobre este artigo",
+      "placeholder": "Pergunte algo sobre o artigo…",
+      "send": "Enviar",
+      "close": "Fechar",
+      "openChat": "Continuar no chat",
+      "failed": "Não foi possível responder agora.",
+      "suggestions": {
+        "keyPoints": "Quais são os pontos principais?",
+        "context": "Qual é o contexto disso?",
+        "explainTerms": "Explique os termos técnicos"
+      }
+    },
+    "bySubject": "por assunto"
   },
   "feeds": {
     "add": {
@@ -507,7 +539,9 @@
       "digestHour": "Horário do digest",
       "savePrefs": "Salvar preferências",
       "classifyRecent": "Classificar não lidos recentes",
-      "classified": "{count, plural, =1 {1 artigo classificado} other {# artigos classificados}}"
+      "classified": "{count, plural, =1 {1 artigo classificado} other {# artigos classificados}}",
+      "digestEmail": "Receber também por e-mail",
+      "digestEmailHint": "O digest diário chega no e-mail da sua conta."
     },
     "ttsForm": {
       "saved": "Provedor de áudio salvo",
@@ -685,7 +719,15 @@
       "ownRole": "Você não pode alterar seu próprio papel.",
       "ownDelete": "Você não pode excluir a si mesmo."
     },
-    "passwordLoginDisabled": "O login por senha está desativado (OIDC_DISABLE_PASSWORD_LOGIN): as contas são criadas pelo SSO no primeiro acesso."
+    "passwordLoginDisabled": "O login por senha está desativado (OIDC_DISABLE_PASSWORD_LOGIN): as contas são criadas pelo SSO no primeiro acesso.",
+    "mail": {
+      "title": "E-mail (SMTP)",
+      "configured": "Configurado: {host}. Usado para redefinir senha e enviar o digest.",
+      "notConfigured": "Não configurado. Defina SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD e SMTP_FROM para ativar a redefinição de senha e o digest por e-mail.",
+      "sendTest": "Enviar e-mail de teste",
+      "sent": "E-mail de teste enviado para {email}.",
+      "failed": "Falha ao enviar: {reason}"
+    }
   },
   "digest": {
     "eyebrow": "Digest diário",
@@ -910,6 +952,65 @@
     "unsubscribeAllConfirm": "Cancelar a assinatura dos {count} feeds em “{filter}”?",
     "unsubscribed": "{count, plural, one {Assinatura cancelada} other {# assinaturas canceladas}}",
     "empty": "Você ainda não assina nenhum feed.",
-    "emptyFilter": "Nenhum feed nesta situação."
+    "emptyFilter": "Nenhum feed nesta situação.",
+    "badge": {
+      "error": "Com erro",
+      "stale": "Parado",
+      "lowRead": "Pouco lido",
+      "noisy": "Ativo demais"
+    }
+  },
+  "tags": {
+    "add": "Adicionar tag",
+    "remove": "Remover a tag {name}",
+    "filter": "Filtrar por tag",
+    "all": "Todas",
+    "rename": "Renomear tag",
+    "renamePrompt": "Novo nome da tag:",
+    "delete": "Apagar tag",
+    "deleteConfirm": "Apagar a tag “{name}”? Os artigos continuam salvos.",
+    "errors": {
+      "invalidName": "Use de 1 a 40 caracteres.",
+      "notFound": "Não encontrado.",
+      "exists": "Já existe uma tag com esse nome."
+    }
+  },
+  "semantic": {
+    "title": "Busca semântica",
+    "description": "Encontra artigos pelo assunto, mesmo sem as palavras exatas, na busca das listas e no chat. Usa um provedor global com API de embeddings (OpenAI, OpenRouter ou compatível, como o Ollama). Os artigos dos últimos 60 dias são indexados aos poucos, a cada minuto.",
+    "noProviders": "Cadastre um provedor global OpenAI, OpenRouter ou compatível em “Provedores” para ativar.",
+    "provider": "Provedor global",
+    "model": "Modelo de embeddings",
+    "modelHint": "Ex.: {example}",
+    "choose": "Escolha…",
+    "enable": "Ativar",
+    "update": "Salvar",
+    "disable": "Desativar",
+    "enabled": "Busca semântica ativada. A indexação começou.",
+    "disabled": "Busca semântica desativada.",
+    "status": "{indexed} de {total} artigos recentes indexados",
+    "errors": {
+      "modelRequired": "Informe o modelo de embeddings.",
+      "providerInvalid": "Escolha um provedor global OpenAI, OpenRouter ou compatível.",
+      "emptyVector": "O provedor devolveu um vetor vazio.",
+      "testFailed": "O teste do modelo falhou: {reason}"
+    }
+  },
+  "mail": {
+    "reset": {
+      "subject": "Redefinir sua senha do openRSS",
+      "intro": "Olá, {name}! Recebemos um pedido para redefinir sua senha. O link vale por 1 hora.",
+      "button": "Criar nova senha",
+      "ignore": "Se não foi você, ignore este e-mail: sua senha continua a mesma."
+    },
+    "digest": {
+      "subject": "Seu digest do openRSS · {day}",
+      "open": "Abrir no openRSS",
+      "footer": "Você recebe este e-mail porque ativou o digest por e-mail em Configurações → IA."
+    },
+    "test": {
+      "subject": "Teste de e-mail do openRSS",
+      "body": "Se você recebeu esta mensagem, o envio de e-mails do openRSS está funcionando."
+    }
   }
 }

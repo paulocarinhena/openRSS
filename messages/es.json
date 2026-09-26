@@ -69,10 +69,28 @@
       "unable_to_create_user": "No se pudo crear la cuenta por SSO (¿registro cerrado?).",
       "email_not_verified": "El proveedor indicó que tu correo no está verificado.",
       "access_denied": "Acceso denegado por el proveedor de inicio de sesión.",
-      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo."
+      "state_mismatch": "La sesión de inicio expiró. Inténtalo de nuevo.",
+      "tooManyRequests": "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
     },
     "ssoButton": "Entrar con {name}",
-    "or": "o"
+    "or": "o",
+    "forgotPassword": "Olvidé mi contraseña",
+    "reset": {
+      "forgotTitle": "Restablecer contraseña",
+      "forgotDescription": "Indica el correo de tu cuenta. Te enviaremos un enlace para crear una nueva contraseña.",
+      "sent": "Si existe una cuenta con ese correo, el enlace llegará en unos minutos. Revisa también el spam.",
+      "email": "Correo",
+      "send": "Enviar enlace",
+      "wait": "Espera…",
+      "newTitle": "Nueva contraseña",
+      "newPassword": "Nueva contraseña",
+      "confirm": "Confirma la nueva contraseña",
+      "save": "Guardar nueva contraseña",
+      "mismatch": "Las contraseñas no coinciden.",
+      "invalidLink": "Enlace inválido o vencido. Pide uno nuevo en “Olvidé mi contraseña”.",
+      "failed": "No se pudo cambiar la contraseña.",
+      "done": "Contraseña cambiada. Entra con la nueva contraseña."
+    }
   },
   "setup": {
     "title": "Configuración inicial",
@@ -305,7 +323,21 @@
       "fetchFailed": "Error al obtener el artículo."
     },
     "highlighted": "Destacado por una regla",
-    "moreSources": "{count, plural, one {+# fuente} other {+# fuentes}}"
+    "moreSources": "{count, plural, one {+# fuente} other {+# fuentes}}",
+    "qa": {
+      "title": "Preguntas sobre este artículo",
+      "placeholder": "Pregunta algo sobre el artículo…",
+      "send": "Enviar",
+      "close": "Cerrar",
+      "openChat": "Continuar en el chat",
+      "failed": "No se pudo responder ahora.",
+      "suggestions": {
+        "keyPoints": "¿Cuáles son los puntos principales?",
+        "context": "¿Cuál es el contexto?",
+        "explainTerms": "Explica los términos técnicos"
+      }
+    },
+    "bySubject": "por tema"
   },
   "feeds": {
     "add": {
@@ -507,7 +539,9 @@
       "digestHour": "Hora del digest",
       "savePrefs": "Guardar preferencias",
       "classifyRecent": "Clasificar no leídos recientes",
-      "classified": "{count, plural, =1 {1 artículo clasificado} other {# artículos clasificados}}"
+      "classified": "{count, plural, =1 {1 artículo clasificado} other {# artículos clasificados}}",
+      "digestEmail": "Recibir también por correo",
+      "digestEmailHint": "El digest diario llega al correo de tu cuenta."
     },
     "ttsForm": {
       "saved": "Proveedor de audio guardado",
@@ -685,7 +719,15 @@
       "ownRole": "No puedes cambiar tu propio rol.",
       "ownDelete": "No puedes eliminarte a ti mismo."
     },
-    "passwordLoginDisabled": "El inicio de sesión con contraseña está desactivado (OIDC_DISABLE_PASSWORD_LOGIN): las cuentas se crean por SSO en el primer acceso."
+    "passwordLoginDisabled": "El inicio de sesión con contraseña está desactivado (OIDC_DISABLE_PASSWORD_LOGIN): las cuentas se crean por SSO en el primer acceso.",
+    "mail": {
+      "title": "Correo (SMTP)",
+      "configured": "Configurado: {host}. Se usa para restablecer contraseñas y enviar el digest.",
+      "notConfigured": "No configurado. Define SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD y SMTP_FROM para activar el restablecimiento de contraseña y el digest por correo.",
+      "sendTest": "Enviar correo de prueba",
+      "sent": "Correo de prueba enviado a {email}.",
+      "failed": "Error al enviar: {reason}"
+    }
   },
   "digest": {
     "eyebrow": "Digest diario",
@@ -910,6 +952,65 @@
     "unsubscribeAllConfirm": "¿Cancelar la suscripción a los {count} feeds en “{filter}”?",
     "unsubscribed": "{count, plural, one {Suscripción cancelada} other {# suscripciones canceladas}}",
     "empty": "Aún no estás suscrito a ningún feed.",
-    "emptyFilter": "Ningún feed en este estado."
+    "emptyFilter": "Ningún feed en este estado.",
+    "badge": {
+      "error": "Con error",
+      "stale": "Detenido",
+      "lowRead": "Poco leído",
+      "noisy": "Demasiado activo"
+    }
+  },
+  "tags": {
+    "add": "Añadir etiqueta",
+    "remove": "Quitar la etiqueta {name}",
+    "filter": "Filtrar por etiqueta",
+    "all": "Todas",
+    "rename": "Renombrar etiqueta",
+    "renamePrompt": "Nuevo nombre de la etiqueta:",
+    "delete": "Borrar etiqueta",
+    "deleteConfirm": "¿Borrar la etiqueta “{name}”? Los artículos siguen guardados.",
+    "errors": {
+      "invalidName": "Usa de 1 a 40 caracteres.",
+      "notFound": "No encontrado.",
+      "exists": "Ya existe una etiqueta con ese nombre."
+    }
+  },
+  "semantic": {
+    "title": "Búsqueda semántica",
+    "description": "Encuentra artículos por tema, aunque no tengan las palabras exactas, en la búsqueda de las listas y en el chat. Usa un proveedor global con API de embeddings (OpenAI, OpenRouter o compatible, como Ollama). Los artículos de los últimos 60 días se indexan poco a poco, cada minuto.",
+    "noProviders": "Añade un proveedor global OpenAI, OpenRouter o compatible en “Proveedores” para activarla.",
+    "provider": "Proveedor global",
+    "model": "Modelo de embeddings",
+    "modelHint": "Ej.: {example}",
+    "choose": "Elige…",
+    "enable": "Activar",
+    "update": "Guardar",
+    "disable": "Desactivar",
+    "enabled": "Búsqueda semántica activada. La indexación empezó.",
+    "disabled": "Búsqueda semántica desactivada.",
+    "status": "{indexed} de {total} artículos recientes indexados",
+    "errors": {
+      "modelRequired": "Indica el modelo de embeddings.",
+      "providerInvalid": "Elige un proveedor global OpenAI, OpenRouter o compatible.",
+      "emptyVector": "El proveedor devolvió un vector vacío.",
+      "testFailed": "La prueba del modelo falló: {reason}"
+    }
+  },
+  "mail": {
+    "reset": {
+      "subject": "Restablece tu contraseña de openRSS",
+      "intro": "¡Hola, {name}! Recibimos una solicitud para restablecer tu contraseña. El enlace vale por 1 hora.",
+      "button": "Crear nueva contraseña",
+      "ignore": "Si no fuiste tú, ignora este correo: tu contraseña sigue igual."
+    },
+    "digest": {
+      "subject": "Tu digest de openRSS · {day}",
+      "open": "Abrir en openRSS",
+      "footer": "Recibes este correo porque activaste el digest por correo en Ajustes → IA."
+    },
+    "test": {
+      "subject": "Prueba de correo de openRSS",
+      "body": "Si recibiste este mensaje, el envío de correos de openRSS funciona."
+    }
   }
 }

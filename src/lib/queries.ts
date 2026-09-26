@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getLocale } from "next-intl/server";
 import { db, icontains } from "@/lib/db";
 import { localizeError } from "@/lib/localized-error";
+import { semanticSearch } from "@/lib/ai/embeddings";
 import { getUserSettings } from "@/lib/app-settings";
 import { sanitizeArticleHtml } from "@/lib/feeds/sanitize";
 import { stripHtml, truncate } from "@/lib/utils";
@@ -10,7 +11,7 @@ import { stripHtml, truncate } from "@/lib/utils";
 export type ArticleScope =
   | { kind: "today" }
   | { kind: "all" }
-  | { kind: "saved" }
+  | { kind: "saved"; tag?: string }
   | { kind: "feed"; feedId: string }
   | { kind: "folder"; folderId: string };
 
@@ -102,7 +103,10 @@ export async function articleScopeWhere(userId: string, scope: ArticleScope): Pr
   const subscribed: Prisma.ArticleWhereInput = { feed: { subscriptions: { some: { userId } } } };
   switch (scope.kind) {
     case "saved":
-      return { states: { some: { userId, isSaved: true } } };
+      return {
+        states: { some: { userId, isSaved: true } },
+        ...(scope.tag ? { tags: { some: { tag: { userId, name: scope.tag } } } } : {}),
+      };
     case "feed":
       return { feedId: scope.feedId, ...subscribed };
     case "folder":
@@ -129,6 +133,7 @@ const articleSelect = (userId: string) =>
     publishedAt: true,
     storyId: true,
     feed: { select: { id: true, title: true, iconUrl: true } },
+    tags: { where: { tag: { userId } }, select: { tag: { select: { id: true, name: true } } }, orderBy: { tag: { name: "asc" } } },
     states: { where: { userId }, select: { isRead: true, isSaved: true, isHighlighted: true, priorityScore: true, priorityReason: true } },
   }) satisfies Prisma.ArticleSelect;
 
@@ -138,16 +143,34 @@ export async function listArticles(
   opts: { unreadOnly?: boolean; page?: number; query?: string } = {},
 ) {
   const unreadOnly = opts.unreadOnly ?? scope.kind !== "saved";
+  const base: Prisma.ArticleWhereInput = {
+    AND: [await articleScopeWhere(userId, scope), unreadOnly ? { NOT: { states: { some: { userId, isRead: true } } } } : {}],
+  };
   const where: Prisma.ArticleWhereInput = {
-    AND: [
-      await articleScopeWhere(userId, scope),
-      unreadOnly ? { NOT: { states: { some: { userId, isRead: true } } } } : {},
-      opts.query ? { OR: [{ title: icontains(opts.query) }, { snippet: icontains(opts.query) }] } : {},
-    ],
+    AND: [base, opts.query ? { OR: [{ title: icontains(opts.query) }, { snippet: icontains(opts.query) }] } : {}],
   };
   const page = Math.max(0, opts.page ?? 0);
   const { groupStories } = await getUserSettings(userId);
   const group = (items: ArticleListItem[]) => (groupStories ? groupByStory(items) : items);
+
+  /**
+   * Busca por assunto: na primeira página, depois dos resultados por palavra, entram os artigos
+   * do escopo mais parecidos com a consulta (se o admin ligou a busca semântica).
+   */
+  const withSemantic = async (items: ArticleListItem[]) => {
+    if (!opts.query || page > 0) return items;
+    const matches = await semanticSearch(opts.query, base).catch((err) => {
+      console.error("[semantic]", err instanceof Error ? err.message : err);
+      return null;
+    });
+    const known = new Set(items.map((i) => i.id));
+    const extra = (matches ?? []).filter((m) => !known.has(m.id));
+    if (extra.length === 0) return items;
+    const rows = await db.article.findMany({ where: { id: { in: extra.map((m) => m.id) } }, select: articleSelect(userId) });
+    const byId = new Map(rows.map((r) => [r.id, toListItem(r)]));
+    // Reagrupa: um resultado por assunto pode ser outra fonte de um fato já listado.
+    return group([...items, ...extra.flatMap((m) => (byId.has(m.id) ? [{ ...byId.get(m.id)!, matchedBySubject: true }] : []))]);
+  };
 
   if (scope.kind === "today") {
     // Ordena por prioridade da IA (quando houver) e depois por data.
@@ -155,7 +178,7 @@ export async function listArticles(
     const sorted = group(
       rows.map(toListItem).sort((a, b) => (b.priorityScore ?? -1) - (a.priorityScore ?? -1) || +b.publishedAt - +a.publishedAt),
     );
-    return { items: sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), hasMore: sorted.length > (page + 1) * PAGE_SIZE };
+    return { items: await withSemantic(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)), hasMore: sorted.length > (page + 1) * PAGE_SIZE };
   }
 
   const rows = await db.article.findMany({
@@ -165,7 +188,7 @@ export async function listArticles(
     skip: page * PAGE_SIZE,
     take: PAGE_SIZE + 1,
   });
-  return { items: group(rows.slice(0, PAGE_SIZE).map(toListItem)), hasMore: rows.length > PAGE_SIZE };
+  return { items: await withSemantic(group(rows.slice(0, PAGE_SIZE).map(toListItem))), hasMore: rows.length > PAGE_SIZE };
 }
 
 /**
@@ -212,8 +235,11 @@ function toListItem(a: Prisma.ArticleGetPayload<{ select: ReturnType<typeof arti
     priorityScore: s?.priorityScore ?? null,
     priorityReason: s?.priorityReason ?? null,
     storyId: a.storyId,
+    tags: a.tags.map((t) => t.tag),
     /** Outras fontes do mesmo fato, preenchido por groupByStory. */
     related: [] as RelatedSource[],
+    /** Veio da busca semântica (parecido por assunto), não das palavras da consulta. */
+    matchedBySubject: false,
   };
 }
 
@@ -228,10 +254,11 @@ export async function getArticle(userId: string, articleId: string) {
     include: {
       feed: { select: { id: true, title: true, iconUrl: true, siteUrl: true } },
       states: { where: { userId } },
+      tags: { where: { tag: { userId } }, select: { tag: { select: { id: true, name: true } } }, orderBy: { tag: { name: "asc" } } },
     },
   });
   if (!article) return null;
-  const { states, ...rest } = article;
+  const { states, tags, ...rest } = article;
   return {
     ...rest,
     // Reaplica o saneamento: artigos extraídos/ingeridos antes de uma correção no sanitizador
@@ -239,6 +266,7 @@ export async function getArticle(userId: string, articleId: string) {
     contentHtml: rest.contentHtml ? sanitizeArticleHtml(rest.contentHtml, rest.url) : rest.contentHtml,
     fullContentHtml: rest.fullContentHtml ? sanitizeArticleHtml(rest.fullContentHtml, rest.url) : rest.fullContentHtml,
     state: states.at(0) ?? null,
+    tags: tags.map((t) => t.tag),
   };
 }
 
@@ -256,7 +284,7 @@ export async function scopeTitle(
     case "all":
       return labels.all;
     case "saved":
-      return labels.saved;
+      return scope.tag ? `${labels.saved} · ${scope.tag}` : labels.saved;
     case "feed": {
       const sub = await db.subscription.findFirst({ where: { userId, feedId: scope.feedId }, include: { feed: true } });
       return sub ? (sub.customTitle ?? sub.feed.title) : null;

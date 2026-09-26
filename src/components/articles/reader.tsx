@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FeedIcon } from "@/components/feed-icon";
 import { SummaryPanel, type SummaryMeta } from "./summary-panel";
+import { ArticleQA } from "./article-qa";
+import { TagEditor } from "./tag-editor";
 import { READER_WIDTH_ORDER, READER_WIDTHS, useReaderWidth } from "@/hooks/use-reader-width";
 
 function visibleTextLength(html: string | null): number {
@@ -97,6 +99,7 @@ export function Reader({
   const [generatingAudioSource, setGeneratingAudioSource] = useState<"article" | "summary" | null>(null);
   const audioRequest = useRef<AbortController | null>(null);
   const [chatPending, startChat] = useTransition();
+  const [qaOpen, setQaOpen] = useState(false);
   const [readerWidth, setReaderWidth] = useReaderWidth();
   const widthConfig = READER_WIDTHS[readerWidth];
   const nextWidth = READER_WIDTH_ORDER[(READER_WIDTH_ORDER.indexOf(readerWidth) + 1) % READER_WIDTH_ORDER.length];
@@ -332,10 +335,12 @@ export function Reader({
               </Button>
               <Button
                 size="sm"
-                disabled={!aiEnabled || chatPending}
-                onClick={() => startChat(() => createThreadAction([article.id]))}
+                disabled={!aiEnabled}
+                title={aiEnabled ? undefined : t("reader.configureAi")}
+                aria-expanded={qaOpen}
+                onClick={() => setQaOpen((open) => !open)}
               >
-                {chatPending ? <Loader2 className="animate-spin" /> : <MessageSquare className="text-ai" />}
+                <MessageSquare className="text-ai" />
                 {t("reader.askAi")}
               </Button>
               <Button
@@ -381,6 +386,19 @@ export function Reader({
               </div>
               <audio className="w-full" controls preload="metadata" src={audioUrl}>{t("audio.unsupported")}</audio>
             </section>
+          )}
+
+          {/* Taguear salva o artigo no servidor; aqui só alinha o ícone de salvo. */}
+          <TagEditor key={`tags-${article.id}`} articleId={article.id} initial={article.tags ?? []} onSavedChange={() => !isSaved && onToggleSaved()} />
+
+          {qaOpen && (
+            <ArticleQA
+              key={article.id}
+              articleId={article.id}
+              onClose={() => setQaOpen(false)}
+              onOpenChat={() => startChat(() => createThreadAction([article.id]))}
+              chatPending={chatPending}
+            />
           )}
 
           {summary !== null && (

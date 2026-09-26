@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getAppSettings } from "@/lib/app-settings";
 import { getSession } from "@/lib/session";
 import { publicOidcInfo } from "@/lib/oidc";
+import { isMailConfigured } from "@/lib/mail";
 import { AuthForm, AuthSwitch } from "../auth-form";
 
 export async function generateMetadata() {
@@ -21,7 +22,7 @@ export default async function LoginPage() {
   return (
     <>
       <Suspense>
-        <AuthForm mode="login" sso={sso} />
+        <AuthForm mode="login" sso={sso} canResetPassword={isMailConfigured()} />
       </Suspense>
       {settings.allowRegistration && !sso?.passwordLoginDisabled && <AuthSwitch href="/register" label={t("noAccount")} />}
     </>

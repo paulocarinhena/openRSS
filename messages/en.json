@@ -69,10 +69,28 @@
       "unable_to_create_user": "Could not create the account through SSO (registration closed?).",
       "email_not_verified": "The provider reported that your email is not verified.",
       "access_denied": "Access denied by the sign-in provider.",
-      "state_mismatch": "The sign-in session expired. Try again."
+      "state_mismatch": "The sign-in session expired. Try again.",
+      "tooManyRequests": "Too many attempts. Wait a minute and try again."
     },
     "ssoButton": "Sign in with {name}",
-    "or": "or"
+    "or": "or",
+    "forgotPassword": "Forgot my password",
+    "reset": {
+      "forgotTitle": "Reset password",
+      "forgotDescription": "Enter your account email. We will send a link to create a new password.",
+      "sent": "If an account exists for that email, the link arrives in a few minutes. Check your spam folder too.",
+      "email": "Email",
+      "send": "Send link",
+      "wait": "Please wait…",
+      "newTitle": "New password",
+      "newPassword": "New password",
+      "confirm": "Confirm the new password",
+      "save": "Save new password",
+      "mismatch": "The passwords do not match.",
+      "invalidLink": "Invalid or expired link. Request a new one under “Forgot my password”.",
+      "failed": "Could not change the password.",
+      "done": "Password changed. Sign in with the new password."
+    }
   },
   "setup": {
     "title": "Initial setup",
@@ -305,7 +323,21 @@
       "fetchFailed": "Failed to fetch the article."
     },
     "highlighted": "Highlighted by a rule",
-    "moreSources": "{count, plural, one {+# source} other {+# sources}}"
+    "moreSources": "{count, plural, one {+# source} other {+# sources}}",
+    "qa": {
+      "title": "Questions about this article",
+      "placeholder": "Ask something about the article…",
+      "send": "Send",
+      "close": "Close",
+      "openChat": "Continue in chat",
+      "failed": "Could not answer right now.",
+      "suggestions": {
+        "keyPoints": "What are the key points?",
+        "context": "What is the context here?",
+        "explainTerms": "Explain the technical terms"
+      }
+    },
+    "bySubject": "by topic"
   },
   "feeds": {
     "add": {
@@ -507,7 +539,9 @@
       "digestHour": "Digest time",
       "savePrefs": "Save preferences",
       "classifyRecent": "Classify recent unread",
-      "classified": "{count, plural, =1 {1 article classified} other {# articles classified}}"
+      "classified": "{count, plural, =1 {1 article classified} other {# articles classified}}",
+      "digestEmail": "Also send by email",
+      "digestEmailHint": "The daily digest is sent to your account email."
     },
     "ttsForm": {
       "saved": "Audio provider saved",
@@ -685,7 +719,15 @@
       "ownRole": "You cannot change your own role.",
       "ownDelete": "You cannot delete yourself."
     },
-    "passwordLoginDisabled": "Password sign-in is disabled (OIDC_DISABLE_PASSWORD_LOGIN): accounts are created through SSO on first sign-in."
+    "passwordLoginDisabled": "Password sign-in is disabled (OIDC_DISABLE_PASSWORD_LOGIN): accounts are created through SSO on first sign-in.",
+    "mail": {
+      "title": "Email (SMTP)",
+      "configured": "Configured: {host}. Used for password resets and the digest.",
+      "notConfigured": "Not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD and SMTP_FROM to enable password resets and the email digest.",
+      "sendTest": "Send test email",
+      "sent": "Test email sent to {email}.",
+      "failed": "Sending failed: {reason}"
+    }
   },
   "digest": {
     "eyebrow": "Daily digest",
@@ -910,6 +952,65 @@
     "unsubscribeAllConfirm": "Unsubscribe from the {count} feeds in “{filter}”?",
     "unsubscribed": "{count, plural, one {Unsubscribed} other {# subscriptions removed}}",
     "empty": "You are not subscribed to any feed yet.",
-    "emptyFilter": "No feeds with this status."
+    "emptyFilter": "No feeds with this status.",
+    "badge": {
+      "error": "Failing",
+      "stale": "Stale",
+      "lowRead": "Rarely read",
+      "noisy": "Too noisy"
+    }
+  },
+  "tags": {
+    "add": "Add tag",
+    "remove": "Remove tag {name}",
+    "filter": "Filter by tag",
+    "all": "All",
+    "rename": "Rename tag",
+    "renamePrompt": "New tag name:",
+    "delete": "Delete tag",
+    "deleteConfirm": "Delete the tag “{name}”? The articles stay saved.",
+    "errors": {
+      "invalidName": "Use 1 to 40 characters.",
+      "notFound": "Not found.",
+      "exists": "A tag with that name already exists."
+    }
+  },
+  "semantic": {
+    "title": "Semantic search",
+    "description": "Finds articles by topic, even without the exact words, in list search and in chat. Uses a global provider with an embeddings API (OpenAI, OpenRouter or compatible, like Ollama). Articles from the last 60 days are indexed gradually, every minute.",
+    "noProviders": "Add a global OpenAI, OpenRouter or compatible provider under “Providers” to enable it.",
+    "provider": "Global provider",
+    "model": "Embedding model",
+    "modelHint": "E.g. {example}",
+    "choose": "Choose…",
+    "enable": "Enable",
+    "update": "Save",
+    "disable": "Disable",
+    "enabled": "Semantic search enabled. Indexing has started.",
+    "disabled": "Semantic search disabled.",
+    "status": "{indexed} of {total} recent articles indexed",
+    "errors": {
+      "modelRequired": "Enter the embedding model.",
+      "providerInvalid": "Choose a global OpenAI, OpenRouter or compatible provider.",
+      "emptyVector": "The provider returned an empty vector.",
+      "testFailed": "The model test failed: {reason}"
+    }
+  },
+  "mail": {
+    "reset": {
+      "subject": "Reset your openRSS password",
+      "intro": "Hi {name}! We received a request to reset your password. The link is valid for 1 hour.",
+      "button": "Create a new password",
+      "ignore": "If this wasn't you, ignore this email: your password stays the same."
+    },
+    "digest": {
+      "subject": "Your openRSS digest · {day}",
+      "open": "Open in openRSS",
+      "footer": "You get this email because you enabled the email digest in Settings → AI."
+    },
+    "test": {
+      "subject": "openRSS email test",
+      "body": "If you received this message, openRSS email delivery is working."
+    }
   }
 }

@@ -47,6 +47,12 @@ const { getArticle, listArticles } = await import("@/lib/queries");
 const { saveLinkAction } = await import("@/app/actions/links");
 const { refreshDueFeeds } = await import("@/lib/feeds/refresh");
 const { getFeedHealth } = await import("@/lib/feeds/health");
+const { POST: askArticle } = await import("@/app/api/ai/ask/route");
+const { startFakeOpenAI } = await import("./helpers/fake-openai");
+const { addTagAction, deleteTagAction, removeTagAction, renameTagAction } = await import("@/app/actions/tags");
+const { listTags } = await import("@/lib/tags");
+const { setEmbeddingConfigAction } = await import("@/app/actions/embeddings");
+const { embedPending } = await import("@/lib/ai/embeddings");
 
 const OLD = new Date(Date.now() - 400 * 86400000);
 
@@ -437,5 +443,115 @@ describe("feed health", () => {
     expect(report.get(ignored.id)).toMatchObject({ status: ["lowRead"], articles30d: 12, unread: 12 });
     // Mais graves primeiro.
     expect((await getFeedHealth("alice", now))[0].feedId).toBe(failing.id);
+  });
+});
+
+describe("article Q&A", () => {
+  it("answers from the article text and refuses articles the user cannot read", async () => {
+    const fake = await startFakeOpenAI({
+      answer: (body) => {
+        const system = JSON.stringify(body.messages[0]);
+        return system.includes("Texto secreto do artigo") ? "Resposta baseada no artigo." : "SEM CONTEXTO";
+      },
+    });
+    try {
+      await db.aiProvider.create({ data: { userId: null, type: "openai_compatible", name: "fake", baseUrl: fake.baseUrl, defaultModel: "m" } });
+      const feed = await createFeed("https://qa.example/feed", [{ guid: "q" }]);
+      const article = feed.articles[0];
+      await db.article.update({ where: { id: article.id }, data: { contentHtml: "<p>Texto secreto do artigo.</p>" } });
+      await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+
+      const request = (articleId: string) =>
+        new Request("http://localhost/api/ai/ask", {
+          method: "POST",
+          body: JSON.stringify({ articleId, question: "Do que trata?", history: [{ role: "user", content: "oi" }, { role: "assistant", content: "olá" }] }),
+        });
+      const res = await askArticle(request(article.id));
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("Resposta baseada no artigo.");
+      const sent = fake.requests.at(-1)!.body.messages as { role: string }[];
+      expect(sent.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+
+      const other = await createFeed("https://qa-other.example/feed", [{ guid: "x" }]);
+      expect((await askArticle(request(other.articles[0].id))).status).toBe(404);
+    } finally {
+      await fake.close();
+    }
+  });
+});
+
+describe("tags", () => {
+  it("tags (and saves) articles, filters Saved by tag and keeps tags per user", async () => {
+    await db.tag.deleteMany();
+    const feed = await createFeed("https://tags.example/feed", [{ guid: "t1" }, { guid: "t2" }]);
+    await db.subscription.createMany({ data: [{ userId: "alice", feedId: feed.id }, { userId: "bob", feedId: feed.id }] });
+    const [a1, a2] = feed.articles;
+
+    const added = await addTagAction(a1.id, "  receitas ");
+    expect(added).toMatchObject({ ok: true, tag: { name: "receitas" } });
+    expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a1.id } } })).toMatchObject({ isSaved: true });
+    await addTagAction(a1.id, "receitas"); // repetir não duplica
+    await addTagAction(a2.id, "viagem");
+
+    const byTag = await listArticles("alice", { kind: "saved", tag: "receitas" });
+    expect(byTag.items.map((i) => i.id)).toEqual([a1.id]);
+    expect(byTag.items[0].tags).toEqual([{ id: expect.any(String), name: "receitas" }]);
+    expect(await listTags("alice")).toEqual([
+      { id: expect.any(String), name: "receitas", count: 1 },
+      { id: expect.any(String), name: "viagem", count: 1 },
+    ]);
+
+    // As tags da Alice não aparecem para o Bob.
+    currentUser = { id: "bob", role: "user" };
+    expect((await listArticles("bob", { kind: "all" }, { unreadOnly: false })).items.every((i) => i.tags.length === 0)).toBe(true);
+    const receitas = (await listTags("alice")).find((t) => t.name === "receitas")!;
+    await removeTagAction(a1.id, receitas.id);
+    await deleteTagAction(receitas.id);
+    expect(await db.tag.count({ where: { id: receitas.id } })).toBe(1);
+
+    currentUser = { id: "alice", role: "admin" };
+    expect(await renameTagAction(receitas.id, "viagem")).toMatchObject({ ok: false });
+    expect(await renameTagAction(receitas.id, "culinária")).toMatchObject({ ok: true });
+    await deleteTagAction(receitas.id);
+    expect(await db.userArticle.findUnique({ where: { userId_articleId: { userId: "alice", articleId: a1.id } } })).toMatchObject({ isSaved: true });
+    expect((await addTagAction("inexistente", "x")).ok).toBe(false);
+  });
+});
+
+describe("semantic search", () => {
+  it("indexes articles and finds them by topic when the words do not match", async () => {
+    // Embeddings falsos: eixo 0 = esporte, eixo 1 = economia.
+    const topic = (text: string) => {
+      const t = text.toLowerCase();
+      return [/futebol|gol|campeonato|time/.test(t) ? 1 : 0, /juros|inflação|banco|mercado/.test(t) ? 1 : 0, 0.05];
+    };
+    const fake = await startFakeOpenAI({ embed: topic });
+    try {
+      const provider = await db.aiProvider.create({ data: { userId: null, type: "openai_compatible", name: "emb", baseUrl: fake.baseUrl } });
+      expect(await setEmbeddingConfigAction({ providerId: provider.id, model: "fake-embed" })).toEqual({ ok: true });
+
+      const feed = await createFeed("https://semantic.example/feed", [{ guid: "sport" }, { guid: "money" }]);
+      await db.article.update({ where: { id: feed.articles[0].id }, data: { title: "Time vence a final com gol no último minuto" } });
+      await db.article.update({ where: { id: feed.articles[1].id }, data: { title: "Banco central sobe os juros de novo" } });
+      await db.subscription.create({ data: { userId: "alice", feedId: feed.id } });
+
+      expect(await embedPending()).toBeGreaterThanOrEqual(2);
+      expect(await db.articleEmbedding.count({ where: { modelKey: `${provider.id}:fake-embed` } })).toBeGreaterThanOrEqual(2);
+
+      // "campeonato" não aparece em nenhum título, mas é o mesmo assunto do artigo de esporte.
+      const result = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "campeonato" });
+      expect(result.items.map((i) => i.id)).toEqual([feed.articles[0].id]);
+      expect(result.items[0].matchedBySubject).toBe(true);
+
+      // Palavra exata continua vindo primeiro, sem marca de "por assunto".
+      const exact = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "juros" });
+      expect(exact.items[0]).toMatchObject({ id: feed.articles[1].id, matchedBySubject: false });
+
+      expect(await setEmbeddingConfigAction({ providerId: null, model: "" })).toEqual({ ok: true });
+      const off = await listArticles("alice", { kind: "all" }, { unreadOnly: false, query: "campeonato" });
+      expect(off.items).toEqual([]);
+    } finally {
+      await fake.close();
+    }
   });
 });

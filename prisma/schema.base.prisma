@@ -31,6 +31,7 @@ model User {
   chatThreads   ChatThread[]
   rules         Rule[]
   apiTokens     ApiToken[]
+  tags          Tag[]
 
   @@map("user")
 }
@@ -157,6 +158,8 @@ model Article {
   summaries ArticleSummary[]
   audios    ArticleAudio[]
   ref       ArticleRef?
+  tags      ArticleTag[]
+  embedding ArticleEmbedding?
 
   @@unique([feedId, guid])
   @@index([feedId, publishedAt])
@@ -239,6 +242,7 @@ model UserSettings {
   classifyEnabled   Boolean  @default(false)
   digestEnabled     Boolean  @default(false)
   digestHour        Int      @default(7)
+  digestEmail       Boolean  @default(false) // também envia o digest diário por e-mail (se houver SMTP)
   timezone          String   @default("America/Sao_Paulo")
   listView          String   @default("cards") // "titles" | "cards" | "magazine"
   groupStories      Boolean  @default(true) // agrupa na lista artigos de fontes diferentes sobre o mesmo fato
@@ -336,6 +340,8 @@ model AppSettings {
   retentionDays          Int     @default(90)
   defaultAiProviderId    String?
   defaultAiModel         String?
+  embeddingProviderId    String? // busca semântica: provedor global dos embeddings (null = desligada)
+  embeddingModel         String?
 
   @@map("app_settings")
 }
@@ -396,6 +402,44 @@ model ApiRef {
 
   @@unique([kind, refId])
   @@map("api_ref")
+}
+
+// Tags pessoais para organizar artigos (principalmente os salvos).
+model Tag {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime     @default(now())
+  articles  ArticleTag[]
+
+  @@unique([userId, name])
+  @@map("tag")
+}
+
+model ArticleTag {
+  tagId     String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([tagId, articleId])
+  @@index([articleId])
+  @@map("article_tag")
+}
+
+// Vetor do artigo (título + trecho) para a busca semântica. `modelKey` = "<provedor>:<modelo>":
+// ao trocar de modelo, os vetores antigos deixam de valer e são refeitos aos poucos.
+model ArticleEmbedding {
+  articleId String   @id
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  modelKey  String
+  vector    Bytes // Float32, normalizado (norma 1)
+  createdAt DateTime @default(now())
+
+  @@index([modelKey])
+  @@map("article_embedding")
 }
 
 model JobLock {

@@ -9,6 +9,7 @@ import type { ArticleDetail, ArticleListItem, ArticleScope } from "@/lib/queries
 import { loadMoreArticles, loadPreviewImagesAction, markAllRead, openArticleAction, setRead, setSaved } from "@/app/actions/articles";
 import { refreshFeedAction } from "@/app/actions/feeds";
 import { SaveLinkDialog } from "@/components/save-link";
+import { TagFilter, type TagCount } from "./tag-filter";
 import { updateSettingsAction } from "@/app/actions/settings";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function ArticleWorkspace({
   aiEnabled,
   ttsEnabled,
   feedError,
+  tagFilter,
 }: {
   scope: ArticleScope;
   title: string;
@@ -44,6 +46,7 @@ export function ArticleWorkspace({
   aiEnabled: boolean;
   ttsEnabled: boolean;
   feedError: string | null;
+  tagFilter: { tags: TagCount[]; active: string | undefined } | null;
 }) {
   const t = useTranslations("articles");
   const router = useRouter();
@@ -446,6 +449,7 @@ export function ArticleWorkspace({
               <Sparkles className="size-3 text-ai" /> {t("aiOrdered")}
             </p>
           )}
+          {tagFilter && <TagFilter tags={tagFilter.tags} active={tagFilter.active} />}
           {feedError && (
             <p role="status" className="flex items-center gap-1.5 text-[0.6875rem] text-warning">
               <TriangleAlert className="size-3" /> {t("lastError", { error: feedError })}

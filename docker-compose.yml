@@ -25,6 +25,13 @@ services:
       OIDC_SCOPES: ${OIDC_SCOPES:-}
       OIDC_AUTO_REGISTER: ${OIDC_AUTO_REGISTER:-}
       OIDC_DISABLE_PASSWORD_LOGIN: ${OIDC_DISABLE_PASSWORD_LOGIN:-}
+      # E-mail (opcional): redefinição de senha e digest por e-mail.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       DISABLE_SCHEDULER: ${DISABLE_SCHEDULER:-false}
     volumes:
       - openrss-data:/data

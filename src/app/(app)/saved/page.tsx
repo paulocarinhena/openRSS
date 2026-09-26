@@ -6,6 +6,8 @@ export async function generateMetadata() {
   return { title: t("saved") };
 }
 
-export default function SavedPage({ searchParams }: PageProps<"/saved">) {
-  return <ArticleView scope={{ kind: "saved" }} searchParams={searchParams} />;
+export default async function SavedPage({ searchParams }: PageProps<"/saved">) {
+  const { tag } = await searchParams;
+  const name = typeof tag === "string" ? tag.trim().slice(0, 40) : "";
+  return <ArticleView scope={name ? { kind: "saved", tag: name } : { kind: "saved" }} searchParams={searchParams} />;
 }
